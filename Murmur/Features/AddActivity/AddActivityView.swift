@@ -183,8 +183,10 @@ struct AddActivityView: View {
 
         do {
             try context.save()
+            HapticFeedback.success.trigger()
             dismiss()
         } catch {
+            HapticFeedback.error.trigger()
             errorMessage = error.localizedDescription
             context.rollback()
             isSaving = false
@@ -303,6 +305,9 @@ private struct ExertionSlider: View {
                 Text(title)
             }
             .accessibilityValue(accessibilityValue)
+            .onChange(of: value) { _, _ in
+                HapticFeedback.light.trigger()
+            }
 
             HStack {
                 Text(descriptor)

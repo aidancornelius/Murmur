@@ -12,6 +12,7 @@
 		44108DB02E8E8A8D007F6FAB /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 44108DAF2E8E8A8D007F6FAB /* WidgetKit.framework */; };
 		44108DB22E8E8A8D007F6FAB /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 44108DB12E8E8A8D007F6FAB /* SwiftUI.framework */; };
 		44108DBF2E8E8A8D007F6FAB /* MurmurWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 44108DAE2E8E8A8D007F6FAB /* MurmurWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		44108DDE2E8E9AB8007F6FAB /* HapticFeedback.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44108DDD2E8E9AB8007F6FAB /* HapticFeedback.swift */; };
 		44475B402E8D2CD2006438DE /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 44475B3F2E8D2CD2006438DE /* StoreKit.framework */; };
 		44475B422E8D2D7E006438DE /* TipJarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44475B412E8D2D7E006438DE /* TipJarView.swift */; };
 		44475B442E8D2DC6006438DE /* PDFExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44475B432E8D2DC6006438DE /* PDFExporter.swift */; };
@@ -119,6 +120,7 @@
 		44108DAE2E8E8A8D007F6FAB /* MurmurWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MurmurWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		44108DAF2E8E8A8D007F6FAB /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		44108DB12E8E8A8D007F6FAB /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		44108DDD2E8E9AB8007F6FAB /* HapticFeedback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticFeedback.swift; sourceTree = "<group>"; };
 		44475B3F2E8D2CD2006438DE /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 		44475B412E8D2D7E006438DE /* TipJarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TipJarView.swift; sourceTree = "<group>"; };
 		44475B432E8D2DC6006438DE /* PDFExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFExporter.swift; sourceTree = "<group>"; };
@@ -455,6 +457,7 @@
 			children = (
 				43CA3AFB288C4542B8A88E79 /* AppConstants.swift */,
 				9E0C21E481F74C6BA32DCBBC /* DateFormatters.swift */,
+				44108DDD2E8E9AB8007F6FAB /* HapticFeedback.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -478,8 +481,6 @@
 				44108DB32E8E8A8D007F6FAB /* MurmurWidgets */,
 			);
 			name = MurmurWidgetsExtension;
-			packageProductDependencies = (
-			);
 			productName = MurmurWidgetsExtension;
 			productReference = 44108DAE2E8E8A8D007F6FAB /* MurmurWidgetsExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
@@ -689,6 +690,7 @@
 				DB578AEAF10FBA1C5E082434 /* ActivityEvent.swift in Sources */,
 				E9DC63EC491B2D771AEC863F /* AddActivityView.swift in Sources */,
 				ANALYSIS001 /* AnalysisModels.swift in Sources */,
+				44108DDE2E8E9AB8007F6FAB /* HapticFeedback.swift in Sources */,
 				ANALYSIS003 /* AnalysisView.swift in Sources */,
 				765998504779325DC574C6D7 /* LogSymptomIntent.swift in Sources */,
 				A2BB3598EF5E4007CFBC3896 /* OpenAddEntryIntent.swift in Sources */,

@@ -76,6 +76,8 @@ struct SymptomTypeListView: View {
         offsets.map { types[$0] }
             .filter { !$0.isDefault } // Only delete non-default symptoms
             .forEach(context.delete)
-        try? context.save()
+        if (try? context.save()) != nil {
+            HapticFeedback.success.trigger()
+        }
     }
 }

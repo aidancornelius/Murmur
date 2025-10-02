@@ -132,11 +132,13 @@ struct DataManagementView: View {
                 }
 
                 await MainActor.run {
+                    HapticFeedback.success.trigger()
                     isProcessing = false
                     successMessage = "All data has been deleted"
                 }
             } catch {
                 await MainActor.run {
+                    HapticFeedback.error.trigger()
                     isProcessing = false
                     errorMessage = "Failed to reset data: \(error.localizedDescription)"
                 }
@@ -225,6 +227,7 @@ struct BackupView: View {
             do {
                 let url = try await backupService.createBackup(password: password)
                 await MainActor.run {
+                    HapticFeedback.success.trigger()
                     backupURL = url
                     isProcessing = false
                     successMessage = "Backup created successfully"
@@ -233,6 +236,7 @@ struct BackupView: View {
                 }
             } catch {
                 await MainActor.run {
+                    HapticFeedback.error.trigger()
                     isProcessing = false
                     errorMessage = error.localizedDescription
                     dismiss()
@@ -362,12 +366,14 @@ struct RestoreView: View {
                 try await backupService.restoreBackup(from: url, password: password)
 
                 await MainActor.run {
+                    HapticFeedback.success.trigger()
                     isProcessing = false
                     successMessage = "Backup restored successfully"
                     dismiss()
                 }
             } catch {
                 await MainActor.run {
+                    HapticFeedback.error.trigger()
                     isProcessing = false
                     errorMessage = error.localizedDescription
                     dismiss()

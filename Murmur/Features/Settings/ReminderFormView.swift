@@ -44,6 +44,7 @@ struct ReminderFormView: View {
                                     .stroke(repeatsOn.contains(day) ? Color.accentColor : Color.gray.opacity(0.2))
                             )
                             .onTapGesture {
+                                HapticFeedback.selection.trigger()
                                 if repeatsOn.contains(day) {
                                     repeatsOn.remove(day)
                                 } else {
@@ -55,6 +56,9 @@ struct ReminderFormView: View {
             }
 
             Toggle("On", isOn: $isEnabled)
+                .onChange(of: isEnabled) { _, _ in
+                    HapticFeedback.selection.trigger()
+                }
 
             if let errorMessage {
                 Section {
@@ -90,6 +94,7 @@ struct ReminderFormView: View {
 
         do {
             try context.save()
+            HapticFeedback.success.trigger()
             Task {
                 if reminder.isEnabled {
                     _ = try? await NotificationScheduler.requestAuthorization()
@@ -100,6 +105,7 @@ struct ReminderFormView: View {
             }
             dismiss()
         } catch {
+            HapticFeedback.error.trigger()
             context.rollback()
             errorMessage = error.localizedDescription
         }

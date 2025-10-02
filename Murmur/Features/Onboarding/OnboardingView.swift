@@ -115,7 +115,10 @@ struct OnboardingView: View {
                     }
                     .accessibilityHint("Starts using Murmur without HealthKit integration")
                 } else {
-                    Button(action: { withAnimation { currentPage += 1 } }) {
+                    Button(action: {
+                        HapticFeedback.light.trigger()
+                        withAnimation { currentPage += 1 }
+                    }) {
                         HStack {
                             Text("Continue")
                             Image(systemName: "arrow.right")
@@ -145,9 +148,11 @@ struct OnboardingView: View {
     }
 
     private func requestHealthKitAndComplete() {
+        HapticFeedback.light.trigger()
         Task {
             await healthKit.bootstrapAuthorizations()
             await MainActor.run {
+                HapticFeedback.success.trigger()
                 onComplete()
             }
         }

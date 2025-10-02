@@ -45,7 +45,10 @@ struct SymptomTypeFormView: View {
                                             .foregroundStyle(.white)
                                     }
                                 }
-                                .onTapGesture { colorHex = hex }
+                                .onTapGesture {
+                                    HapticFeedback.selection.trigger()
+                                    colorHex = hex
+                                }
                         }
                     }
                     .padding(.vertical, 4)
@@ -58,7 +61,10 @@ struct SymptomTypeFormView: View {
                         Image(systemName: icon)
                             .frame(width: 44, height: 44)
                             .background(RoundedRectangle(cornerRadius: 10).stroke(icon == iconName ? Color.accentColor : .gray.opacity(0.2)))
-                            .onTapGesture { iconName = icon }
+                            .onTapGesture {
+                                HapticFeedback.selection.trigger()
+                                iconName = icon
+                            }
                     }
                 }
                 .padding(.vertical, 4)
@@ -66,6 +72,9 @@ struct SymptomTypeFormView: View {
 
             Section {
                 Toggle("Show first when logging", isOn: $isStarred)
+                    .onChange(of: isStarred) { _, _ in
+                        HapticFeedback.selection.trigger()
+                    }
                 if isStarred {
                     Stepper("Priority: \(starOrder)", value: $starOrder, in: 0...100)
                         .font(.callout)
@@ -120,9 +129,11 @@ struct SymptomTypeFormView: View {
         do {
             if context.hasChanges {
                 try context.save()
+                HapticFeedback.success.trigger()
             }
             dismiss()
         } catch {
+            HapticFeedback.error.trigger()
             errorMessage = error.localizedDescription
             context.rollback()
         }

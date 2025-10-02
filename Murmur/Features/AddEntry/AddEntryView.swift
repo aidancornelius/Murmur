@@ -86,6 +86,9 @@ struct AddEntryView: View {
                         .accessibilityLabel("Same severity for all symptoms")
                         .accessibilityHint("When enabled, all selected symptoms will use the same severity rating. When disabled, you can rate each symptom individually.")
                         .accessibilityValue(useSameSeverity ? "On, using shared severity" : "Off, individual severity ratings")
+                        .onChange(of: useSameSeverity) { _, _ in
+                            HapticFeedback.selection.trigger()
+                        }
 
                     if useSameSeverity {
                         VStack(alignment: .leading, spacing: 8) {
