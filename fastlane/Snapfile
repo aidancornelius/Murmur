@@ -1,0 +1,46 @@
+# Snapfile for Murmur screenshot automation
+
+# List of devices to generate screenshots for
+devices([
+  "iPhone 17 Pro Max",   # 6.9" - Will be resized to 1284 × 2778px for App Store
+  "iPad Pro 13-inch (M4)"  # 13" iPad Pro
+])
+
+# List of languages to screenshot
+# Add more languages as needed for localisation
+languages([
+  "en-AU"
+])
+
+# Where to put the screenshots
+output_directory "./screenshots"
+
+# Clear previous screenshots
+clear_previous_screenshots true
+
+# Remove the alpha channel from screenshots
+override_status_bar true
+
+# Arguments to pass to the app on launch
+# launch_arguments(["-FirstLaunch"])
+
+# Scheme to build
+scheme "Murmur"
+
+# For apps that support dark mode, enable this to capture dark mode screenshots
+# dark_mode true
+
+# Skip opening simulator after snapshot completes
+stop_after_first_error false
+
+# Number of times to retry if a screenshot fails
+number_of_retries 3
+
+# Erase the simulator before running
+erase_simulator true
+
+# Reinstall app before running
+reinstall_app true
+
+# Delay between launching app and taking screenshots (in seconds)
+# launch_test_target_wait_for_animations true

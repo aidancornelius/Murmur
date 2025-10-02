@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="fastlane.lanes">
+    
+    
+    
+      
+      <testcase classname="fastlane.lanes" name="0: default_platform" time="0.000183">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="1: sips -z 2778 1284 /Users/acb/Code/Murmur/screenshots/en-AU/iPhone\ 17\ Pro\ Max-01Timeline.png" time="0.119317">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="2: sips -z 2778 1284 /Users/acb/Code/Murmur/screenshots/en-AU/iPhone\ 17\ Pro\ Max-03AddSymptom.png" time="0.104624">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="3: sips -z 2778 1284 /Users/acb/Code/Murmur/screenshots/en-AU/iPhone\ 17\ Pro\ Max-04Analysis.png" time="0.107167">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="4: sips -z 2778 1284 /Users/acb/Code/Murmur/screenshots/en-AU/iPhone\ 17\ Pro\ Max-05Settings.png" time="0.110498">
+        
+      </testcase>
+    
+  </testsuite>
+</testsuites>

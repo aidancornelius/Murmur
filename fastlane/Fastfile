@@ -1,0 +1,55 @@
+# Fastfile for Murmur automation
+
+default_platform(:ios)
+
+platform :ios do
+  desc "Generate screenshots for App Store Connect"
+  lane :screenshots do
+    snapshot(
+      scheme: "MurmurUITests",
+      output_directory: "./screenshots",
+      clear_previous_screenshots: true,
+      reinstall_app: true,
+      erase_simulator: true,
+      devices: [
+        "iPhone 17 Pro Max",
+        "iPad Pro 13-inch (M4)"
+      ],
+      languages: ["en-AU"],
+      override_status_bar: true,
+      number_of_retries: 3
+    )
+  end
+
+  desc "Frame screenshots with device frames"
+  lane :add_frames do
+    frameit(
+      path: "./screenshots",
+      silver: true
+    )
+  end
+
+  desc "Generate, resize, and frame screenshots for App Store"
+  lane :prepare_screenshots do
+    screenshots
+    resize_screenshots
+    add_frames
+  end
+
+  desc "Resize iPhone screenshots for App Store Connect"
+  lane :resize_screenshots do
+    # Resize iPhone 17 Pro Max (1320x2868) to iPhone Pro Max spec (1284x2778)
+    screenshot_dir = File.expand_path("../screenshots", __dir__)
+    files = Dir.glob("#{screenshot_dir}/**/iPhone*.png")
+
+    if files.empty?
+      UI.error("No iPhone screenshots found in #{screenshot_dir}")
+    else
+      files.each do |file|
+        UI.message("Resizing: #{File.basename(file)}")
+        sh("sips", "-z", "2778", "1284", file)
+      end
+      UI.success("Resized #{files.count} iPhone screenshot(s) to 1284x2778")
+    end
+  end
+end
