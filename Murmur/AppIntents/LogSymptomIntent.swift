@@ -76,18 +76,80 @@ struct LogSymptomIntent: AppIntent {
 }
 
 @available(iOS 16.0, *)
-struct SymptomAppShortcuts: AppShortcutsProvider {
+struct MurmurAppShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
-        AppShortcut(
-            intent: LogSymptomIntent(),
-            phrases: [
-                "Log symptom in \(.applicationName)",
-                "Record symptom in \(.applicationName)",
-                "Log a \(.applicationName) entry",
-                "Add symptom to \(.applicationName)"
-            ],
-            shortTitle: "Log symptom",
-            systemImageName: "heart.text.square"
-        )
+        [
+            // Primary actions
+            AppShortcut(
+                intent: OpenAddEntryIntent(),
+                phrases: [
+                    "How am I feeling in \(.applicationName)",
+                    "Log how I'm feeling in \(.applicationName)",
+                    "Open \(.applicationName) symptom log"
+                ],
+                shortTitle: "How are you feeling?",
+                systemImageName: "heart.text.square"
+            ),
+            AppShortcut(
+                intent: OpenAddActivityIntent(),
+                phrases: [
+                    "Log activity in \(.applicationName)",
+                    "Record activity in \(.applicationName)",
+                    "Add activity to \(.applicationName)"
+                ],
+                shortTitle: "Log an activity",
+                systemImageName: "calendar.badge.clock"
+            ),
+            AppShortcut(
+                intent: LogSymptomIntent(),
+                phrases: [
+                    "Log symptom in \(.applicationName)",
+                    "Record symptom in \(.applicationName)",
+                    "Quick log in \(.applicationName)"
+                ],
+                shortTitle: "Quick log symptom",
+                systemImageName: "bolt.heart"
+            ),
+
+            // Data query actions
+            AppShortcut(
+                intent: GetRecentEntriesIntent(),
+                phrases: [
+                    "Get my recent symptoms from \(.applicationName)",
+                    "Show my \(.applicationName) entries",
+                    "What are my recent \(.applicationName) logs"
+                ],
+                shortTitle: "Get recent entries",
+                systemImageName: "list.bullet.clipboard"
+            ),
+            AppShortcut(
+                intent: GetSymptomsBySeverityIntent(),
+                phrases: [
+                    "Get severe symptoms from \(.applicationName)",
+                    "Show high severity entries in \(.applicationName)"
+                ],
+                shortTitle: "Get symptoms by severity",
+                systemImageName: "exclamationmark.triangle"
+            ),
+            AppShortcut(
+                intent: GetDailySummaryIntent(),
+                phrases: [
+                    "Get my \(.applicationName) summary",
+                    "Show my day in \(.applicationName)",
+                    "What's my \(.applicationName) summary"
+                ],
+                shortTitle: "Get daily summary",
+                systemImageName: "calendar.day.timeline.left"
+            ),
+            AppShortcut(
+                intent: CountSymptomsIntent(),
+                phrases: [
+                    "How many symptoms in \(.applicationName)",
+                    "Count my \(.applicationName) entries"
+                ],
+                shortTitle: "Count symptoms",
+                systemImageName: "number"
+            )
+        ]
     }
 }

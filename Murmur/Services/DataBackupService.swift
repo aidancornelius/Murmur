@@ -34,10 +34,17 @@ final class DataBackupService {
     }
 
     struct BackupData: Codable {
-        let version: Int = 1
+        let version: Int
         let createdAt: Date
         let entries: [EntryBackup]
         let symptomTypes: [SymptomTypeBackup]
+
+        init(version: Int = 1, createdAt: Date, entries: [EntryBackup], symptomTypes: [SymptomTypeBackup]) {
+            self.version = version
+            self.createdAt = createdAt
+            self.entries = entries
+            self.symptomTypes = symptomTypes
+        }
 
         struct EntryBackup: Codable {
             let id: UUID

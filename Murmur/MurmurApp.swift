@@ -1,5 +1,10 @@
 import SwiftUI
 
+extension Notification.Name {
+    static let openAddEntry = Notification.Name("openAddEntry")
+    static let openAddActivity = Notification.Name("openAddActivity")
+}
+
 @main
 struct MurmurApp: App {
     @UIApplicationDelegateAdaptor(MurmurAppDelegate.self) private var appDelegate
@@ -40,6 +45,9 @@ private struct RootContainer: View {
     @State private var showingAddEntry = false
     @State private var showingAddActivity = false
     @State private var hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
+
+    private let openAddEntryPublisher = NotificationCenter.default.publisher(for: .openAddEntry)
+    private let openAddActivityPublisher = NotificationCenter.default.publisher(for: .openAddActivity)
 
     var body: some View {
         if hasCompletedOnboarding {
@@ -104,6 +112,12 @@ private struct RootContainer: View {
                     AddActivityView()
                         .environment(\.managedObjectContext, context)
                 }
+            }
+            .onReceive(openAddEntryPublisher) { _ in
+                showingAddEntry = true
+            }
+            .onReceive(openAddActivityPublisher) { _ in
+                showingAddActivity = true
             }
         } else {
             OnboardingView {
