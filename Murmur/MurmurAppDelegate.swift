@@ -1,5 +1,6 @@
 import UIKit
 import UserNotifications
+import AppIntents
 
 final class MurmurAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     let healthKitAssistant = HealthKitAssistant()
@@ -16,6 +17,14 @@ final class MurmurAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificati
         healthKitAssistant.manualCycleTracker = manualCycleTracker
 
         UNUserNotificationCenter.current().delegate = self
+
+        // Register app shortcuts for Siri and lock screen
+        if #available(iOS 16.0, *) {
+            Task {
+                try? await MurmurAppShortcuts.updateAppShortcutParameters()
+            }
+        }
+
         return true
     }
 

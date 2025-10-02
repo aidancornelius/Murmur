@@ -208,7 +208,7 @@ struct GetDailySummaryIntent: AppIntent {
             }
         }
 
-        return .result(dialog: summary.trimmingCharacters(in: .whitespacesAndNewlines))
+        return .result(dialog: IntentDialog(stringLiteral: summary.trimmingCharacters(in: .whitespacesAndNewlines)))
     }
 }
 
@@ -240,6 +240,6 @@ struct CountSymptomsIntent: AppIntent {
         let timeframe = daysBack > 0 ? "in the last \(daysBack) days" : "of all time"
         let message = "You've logged \(count) symptom \(count == 1 ? "entry" : "entries") \(timeframe)."
 
-        return .result(value: count, dialog: message)
+        return .result(value: count, dialog: IntentDialog(stringLiteral: message))
     }
 }

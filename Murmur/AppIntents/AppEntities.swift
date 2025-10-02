@@ -77,8 +77,8 @@ struct ActivityEventEntity: AppEntity, Identifiable {
     var id: UUID
     var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(
-            title: "\(name)",
-            subtitle: dateDescription,
+            title: LocalizedStringResource(stringLiteral: name),
+            subtitle: LocalizedStringResource(stringLiteral: dateDescription),
             image: .init(systemName: "calendar.badge.clock")
         )
     }
@@ -147,8 +147,8 @@ struct SymptomTypeEntity: AppEntity, Identifiable {
     var id: UUID
     var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(
-            title: "\(name)",
-            subtitle: category,
+            title: LocalizedStringResource(stringLiteral: name),
+            subtitle: LocalizedStringResource(stringLiteral: category),
             image: .init(systemName: iconName)
         )
     }

@@ -1,6 +1,7 @@
 import AppIntents
 import CoreData
 import Foundation
+import SwiftUI
 
 @available(iOS 16.0, *)
 struct GetRecentEntriesIntent: AppIntent {
@@ -17,8 +18,8 @@ struct GetRecentEntriesIntent: AppIntent {
 
         let fetchRequest: NSFetchRequest<SymptomEntry> = SymptomEntry.fetchRequest()
         fetchRequest.sortDescriptors = [
-            NSSortDescriptor(keyPath: \SymptomEntry.backdatedAt, order: .reverse),
-            NSSortDescriptor(keyPath: \SymptomEntry.createdAt, order: .reverse)
+            NSSortDescriptor(keyPath: \SymptomEntry.backdatedAt, ascending: false),
+            NSSortDescriptor(keyPath: \SymptomEntry.createdAt, ascending: false)
         ]
         fetchRequest.fetchLimit = max(1, min(10, count))
 
@@ -47,7 +48,7 @@ struct GetRecentEntriesIntent: AppIntent {
             summary += "\n"
         }
 
-        return .result(dialog: summary.trimmingCharacters(in: .whitespacesAndNewlines)) {
+        return .result(dialog: IntentDialog(stringLiteral: summary.trimmingCharacters(in: .whitespacesAndNewlines))) {
             RecentEntriesView(entries: entries.map { EntrySnippet(from: $0) })
         }
     }
