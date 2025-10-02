@@ -9,6 +9,9 @@
 /* Begin PBXBuildFile section */
 		18BD91891ED3865FCE879F9D /* GetRecentEntriesIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA39FF0B6DC573F58191D8BF /* GetRecentEntriesIntent.swift */; };
 		43CA3AFB288C4542B8A88E78 /* AppConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43CA3AFB288C4542B8A88E79 /* AppConstants.swift */; };
+		44108DB02E8E8A8D007F6FAB /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 44108DAF2E8E8A8D007F6FAB /* WidgetKit.framework */; };
+		44108DB22E8E8A8D007F6FAB /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 44108DB12E8E8A8D007F6FAB /* SwiftUI.framework */; };
+		44108DBF2E8E8A8D007F6FAB /* MurmurWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 44108DAE2E8E8A8D007F6FAB /* MurmurWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		44475B402E8D2CD2006438DE /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 44475B3F2E8D2CD2006438DE /* StoreKit.framework */; };
 		44475B422E8D2D7E006438DE /* TipJarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44475B412E8D2D7E006438DE /* TipJarView.swift */; };
 		44475B442E8D2DC6006438DE /* PDFExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44475B432E8D2DC6006438DE /* PDFExporter.swift */; };
@@ -21,6 +24,7 @@
 		444760AA2E8DF7E4006438DE /* DataManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 444760A92E8DF7E4006438DE /* DataManagementView.swift */; };
 		444760AC2E8DF7F8006438DE /* DataBackupService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 444760AB2E8DF7F8006438DE /* DataBackupService.swift */; };
 		44D83F8D2E8BE8A900D63101 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44D83F8B2E8BE8A900D63101 /* OnboardingView.swift */; };
+		50FCD2583C3972904F781005 /* ControlWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC05C62E0723AD655ACE4A0A /* ControlWidgets.swift */; };
 		5AD864AFE0518CA55402FA1E /* DataQueryIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DFC5CD06EE9972460083E73 /* DataQueryIntents.swift */; };
 		765998504779325DC574C6D7 /* LogSymptomIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51BE1580EC676A9A33F11C8F /* LogSymptomIntent.swift */; };
 		9E0C21E481F74C6BA32DCBBB /* DateFormatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E0C21E481F74C6BA32DCBBC /* DateFormatters.swift */; };
@@ -59,6 +63,7 @@
 		A2B0E006 /* Reminder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B0E005 /* Reminder.swift */; };
 		A2B0F001 /* Murmur.xcdatamodeld in Resources */ = {isa = PBXBuildFile; fileRef = A2B0DE90 /* Murmur.xcdatamodeld */; };
 		A2BB3598EF5E4007CFBC3896 /* OpenAddEntryIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF6250365C78E47312492C4 /* OpenAddEntryIntent.swift */; };
+		A5EE7E6CDB0E12FD21D961D0 /* ControlWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F55FB26D3635ADEEA930C23 /* ControlWidgets.swift */; };
 		ANALYSIS001 /* AnalysisModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = ANALYSIS002 /* AnalysisModels.swift */; };
 		ANALYSIS003 /* AnalysisView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ANALYSIS004 /* AnalysisView.swift */; };
 		B09A9B12F896570C98E49753 /* AppEntities.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA39D1E360BD7C97C14FDE11 /* AppEntities.swift */; };
@@ -70,6 +75,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		44108DBD2E8E8A8D007F6FAB /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A2B00000 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 44108DAD2E8E8A8D007F6FAB;
+			remoteInfo = MurmurWidgetsExtension;
+		};
 		444760B72E8E094F006438DE /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = A2B00000 /* Project object */;
@@ -86,9 +98,27 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		44108DC42E8E8A8D007F6FAB /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				44108DBF2E8E8A8D007F6FAB /* MurmurWidgetsExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
-		1AF6250365C78E47312492C4 /* OpenAddEntryIntent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = OpenAddEntryIntent.swift; path = OpenAddEntryIntent.swift; sourceTree = "<group>"; };
+		1AF6250365C78E47312492C4 /* OpenAddEntryIntent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpenAddEntryIntent.swift; sourceTree = "<group>"; };
+		1F55FB26D3635ADEEA930C23 /* ControlWidgets.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ControlWidgets.swift; sourceTree = "<group>"; };
 		43CA3AFB288C4542B8A88E79 /* AppConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConstants.swift; sourceTree = "<group>"; };
+		44108DAE2E8E8A8D007F6FAB /* MurmurWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MurmurWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		44108DAF2E8E8A8D007F6FAB /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		44108DB12E8E8A8D007F6FAB /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		44475B3F2E8D2CD2006438DE /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 		44475B412E8D2D7E006438DE /* TipJarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TipJarView.swift; sourceTree = "<group>"; };
 		44475B432E8D2DC6006438DE /* PDFExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFExporter.swift; sourceTree = "<group>"; };
@@ -103,9 +133,9 @@
 		444760B12E8E094F006438DE /* MurmurUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MurmurUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		44B13E442E8BBB52003FC5E2 /* Murmur.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Murmur.entitlements; sourceTree = "<group>"; };
 		44D83F8B2E8BE8A900D63101 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
-		4DFC5CD06EE9972460083E73 /* DataQueryIntents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = DataQueryIntents.swift; path = DataQueryIntents.swift; sourceTree = "<group>"; };
-		51820B9607477A9575B9187D /* OpenAddActivityIntent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = OpenAddActivityIntent.swift; path = OpenAddActivityIntent.swift; sourceTree = "<group>"; };
-		51BE1580EC676A9A33F11C8F /* LogSymptomIntent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = LogSymptomIntent.swift; path = LogSymptomIntent.swift; sourceTree = "<group>"; };
+		4DFC5CD06EE9972460083E73 /* DataQueryIntents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DataQueryIntents.swift; sourceTree = "<group>"; };
+		51820B9607477A9575B9187D /* OpenAddActivityIntent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpenAddActivityIntent.swift; sourceTree = "<group>"; };
+		51BE1580EC676A9A33F11C8F /* LogSymptomIntent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LogSymptomIntent.swift; sourceTree = "<group>"; };
 		721640201DABA6889C773545 /* AddActivityView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AddActivityView.swift; sourceTree = "<group>"; };
 		922D6703277F7323BF3470A6 /* ActivityEvent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActivityEvent.swift; sourceTree = "<group>"; };
 		9E0C21E481F74C6BA32DCBBC /* DateFormatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateFormatters.swift; sourceTree = "<group>"; };
@@ -146,29 +176,40 @@
 		A2B0E001 /* SymptomType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymptomType.swift; sourceTree = "<group>"; };
 		A2B0E003 /* SymptomEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymptomEntry.swift; sourceTree = "<group>"; };
 		A2B0E005 /* Reminder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reminder.swift; sourceTree = "<group>"; };
-		AA39FF0B6DC573F58191D8BF /* GetRecentEntriesIntent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = GetRecentEntriesIntent.swift; path = GetRecentEntriesIntent.swift; sourceTree = "<group>"; };
+		AA39FF0B6DC573F58191D8BF /* GetRecentEntriesIntent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GetRecentEntriesIntent.swift; sourceTree = "<group>"; };
 		ANALYSIS002 /* AnalysisModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisModels.swift; sourceTree = "<group>"; };
 		ANALYSIS004 /* AnalysisView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisView.swift; sourceTree = "<group>"; };
 		CA1E2DA3000000000000001 /* CalendarAssistant.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarAssistant.swift; sourceTree = "<group>"; };
-		CA39D1E360BD7C97C14FDE11 /* AppEntities.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AppEntities.swift; path = AppEntities.swift; sourceTree = "<group>"; };
+		CA39D1E360BD7C97C14FDE11 /* AppEntities.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppEntities.swift; sourceTree = "<group>"; };
+		FC05C62E0723AD655ACE4A0A /* ControlWidgets.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ControlWidgets.swift; sourceTree = "<group>"; };
 		LS0000001 /* LoadScore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadScore.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedRootGroup section */
-		444760B22E8E094F006438DE /* MurmurUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		44108DC02E8E8A8D007F6FAB /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
 			);
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
-			path = MurmurUITests;
-			sourceTree = "<group>";
+			target = 44108DAD2E8E8A8D007F6FAB /* MurmurWidgetsExtension */;
 		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		44108DB32E8E8A8D007F6FAB /* MurmurWidgets */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (44108DC02E8E8A8D007F6FAB /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = MurmurWidgets; sourceTree = "<group>"; };
+		444760B22E8E094F006438DE /* MurmurUITests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = MurmurUITests; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		44108DAB2E8E8A8D007F6FAB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				44108DB22E8E8A8D007F6FAB /* SwiftUI.framework in Frameworks */,
+				44108DB02E8E8A8D007F6FAB /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		444760AE2E8E094F006438DE /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -198,6 +239,8 @@
 			isa = PBXGroup;
 			children = (
 				44475B3F2E8D2CD2006438DE /* StoreKit.framework */,
+				44108DAF2E8E8A8D007F6FAB /* WidgetKit.framework */,
+				44108DB12E8E8A8D007F6FAB /* SwiftUI.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -224,6 +267,7 @@
 				A2B00005 /* Murmur */,
 				A2B0000E /* MurmurTests */,
 				444760B22E8E094F006438DE /* MurmurUITests */,
+				44108DB32E8E8A8D007F6FAB /* MurmurWidgets */,
 				44475B3E2E8D2CD2006438DE /* Frameworks */,
 				A2B00004 /* Products */,
 			);
@@ -237,6 +281,7 @@
 				A2B01000 /* Murmur.app */,
 				A2B01001 /* MurmurTests.xctest */,
 				444760B12E8E094F006438DE /* MurmurUITests.xctest */,
+				44108DAE2E8E8A8D007F6FAB /* MurmurWidgetsExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -399,8 +444,9 @@
 				AA39FF0B6DC573F58191D8BF /* GetRecentEntriesIntent.swift */,
 				4DFC5CD06EE9972460083E73 /* DataQueryIntents.swift */,
 				CA39D1E360BD7C97C14FDE11 /* AppEntities.swift */,
+				FC05C62E0723AD655ACE4A0A /* ControlWidgets.swift */,
+				1F55FB26D3635ADEEA930C23 /* ControlWidgets.swift */,
 			);
-			name = AppIntents;
 			path = AppIntents;
 			sourceTree = "<group>";
 		};
@@ -416,6 +462,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		44108DAD2E8E8A8D007F6FAB /* MurmurWidgetsExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 44108DC12E8E8A8D007F6FAB /* Build configuration list for PBXNativeTarget "MurmurWidgetsExtension" */;
+			buildPhases = (
+				44108DAA2E8E8A8D007F6FAB /* Sources */,
+				44108DAB2E8E8A8D007F6FAB /* Frameworks */,
+				44108DAC2E8E8A8D007F6FAB /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				44108DB32E8E8A8D007F6FAB /* MurmurWidgets */,
+			);
+			name = MurmurWidgetsExtension;
+			packageProductDependencies = (
+			);
+			productName = MurmurWidgetsExtension;
+			productReference = 44108DAE2E8E8A8D007F6FAB /* MurmurWidgetsExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		444760B02E8E094F006438DE /* MurmurUITests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 444760BB2E8E094F006438DE /* Build configuration list for PBXNativeTarget "MurmurUITests" */;
@@ -444,10 +512,12 @@
 				A2B00010 /* Sources */,
 				A2B00011 /* Frameworks */,
 				A2B00012 /* Resources */,
+				44108DC42E8E8A8D007F6FAB /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				44108DBE2E8E8A8D007F6FAB /* PBXTargetDependency */,
 			);
 			name = Murmur;
 			productName = Murmur;
@@ -482,6 +552,9 @@
 				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
+					44108DAD2E8E8A8D007F6FAB = {
+						CreatedOnToolsVersion = 26.0.1;
+					};
 					444760B02E8E094F006438DE = {
 						CreatedOnToolsVersion = 26.0.1;
 						TestTargetID = A2B00001;
@@ -508,6 +581,7 @@
 			projectRoot = "";
 			targets = (
 				A2B00001 /* Murmur */,
+				44108DAD2E8E8A8D007F6FAB /* MurmurWidgetsExtension */,
 				A2B00002 /* MurmurTests */,
 				444760B02E8E094F006438DE /* MurmurUITests */,
 			);
@@ -515,6 +589,13 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		44108DAC2E8E8A8D007F6FAB /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		444760AF2E8E094F006438DE /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -543,6 +624,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		44108DAA2E8E8A8D007F6FAB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		444760AD2E8E094F006438DE /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -608,6 +696,8 @@
 				18BD91891ED3865FCE879F9D /* GetRecentEntriesIntent.swift in Sources */,
 				5AD864AFE0518CA55402FA1E /* DataQueryIntents.swift in Sources */,
 				B09A9B12F896570C98E49753 /* AppEntities.swift in Sources */,
+				50FCD2583C3972904F781005 /* ControlWidgets.swift in Sources */,
+				A5EE7E6CDB0E12FD21D961D0 /* ControlWidgets.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -622,6 +712,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		44108DBE2E8E8A8D007F6FAB /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 44108DAD2E8E8A8D007F6FAB /* MurmurWidgetsExtension */;
+			targetProxy = 44108DBD2E8E8A8D007F6FAB /* PBXContainerItemProxy */;
+		};
 		444760B82E8E094F006438DE /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = A2B00001 /* Murmur */;
@@ -635,6 +730,78 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		44108DC22E8E8A8D007F6FAB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1000;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = HK6R36PLNR;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = MurmurWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = MurmurWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.12;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.cornelius-bell.Murmur.MurmurWidgets";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		44108DC32E8E8A8D007F6FAB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1000;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = HK6R36PLNR;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = MurmurWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = MurmurWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.12;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.cornelius-bell.Murmur.MurmurWidgets";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		444760B92E8E094F006438DE /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -813,18 +980,18 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Murmur/Murmur.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1523;
+				CURRENT_PROJECT_VERSION = 1000;
 				DEVELOPMENT_TEAM = HK6R36PLNR;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Murmur/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.10;
+				MARKETING_VERSION = 1.12;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.cornelius-bell.Murmur";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -840,18 +1007,18 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Murmur/Murmur.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1523;
+				CURRENT_PROJECT_VERSION = 1000;
 				DEVELOPMENT_TEAM = HK6R36PLNR;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Murmur/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.10;
+				MARKETING_VERSION = 1.12;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.cornelius-bell.Murmur";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -905,6 +1072,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		44108DC12E8E8A8D007F6FAB /* Build configuration list for PBXNativeTarget "MurmurWidgetsExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				44108DC22E8E8A8D007F6FAB /* Debug */,
+				44108DC32E8E8A8D007F6FAB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		444760BB2E8E094F006438DE /* Build configuration list for PBXNativeTarget "MurmurUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

@@ -1,3 +1,10 @@
+//
+//  MurmurWidgetsControl.swift
+//  MurmurWidgets
+//
+//  Created by Aidan Cornelius-Bell on 2/10/2025.
+//
+
 import AppIntents
 import SwiftUI
 import WidgetKit
@@ -45,12 +52,4 @@ struct ControlWidgetProvider: ControlValueProvider {
     }
 
     let previewValue: String = ""
-}
-
-@available(iOS 18.0, *)
-struct MurmurControlWidgetBundle: WidgetBundle {
-    var body: some Widget {
-        LogSymptomControl()
-        LogActivityControl()
-    }
 }

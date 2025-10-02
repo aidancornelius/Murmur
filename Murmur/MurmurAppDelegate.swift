@@ -20,9 +20,7 @@ final class MurmurAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificati
 
         // Register app shortcuts for Siri and lock screen
         if #available(iOS 16.0, *) {
-            Task {
-                try? await MurmurAppShortcuts.updateAppShortcutParameters()
-            }
+            MurmurAppShortcuts.updateAppShortcutParameters()
         }
 
         return true

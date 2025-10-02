@@ -1,5 +1,5 @@
 import AppIntents
-import CoreData
+@preconcurrency import CoreData
 import Foundation
 
 // MARK: - Symptom Entry Entity
@@ -59,7 +59,7 @@ struct SymptomEntryQuery: EntityQuery {
         fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \SymptomEntry.backdatedAt, ascending: false)]
         fetchRequest.fetchLimit = 5
 
-        guard let entries = try? await context.perform({ try context.fetch(fetchRequest) }) else {
+        guard let entries = try? await context.perform({ [fetchRequest] in try context.fetch(fetchRequest) }) else {
             return []
         }
 
@@ -129,7 +129,7 @@ struct ActivityEventQuery: EntityQuery {
         fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \ActivityEvent.backdatedAt, ascending: false)]
         fetchRequest.fetchLimit = 5
 
-        guard let activities = try? await context.perform({ try context.fetch(fetchRequest) }) else {
+        guard let activities = try? await context.perform({ [fetchRequest] in try context.fetch(fetchRequest) }) else {
             return []
         }
 
@@ -190,7 +190,7 @@ struct SymptomTypeQuery: EntityQuery {
         ]
         fetchRequest.fetchLimit = 10
 
-        guard let types = try? await context.perform({ try context.fetch(fetchRequest) }) else {
+        guard let types = try? await context.perform({ [fetchRequest] in try context.fetch(fetchRequest) }) else {
             return []
         }
 
