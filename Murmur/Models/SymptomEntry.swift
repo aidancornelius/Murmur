@@ -30,3 +30,32 @@ extension SymptomEntry {
 extension SymptomEntry: Identifiable {
 
 }
+
+// MARK: - Safe accessors
+extension SymptomEntry {
+    /// Safe access to ID with fallback generation
+    var safeId: UUID {
+        if let id = self.id {
+            return id
+        } else {
+            let newId = UUID()
+            self.id = newId
+            return newId
+        }
+    }
+
+    /// Safe access to creation date with validation
+    var safeCreatedAt: Date {
+        createdAt ?? Date()
+    }
+
+    /// Safe access to note
+    var safeNote: String? {
+        note
+    }
+
+    /// Effective date for display (backdated or created)
+    var effectiveDate: Date {
+        backdatedAt ?? safeCreatedAt
+    }
+}

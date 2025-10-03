@@ -6,6 +6,7 @@ import os.log
 class StoreManager: ObservableObject {
     @Published private(set) var products: [Product] = []
     @Published private(set) var purchaseState: PurchaseState = .idle
+    @Published private(set) var hasTipped: Bool = false
 
     private let logger = Logger(subsystem: "app.murmur", category: "StoreKit")
     private let productIDs = ["com.murmur.tip.small"]
@@ -20,12 +21,35 @@ class StoreManager: ObservableObject {
     init() {
         Task {
             await loadProducts()
+            await checkPurchaseHistory()
+        }
+    }
+
+    func checkPurchaseHistory() async {
+        for await result in Transaction.currentEntitlements {
+            if case .verified(let transaction) = result {
+                if productIDs.contains(transaction.productID) {
+                    logger.info("Found previous tip purchase: \(transaction.productID)")
+                    hasTipped = true
+                    return
+                }
+            }
         }
     }
 
     func loadProducts() async {
         do {
             products = try await Product.products(for: productIDs)
+
+            // Log detailed product information
+            for product in products {
+                logger.info("Loaded product: \(product.id)")
+                logger.info("  Display name: \(product.displayName)")
+                logger.info("  Display price: \(product.displayPrice)")
+                logger.info("  Price: \(product.price)")
+                logger.info("  Currency code: \(product.priceFormatStyle.currencyCode)")
+                logger.info("  Locale: \(product.priceFormatStyle.locale.identifier)")
+            }
         } catch {
             logger.error("Failed to load products: \(error.localizedDescription)")
             purchaseState = .failed("Unable to load products")
@@ -42,14 +66,20 @@ class StoreManager: ObservableObject {
             case .success(let verification):
                 switch verification {
                 case .verified(let transaction):
+                    logger.info("Purchase successful - Product: \(product.id), Price: \(product.displayPrice)")
+                    logger.info("Transaction ID: \(transaction.id), Date: \(transaction.purchaseDate)")
                     await transaction.finish()
+                    hasTipped = true
                     purchaseState = .purchased
                 case .unverified:
+                    logger.error("Purchase verification failed")
                     purchaseState = .failed("Purchase verification failed")
                 }
             case .userCancelled:
+                logger.info("Purchase cancelled by user")
                 purchaseState = .idle
             case .pending:
+                logger.info("Purchase pending")
                 purchaseState = .idle
             @unknown default:
                 purchaseState = .idle

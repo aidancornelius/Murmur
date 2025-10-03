@@ -13,6 +13,8 @@ final class ManualCycleTracker: ObservableObject {
     @Published private(set) var isEnabled: Bool
 
     private let enabledKey = "ManualCycleTrackingEnabled"
+    private let cycleDayKey = "ManualCycleDay"
+    private let cycleDaySetDateKey = "ManualCycleDaySetDate"
 
     init(context: NSManagedObjectContext) {
         self.context = context
@@ -106,6 +108,27 @@ final class ManualCycleTracker: ObservableObject {
         return try? context.fetch(request).first?.flowLevel
     }
 
+    /// Set the cycle day directly
+    func setCycleDay(_ day: Int) {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+
+        UserDefaults.standard.set(day, forKey: cycleDayKey)
+        UserDefaults.standard.set(today, forKey: cycleDaySetDateKey)
+
+        latestCycleDay = day
+    }
+
+    /// Clear the manually set cycle day
+    func clearCycleDay() {
+        UserDefaults.standard.removeObject(forKey: cycleDayKey)
+        UserDefaults.standard.removeObject(forKey: cycleDaySetDateKey)
+
+        Task {
+            await refreshCycleData()
+        }
+    }
+
     /// Refresh cycle day and flow level calculations
     func refreshCycleData() async {
         guard isEnabled else {
@@ -115,30 +138,64 @@ final class ManualCycleTracker: ObservableObject {
         }
 
         do {
-            // Get entries from last 45 days
-            let endDate = Date()
-            let startDate = endDate.addingTimeInterval(-45 * 24 * 3600)
-            let entries = try ManualCycleEntry.fetch(from: startDate, to: endDate, in: context)
-
-            // Find most recent period start
             let calendar = Calendar.current
             let today = calendar.startOfDay(for: Date())
 
-            // Get today's flow level
+            // Check if user has manually set a cycle day
+            if let setDate = UserDefaults.standard.object(forKey: cycleDaySetDateKey) as? Date,
+               UserDefaults.standard.object(forKey: cycleDayKey) != nil {
+                let setDay = UserDefaults.standard.integer(forKey: cycleDayKey)
+                let daysSinceSet = calendar.dateComponents([.day], from: calendar.startOfDay(for: setDate), to: today).day ?? 0
+                let calculatedDay = setDay + daysSinceSet
+
+                // Validate the cycle day is within reasonable bounds
+                if calculatedDay > 0 && calculatedDay <= AppConstants.Validation.maxCycleLength {
+                    latestCycleDay = calculatedDay
+                } else if calculatedDay > AppConstants.Validation.maxCycleLength {
+                    // Reset if cycle exceeds max length
+                    logger.warning("Cycle day \(calculatedDay) exceeds max length, resetting")
+                    latestCycleDay = nil
+                    UserDefaults.standard.removeObject(forKey: cycleDayKey)
+                    UserDefaults.standard.removeObject(forKey: cycleDaySetDateKey)
+                } else {
+                    // Negative days are invalid
+                    logger.warning("Invalid negative cycle day \(calculatedDay), resetting")
+                    latestCycleDay = nil
+                    UserDefaults.standard.removeObject(forKey: cycleDayKey)
+                    UserDefaults.standard.removeObject(forKey: cycleDaySetDateKey)
+                }
+            } else {
+                // Fall back to calculating from period entries
+                let endDate = Date()
+                let startDate = endDate.addingTimeInterval(-45 * 24 * 3600)
+                let entries = try ManualCycleEntry.fetch(from: startDate, to: endDate, in: context)
+
+                if let firstPeriodEntry = entries.first {
+                    let daysSinceStart = calendar.dateComponents(
+                        [.day],
+                        from: calendar.startOfDay(for: firstPeriodEntry.date),
+                        to: today
+                    ).day ?? 0
+                    let calculatedDay = daysSinceStart + 1
+
+                    // Validate calculated day
+                    if calculatedDay > 0 && calculatedDay <= AppConstants.Validation.maxCycleLength {
+                        latestCycleDay = calculatedDay
+                    } else {
+                        logger.warning("Calculated cycle day \(calculatedDay) is out of bounds")
+                        latestCycleDay = nil
+                    }
+                } else {
+                    latestCycleDay = nil
+                }
+            }
+
+            // Get today's flow level from entries
+            let endDate = Date()
+            let startDate = endDate.addingTimeInterval(-45 * 24 * 3600)
+            let entries = try ManualCycleEntry.fetch(from: startDate, to: endDate, in: context)
             let todayEntries = entries.filter { calendar.isDate($0.date, inSameDayAs: today) }
             latestFlowLevel = todayEntries.first?.flowLevel
-
-            // Calculate cycle day
-            if let firstPeriodEntry = entries.first {
-                let daysSinceStart = calendar.dateComponents(
-                    [.day],
-                    from: calendar.startOfDay(for: firstPeriodEntry.date),
-                    to: today
-                ).day ?? 0
-                latestCycleDay = daysSinceStart + 1
-            } else {
-                latestCycleDay = nil
-            }
         } catch {
             logger.error("Failed to refresh manual cycle data: \(error.localizedDescription)")
         }

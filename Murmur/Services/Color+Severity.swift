@@ -1,24 +1,19 @@
 import SwiftUI
-#if canImport(UIKit)
 import UIKit
-#endif
 
 extension Color {
     /// Returns theme colors that represent a severity bucket.
-    static func severityColor(for value: Double) -> Color {
+    static func severityColor(for value: Double, colorScheme: ColorScheme) -> Color {
         let level = max(1, min(5, Int(round(value))))
-#if canImport(UIKit)
-        if let uiColor = UIColor(named: "Severity\(level)") {
-            return Color(uiColor)
-        }
-#endif
+        let palette = AppearanceManager.palette(for: colorScheme)
+
         switch level {
-        case 1: return Color(hex: "#CCE5FF")
-        case 2: return Color(hex: "#99D1E7")
-        case 3: return Color(hex: "#E68FB7")
-        case 4: return Color(hex: "#BD5780")
-        case 5: return Color(hex: "#8B3B50")
-        default: return Color.accentColor
+        case 1: return palette.color(for: "severity1")
+        case 2: return palette.color(for: "severity2")
+        case 3: return palette.color(for: "severity3")
+        case 4: return palette.color(for: "severity4")
+        case 5: return palette.color(for: "severity5")
+        default: return palette.color(for: "accent")
         }
     }
 }

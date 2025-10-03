@@ -2,6 +2,42 @@ import Foundation
 
 /// Centralised configuration constants for the application.
 enum AppConstants {
+
+    enum UI {
+        /// Maximum number of symptoms that can be selected at once
+        static let maxSymptomSelection = 5
+
+        /// Number of days displayed per page in timeline
+        static let timelinePageSize = 30
+
+        /// Maximum fetch limit for timeline to prevent memory issues
+        static let maxTimelineFetchLimit = 365
+
+        /// Default animation duration
+        static let animationDuration = 0.3
+    }
+
+    enum Analysis {
+        /// Default number of days for analysis
+        static let defaultAnalysisDays = 30
+
+        /// Maximum days for analysis to prevent performance issues
+        static let maxAnalysisDays = 365
+    }
+
+    enum Validation {
+        /// Maximum reasonable cycle length in days
+        static let maxCycleLength = 100
+
+        /// Minimum cycle length in days
+        static let minCycleLength = 14
+    }
+
+    enum InAppPurchase {
+        /// Product identifiers
+        static let productIDs = ["com.murmur.tip.small"]
+    }
+
     /// HealthKit cache and lookback durations.
     enum HealthKit {
         /// Cache duration for HRV samples (30 minutes).

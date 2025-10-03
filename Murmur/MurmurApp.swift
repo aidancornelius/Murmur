@@ -1,4 +1,5 @@
 import SwiftUI
+import CoreData
 
 extension Notification.Name {
     static let openAddEntry = Notification.Name("openAddEntry")
@@ -8,17 +9,24 @@ extension Notification.Name {
 @main
 struct MurmurApp: App {
     @UIApplicationDelegateAdaptor(MurmurAppDelegate.self) private var appDelegate
+    @StateObject private var appearanceManager = AppearanceManager.shared
+    @StateObject private var appLock = AppLockController()
 
     private let stack = CoreDataStack.shared
 
     var body: some Scene {
         WindowGroup {
-            if let manualCycleTracker = appDelegate.manualCycleTracker {
+            // Check for CoreData initialization errors first
+            if let error = stack.initializationError {
+                CoreDataErrorView(error: error)
+            } else if let manualCycleTracker = appDelegate.manualCycleTracker {
                 RootContainer()
                     .environment(\.managedObjectContext, stack.context)
                     .environmentObject(appDelegate.healthKitAssistant)
                     .environmentObject(appDelegate.calendarAssistant)
                     .environmentObject(manualCycleTracker)
+                    .environmentObject(appearanceManager)
+                    .environmentObject(appLock)
                     .onAppear {
                         // Handle UI test mode
                         if CommandLine.arguments.contains("-UITestMode") {
@@ -42,6 +50,8 @@ private struct RootContainer: View {
     @Environment(\.managedObjectContext) private var context
     @EnvironmentObject private var healthKit: HealthKitAssistant
     @EnvironmentObject private var calendar: CalendarAssistant
+    @EnvironmentObject private var appLock: AppLockController
+    @Environment(\.scenePhase) private var scenePhase
     @State private var showingAddEntry = false
     @State private var showingAddActivity = false
     @State private var hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
@@ -50,82 +60,121 @@ private struct RootContainer: View {
     private let openAddActivityPublisher = NotificationCenter.default.publisher(for: .openAddActivity)
 
     var body: some View {
-        if hasCompletedOnboarding {
-            NavigationStack {
-                TimelineView()
-                    .navigationDestination(for: Route.self) { route in
-                        switch route {
-                        case .settings:
-                            SettingsRootView()
-                        case .analysis:
-                            AnalysisView()
-                        }
-                    }
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarLeading) {
-                            NavigationLink(value: Route.settings) {
-                                Image(systemName: "gearshape")
+        ZStack {
+            Group {
+                if hasCompletedOnboarding {
+                    NavigationStack {
+                        TimelineView()
+                        .navigationDestination(for: Route.self) { route in
+                            switch route {
+                            case .settings:
+                                SettingsRootView()
+                            case .analysis:
+                                AnalysisView()
                             }
                         }
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            NavigationLink(value: Route.analysis) {
-                                Image(systemName: "chart.line.uptrend.xyaxis")
+                        .toolbar {
+                            ToolbarItem(placement: .navigationBarLeading) {
+                                NavigationLink(value: Route.settings) {
+                                    Image(systemName: "gearshape")
+                                }
                             }
-                            .accessibilityLabel("Analysis")
-                            .accessibilityHint("View trends and correlations")
+                            ToolbarItem(placement: .navigationBarTrailing) {
+                                NavigationLink(value: Route.analysis) {
+                                    Image(systemName: "chart.line.uptrend.xyaxis")
+                                }
+                                .accessibilityLabel("Analysis")
+                                .accessibilityHint("View trends and correlations")
+                            }
                         }
+                }
+                .task {
+                    // Skip HealthKit authorization dialog in UI test mode
+                    if !CommandLine.arguments.contains("-UITestMode") {
+                        await healthKit.bootstrapAuthorizations()
                     }
-            }
-            .task {
-                // Skip HealthKit authorization dialog in UI test mode
-                if !CommandLine.arguments.contains("-UITestMode") {
-                    await healthKit.bootstrapAuthorizations()
+                }
+                .onAppear {
+                    SampleDataSeeder.seedIfNeeded(in: context)
+                    cleanOrphanedEntries(in: context)
+                    #if targetEnvironment(simulator)
+                    // Check if we should generate sample data
+                    let hasGeneratedSampleData = UserDefaults.standard.bool(forKey: "hasGeneratedSampleData")
+                    if !hasGeneratedSampleData {
+                        SampleDataSeeder.generateSampleEntries(in: context)
+                        UserDefaults.standard.set(true, forKey: "hasGeneratedSampleData")
+                    }
+                    #endif
+                }
+                .safeAreaInset(edge: .bottom) {
+                    FloatingActionButtons(
+                        onSymptom: { showingAddEntry = true },
+                        onActivity: { showingAddActivity = true }
+                    )
+                    .padding(.horizontal)
+                    .padding(.bottom)
+                }
+                .sheet(isPresented: $showingAddEntry) {
+                    NavigationStack {
+                        AddEntryView()
+                            .environment(\.managedObjectContext, context)
+                    }
+                    .themedSurface()
+                }
+                .sheet(isPresented: $showingAddActivity) {
+                    NavigationStack {
+                        AddActivityView()
+                            .environment(\.managedObjectContext, context)
+                    }
+                    .themedSurface()
+                }
+                .onReceive(openAddEntryPublisher) { _ in
+                    showingAddEntry = true
+                }
+                .onReceive(openAddActivityPublisher) { _ in
+                    showingAddActivity = true
+                }
+                } else {
+                    OnboardingView {
+                        UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
+                        hasCompletedOnboarding = true
+                        SampleDataSeeder.seedIfNeeded(in: context)
+                    }
+                    .environmentObject(healthKit)
+                    .environmentObject(appLock)
                 }
             }
-            .onAppear {
-                SampleDataSeeder.seedIfNeeded(in: context)
-                #if targetEnvironment(simulator)
-                // Check if we should generate sample data
-                let hasGeneratedSampleData = UserDefaults.standard.bool(forKey: "hasGeneratedSampleData")
-                if !hasGeneratedSampleData {
-                    SampleDataSeeder.generateSampleEntries(in: context)
-                    UserDefaults.standard.set(true, forKey: "hasGeneratedSampleData")
-                }
-                #endif
+
+            if appLock.isLockActive {
+                LockOverlayView()
             }
-            .safeAreaInset(edge: .bottom) {
-                FloatingActionButtons(
-                    onSymptom: { showingAddEntry = true },
-                    onActivity: { showingAddActivity = true }
-                )
-                .padding(.horizontal)
-                .padding(.bottom)
+        }
+        .themedSurface()
+        .onChange(of: scenePhase) { _, newPhase in
+            switch newPhase {
+            case .background:
+                appLock.appDidEnterBackground()
+            case .active:
+                Task { await appLock.requestUnlockIfNeeded() }
+            default:
+                break
             }
-            .sheet(isPresented: $showingAddEntry) {
-                NavigationStack {
-                    AddEntryView()
-                        .environment(\.managedObjectContext, context)
-                }
+        }
+        .task {
+            await appLock.requestUnlockIfNeeded()
+        }
+    }
+
+    private func cleanOrphanedEntries(in context: NSManagedObjectContext) {
+        context.perform {
+            let fetchRequest: NSFetchRequest<SymptomEntry> = SymptomEntry.fetchRequest()
+            fetchRequest.predicate = NSPredicate(format: "symptomType == nil")
+
+            if let orphanedEntries = try? context.fetch(fetchRequest), !orphanedEntries.isEmpty {
+                print("⚠️ Found \(orphanedEntries.count) orphaned symptom entries - cleaning up")
+                orphanedEntries.forEach(context.delete)
+                try? context.save()
             }
-            .sheet(isPresented: $showingAddActivity) {
-                NavigationStack {
-                    AddActivityView()
-                        .environment(\.managedObjectContext, context)
-                }
-            }
-            .onReceive(openAddEntryPublisher) { _ in
-                showingAddEntry = true
-            }
-            .onReceive(openAddActivityPublisher) { _ in
-                showingAddActivity = true
-            }
-        } else {
-            OnboardingView {
-                UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
-                hasCompletedOnboarding = true
-                SampleDataSeeder.seedIfNeeded(in: context)
-            }
-            .environmentObject(healthKit)
         }
     }
 }
@@ -139,6 +188,13 @@ private struct FloatingActionButtons: View {
     let onSymptom: () -> Void
     let onActivity: () -> Void
 
+    @EnvironmentObject private var appearanceManager: AppearanceManager
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var palette: ColorPalette {
+        appearanceManager.currentPalette(for: colorScheme)
+    }
+
     var body: some View {
         HStack {
             Spacer()
@@ -151,7 +207,7 @@ private struct FloatingActionButtons: View {
                                 .frame(width: 60, height: 60)
                         }
                         .glassEffect(in: Circle())
-                        .tint(.pink)
+                        .tint(palette.accentColor)
                         .accessibilityLabel("Log symptom")
                         .accessibilityHint("Opens form to record a symptom")
 
@@ -161,7 +217,7 @@ private struct FloatingActionButtons: View {
                                 .frame(width: 60, height: 60)
                         }
                         .glassEffect(in: Circle())
-                        .tint(.purple)
+                        .tint(palette.accentColor.opacity(0.85))
                         .accessibilityLabel("Log activity")
                         .accessibilityHint("Opens form to record an activity or event")
                     }
@@ -173,7 +229,7 @@ private struct FloatingActionButtons: View {
                         Image(systemName: "heart.text.square")
                             .font(.title3.weight(.semibold))
                             .padding(16)
-                            .foregroundStyle(.pink)
+                            .foregroundStyle(palette.accentColor)
                             .background(.ultraThinMaterial, in: Circle())
                     }
                     .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
@@ -184,7 +240,7 @@ private struct FloatingActionButtons: View {
                         Image(systemName: "calendar.badge.clock")
                             .font(.title3.weight(.semibold))
                             .padding(16)
-                            .foregroundStyle(.purple)
+                            .foregroundStyle(palette.accentColor.opacity(0.85))
                             .background(.ultraThinMaterial, in: Circle())
                     }
                     .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)

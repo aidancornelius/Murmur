@@ -11,11 +11,12 @@ struct SymptomTrend: Identifiable {
     let averageSeverity: Double
     let trend: TrendDirection
     let periodComparison: String
+    let isPositive: Bool  // True if higher values are better
 
     enum TrendDirection {
-        case increasing
+        case increasing  // Getting better (could be less symptoms or more positive states)
         case stable
-        case decreasing
+        case decreasing  // Getting worse (could be more symptoms or fewer positive states)
     }
 }
 
@@ -32,6 +33,7 @@ struct ActivityCorrelation: Identifiable {
     let averageSeverityAfterActivity: Double
     let averageSeverityWithoutActivity: Double
     let hoursWindow: Int // Time window for correlation
+    let isPositive: Bool  // True if this is a positive symptom
 
     var correlationType: CorrelationType {
         if correlationStrength > 0.3 {
@@ -44,8 +46,8 @@ struct ActivityCorrelation: Identifiable {
     }
 
     enum CorrelationType {
-        case positive  // Activity associated with higher symptoms
-        case negative  // Activity associated with lower symptoms
+        case positive  // Activity associated with worsening (higher negative symptoms or lower positive symptoms)
+        case negative  // Activity associated with improving (lower negative symptoms or higher positive symptoms)
         case neutral   // No clear correlation
     }
 }
@@ -72,6 +74,7 @@ struct PhysiologicalCorrelation: Identifiable {
     let averageWithHighSymptoms: Double?
     let averageWithLowSymptoms: Double?
     let correlationStrength: Double
+    let isPositive: Bool  // True if this is a positive symptom
 }
 
 // MARK: - Analysis engine
@@ -122,10 +125,14 @@ class AnalysisEngine {
 
             let trend: SymptomTrend.TrendDirection
             let diff = secondAvg - firstAvg
+            // For positive symptoms, higher values = improving; for negative symptoms, lower values = improving
+            let isPositive = type.isPositive
             if diff > 0.5 {
-                trend = .increasing
+                // Values went up: good for positive symptoms, bad for negative symptoms
+                trend = isPositive ? .increasing : .decreasing
             } else if diff < -0.5 {
-                trend = .decreasing
+                // Values went down: bad for positive symptoms, good for negative symptoms
+                trend = isPositive ? .decreasing : .increasing
             } else {
                 trend = .stable
             }
@@ -136,7 +143,8 @@ class AnalysisEngine {
                 occurrences: entries.count,
                 averageSeverity: avgSeverity,
                 trend: trend,
-                periodComparison: String(format: "%.1f → %.1f", firstAvg, secondAvg)
+                periodComparison: String(format: "%.1f → %.1f", firstAvg, secondAvg),
+                isPositive: isPositive
             )
         }
         .sorted { $0.occurrences > $1.occurrences }
@@ -220,7 +228,12 @@ class AnalysisEngine {
 
                 // Simple correlation: normalized difference
                 let maxSeverity = max(avgWithActivity, avgWithoutActivity, 1.0)
-                let correlationStrength = (avgWithActivity - avgWithoutActivity) / maxSeverity
+                var correlationStrength = (avgWithActivity - avgWithoutActivity) / maxSeverity
+
+                // For positive symptoms, flip the correlation (higher is better)
+                if type.isPositive {
+                    correlationStrength = -correlationStrength
+                }
 
                 // Only include meaningful correlations
                 if abs(correlationStrength) > 0.2 && symptomsAfterActivity.count >= 2 {
@@ -233,7 +246,8 @@ class AnalysisEngine {
                         occurrencesWithoutSymptom: symptomsWithoutActivity.count,
                         averageSeverityAfterActivity: avgWithActivity,
                         averageSeverityWithoutActivity: avgWithoutActivity,
-                        hoursWindow: hoursWindow
+                        hoursWindow: hoursWindow,
+                        isPositive: type.isPositive
                     ))
                 }
             }
@@ -327,6 +341,8 @@ class AnalysisEngine {
             let highSeverityEntries = entries.filter { $0.severity >= 4 }
             let lowSeverityEntries = entries.filter { $0.severity <= 2 }
 
+            let isPositive = type.isPositive
+
             // HRV correlation
             if let hrvCorr = calculateMetricCorrelation(
                 symptomTypeName: name,
@@ -334,7 +350,8 @@ class AnalysisEngine {
                 metricName: "HRV",
                 highSeverityEntries: highSeverityEntries,
                 lowSeverityEntries: lowSeverityEntries,
-                extractor: { $0.hkHRV?.doubleValue }
+                extractor: { $0.hkHRV?.doubleValue },
+                isPositive: isPositive
             ) {
                 correlations.append(hrvCorr)
             }
@@ -346,7 +363,8 @@ class AnalysisEngine {
                 metricName: "Resting heart rate",
                 highSeverityEntries: highSeverityEntries,
                 lowSeverityEntries: lowSeverityEntries,
-                extractor: { $0.hkRestingHR?.doubleValue }
+                extractor: { $0.hkRestingHR?.doubleValue },
+                isPositive: isPositive
             ) {
                 correlations.append(hrCorr)
             }
@@ -358,7 +376,8 @@ class AnalysisEngine {
                 metricName: "Sleep hours",
                 highSeverityEntries: highSeverityEntries,
                 lowSeverityEntries: lowSeverityEntries,
-                extractor: { $0.hkSleepHours?.doubleValue }
+                extractor: { $0.hkSleepHours?.doubleValue },
+                isPositive: isPositive
             ) {
                 correlations.append(sleepCorr)
             }
@@ -373,7 +392,8 @@ class AnalysisEngine {
         metricName: String,
         highSeverityEntries: [SymptomEntry],
         lowSeverityEntries: [SymptomEntry],
-        extractor: (SymptomEntry) -> Double?
+        extractor: (SymptomEntry) -> Double?,
+        isPositive: Bool = false
     ) -> PhysiologicalCorrelation? {
         let highValues = highSeverityEntries.compactMap(extractor)
         let lowValues = lowSeverityEntries.compactMap(extractor)
@@ -385,7 +405,12 @@ class AnalysisEngine {
 
         // Normalise correlation
         let maxValue = max(avgHigh, avgLow, 1.0)
-        let correlation = (avgHigh - avgLow) / maxValue
+        var correlation = (avgHigh - avgLow) / maxValue
+
+        // For positive symptoms, flip the correlation (higher severity is better)
+        if isPositive {
+            correlation = -correlation
+        }
 
         // Only return if meaningful
         guard abs(correlation) > 0.15 else { return nil }
@@ -396,7 +421,8 @@ class AnalysisEngine {
             metricName: metricName,
             averageWithHighSymptoms: avgHigh,
             averageWithLowSymptoms: avgLow,
-            correlationStrength: correlation
+            correlationStrength: correlation,
+            isPositive: isPositive
         )
     }
 }

@@ -7,76 +7,54 @@ struct OnboardingView: View {
 
     private let pages = [
         OnboardingPage(
-            icon: "heart.text.square",
-            iconColor: .pink,
+            usesLaunchIcon: true,
+            icon: nil,
+            imageName: nil,
+            iconColor: .green,
             title: "Welcome to Murmur",
-            description: "A symptom tracking app designed for people living with chronic conditions like ME/CFS, fibromyalgia, PTSD, and other conditions that require careful energy management.",
+            description: "Your personal symptom tracker that understands chronic conditions. I'll help you track patterns, manage energy, and remember the details when brain fog makes things fuzzy.",
             benefits: []
         ),
         OnboardingPage(
-            icon: "calendar.badge.clock",
-            iconColor: .purple,
-            title: "Track activities & energy",
-            description: "Log activities with physical, cognitive, and emotional exertion levels to understand how different tasks affect you.",
-            benefits: [
-                "Plan your day around your energy levels",
-                "Identify activities that trigger crashes",
-                "Learn your personal limits"
-            ]
-        ),
-        OnboardingPage(
-            icon: "gauge.with.dots.needle.bottom.50percent",
-            iconColor: .orange,
-            title: "Monitor your load score",
-            description: "Your load score tracks accumulated exertion and adjusts based on your symptoms, helping you pace activities to prevent crashes.",
-            benefits: [
-                "Visual warnings when you're approaching limits",
-                "Symptom-aware recovery tracking",
-                "Plan rest days proactively"
-            ]
-        ),
-        OnboardingPage(
-            icon: "heart.text.square.fill",
-            iconColor: .red,
-            title: "Log symptoms",
-            description: "Track symptom severity throughout the day with optional notes. Star your most common symptoms for quick logging.",
-            benefits: [
-                "Identify symptom patterns over time",
-                "Correlate symptoms with activities",
-                "Provide detailed records for medical appointments"
-            ]
-        ),
-        OnboardingPage(
-            icon: "chart.line.uptrend.xyaxis",
-            iconColor: .blue,
-            title: "Discover patterns",
-            description: "View daily summaries, timelines, and correlations between activities and symptoms to understand your condition better.",
-            benefits: [
-                "Spot triggers you might have missed",
-                "Track your progress over weeks and months",
-                "Make informed decisions about your activities"
-            ]
-        ),
-        OnboardingPage(
-            icon: "mic.fill",
+            usesLaunchIcon: false,
+            icon: nil,
+            imageName: "hand1",
             iconColor: .green,
-            title: "Voice commands & accessibility",
-            description: "Log symptoms hands-free with voice commands. Full VoiceOver support, audio graphs, and switch control for accessibility.",
+            title: "Track what matters",
+            description: "Log symptoms with a tap, track activities with energy ratings, and monitor your cycle. Murmur learns your patterns to help you pace yourself.",
             benefits: [
-                "Track symptoms when typing is difficult",
-                "Navigate the app with assistive technologies",
-                "Reduce cognitive load during flare-ups"
+                ("leaf.circle.fill", "Quick symptom logging (customise your own types)"),
+                ("figure.walk.motion", "Activity tracking with physical, cognitive & emotional load"),
+                ("moon.circle.fill", "Optional cycle tracking & reminders"),
+                ("gauge.with.dots.needle.bottom.50percent", "Load score to prevent crashes")
             ]
         ),
         OnboardingPage(
-            icon: "lock.shield.fill",
+            usesLaunchIcon: false,
+            icon: nil,
+            imageName: "hand2",
+            iconColor: .purple,
+            title: "Find your patterns",
+            description: "Murmur analyses your data to spot triggers and trends you might miss. Voice commands mean you can log symptoms even on tough days.",
+            benefits: [
+                ("calendar.day.timeline.left", "Timeline view shows your day at a glance"),
+                ("wand.and.stars", "Pattern analysis reveals hidden triggers"),
+                ("mic.circle.fill", "Voice logging when typing is too much"),
+                ("accessibility", "Full accessibility support")
+            ]
+        ),
+        OnboardingPage(
+            usesLaunchIcon: false,
+            icon: nil,
+            imageName: "hand3",
             iconColor: .indigo,
             title: "Your data stays private",
-            description: "All your health data stays on your device. Optionally connect to Apple Health to enrich entries with HRV, heart rate, and sleep data.",
+            description: "Everything stays on your device. Connect to Apple Health for heart rate and sleep data if you'd like – it's totally optional.",
             benefits: [
-                "No cloud storage or syncing",
-                "Optional biometric app lock",
-                "Export your data anytime (CSV or PDF)"
+                ("lock.circle.fill", "No cloud, no accounts, just you"),
+                ("heart.circle.fill", "Optional HealthKit for richer insights"),
+                ("square.and.arrow.up.circle.fill", "Export your data anytime"),
+                ("faceid", "Biometric app lock available")
             ]
         )
     ]
@@ -97,19 +75,19 @@ struct OnboardingView: View {
                     Button(action: requestHealthKitAndComplete) {
                         HStack {
                             Image(systemName: "heart.circle.fill")
-                            Text("Enable HealthKit")
+                            Text("Connect to HealthKit")
                         }
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.accentColor)
+                        .background(Color(red: 0.65, green: 0.725, blue: 0.549))  // #A6B98C
                         .foregroundStyle(.white)
                         .cornerRadius(12)
                     }
                     .accessibilityHint("Requests permission to connect to Apple Health for enriched symptom tracking")
 
                     Button(action: onComplete) {
-                        Text("Skip for now")
+                        Text("Start without HealthKit")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
@@ -120,13 +98,13 @@ struct OnboardingView: View {
                         withAnimation { currentPage += 1 }
                     }) {
                         HStack {
-                            Text("Continue")
+                            Text(currentPage == 0 ? "Get started" : "Continue")
                             Image(systemName: "arrow.right")
                         }
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.accentColor)
+                        .background(Color(red: 0.65, green: 0.725, blue: 0.549))  // #A6B98C
                         .foregroundStyle(.white)
                         .cornerRadius(12)
                     }
@@ -134,7 +112,7 @@ struct OnboardingView: View {
 
                     if currentPage > 0 {
                         Button(action: onComplete) {
-                            Text("Skip onboarding")
+                            Text("Skip tour")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }
@@ -168,14 +146,23 @@ private struct OnboardingPageView: View {
                 Spacer()
                     .frame(height: 40)
 
-                ZStack {
-                    Circle()
-                        .fill(page.iconColor.opacity(0.15))
-                        .frame(width: 120, height: 120)
-
-                    Image(systemName: page.icon)
-                        .font(.system(size: 56))
+                if page.usesLaunchIcon {
+                    // Display the launch icon image
+                    Image("LaunchScreenIcon")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 140, height: 140)
+                        .cornerRadius(20)
+                } else if let imageName = page.imageName {
+                    Image(imageName)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 160, height: 160)
+                } else if let icon = page.icon {
+                    Image(systemName: icon)
+                        .font(.system(size: 72))
                         .foregroundStyle(page.iconColor)
+                        .frame(height: 120)
                 }
 
                 VStack(spacing: 16) {
@@ -188,16 +175,17 @@ private struct OnboardingPageView: View {
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
-                        .padding(.horizontal, 32)
+                        .padding(.horizontal, 24)
 
                     if !page.benefits.isEmpty {
                         VStack(alignment: .leading, spacing: 12) {
-                            ForEach(page.benefits, id: \.self) { benefit in
+                            ForEach(page.benefits, id: \.1) { benefit in
                                 HStack(alignment: .top, spacing: 12) {
-                                    Image(systemName: "checkmark.circle.fill")
+                                    Image(systemName: benefit.0)
                                         .foregroundStyle(page.iconColor)
                                         .font(.body)
-                                    Text(benefit)
+                                        .frame(width: 24)
+                                    Text(benefit.1)
                                         .font(.subheadline)
                                         .foregroundStyle(.primary)
                                         .fixedSize(horizontal: false, vertical: true)
@@ -205,7 +193,7 @@ private struct OnboardingPageView: View {
                                 }
                             }
                         }
-                        .padding(.horizontal, 40)
+                        .padding(.horizontal, 32)
                         .padding(.top, 8)
                     }
                 }
@@ -219,9 +207,11 @@ private struct OnboardingPageView: View {
 }
 
 private struct OnboardingPage {
-    let icon: String
+    let usesLaunchIcon: Bool
+    let icon: String?
+    let imageName: String?
     let iconColor: Color
     let title: String
     let description: String
-    let benefits: [String]
+    let benefits: [(String, String)]  // (SF Symbol name, description)
 }

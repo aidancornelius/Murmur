@@ -1,35 +1,16 @@
 import SwiftUI
+import CoreData
 
-// MARK: - Accessibility Rotor Support
-extension TimelineView {
-    func withAccessibilityRotor() -> some View {
-        self.accessibilityRotor("High severity days", entries: highSeverityDays) { section in
-            AccessibilityRotorEntry(section.date.description, id: section.id) {
-                // This will scroll to the section
-                NavigationLink(destination: DayDetailView(date: section.date)) {
-                    EmptyView()
-                }
-            }
-        }
-    }
-
-    private var highSeverityDays: [DaySection] {
-        grouped.filter { section in
-            guard let summary = section.summary else { return false }
-            return summary.averageSeverity >= 4.0
-        }
-    }
-}
-
-// MARK: - Rotor Extension for Main View
+// MARK: - Accessibility Rotor Support for Timeline
 struct AccessibilityRotorModifier: ViewModifier {
-    let sections: [DaySection]
+    let daySummaries: [DaySummary]
+    let recentEntries: [SymptomEntry]
 
     func body(content: Content) -> some View {
         content
             .accessibilityRotor("High severity days") {
-                ForEach(highSeverityDays) { section in
-                    AccessibilityRotorEntry(rotorLabel(for: section), id: section.id)
+                ForEach(highSeverityDays) { summary in
+                    AccessibilityRotorEntry(rotorLabel(for: summary), id: summary.id)
                 }
             }
             .accessibilityRotor("Recent entries") {
@@ -39,28 +20,16 @@ struct AccessibilityRotorModifier: ViewModifier {
             }
     }
 
-    private var highSeverityDays: [DaySection] {
-        sections.filter { section in
-            guard let summary = section.summary else { return false }
-            return summary.averageSeverity >= 4.0
+    private var highSeverityDays: [DaySummary] {
+        daySummaries.filter { summary in
+            summary.averageSeverity >= 4.0
         }
     }
 
-    private var recentEntries: [SymptomEntry] {
-        sections.prefix(7)
-            .flatMap { $0.entries }
-            .prefix(20)
-            .map { $0 }
-    }
-
-    private func rotorLabel(for section: DaySection) -> String {
+    private func rotorLabel(for summary: DaySummary) -> String {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
-        let dateString = formatter.string(from: section.date)
-
-        guard let summary = section.summary else {
-            return dateString
-        }
+        let dateString = formatter.string(from: summary.date)
 
         let severityText = SeverityScale.descriptor(for: Int(summary.averageSeverity)).lowercased()
         return "\(dateString): \(severityText) severity, \(summary.entryCount) entries"
@@ -74,7 +43,7 @@ struct AccessibilityRotorModifier: ViewModifier {
 }
 
 extension View {
-    func timelineAccessibilityRotor(sections: [DaySection]) -> some View {
-        modifier(AccessibilityRotorModifier(sections: sections))
+    func timelineAccessibilityRotor(daySummaries: [DaySummary], recentEntries: [SymptomEntry]) -> some View {
+        modifier(AccessibilityRotorModifier(daySummaries: daySummaries, recentEntries: recentEntries))
     }
 }

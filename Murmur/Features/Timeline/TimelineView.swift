@@ -4,23 +4,52 @@ import os.log
 
 struct TimelineView: View {
     @Environment(\.managedObjectContext) private var context
-    @State private var daySections: [DaySection] = []
+    @Environment(\.colorScheme) private var colorScheme
+    @EnvironmentObject private var appearanceManager: AppearanceManager
     @State private var fetchedDays: Int = 30 // Start with 30 days
     @State private var isLoadingMore = false
-    @State private var refreshTrigger = UUID()
 
-    private let daysPerPage = 30
+    private let daysPerPage = AppConstants.UI.timelinePageSize
     private let logger = Logger(subsystem: "app.murmur", category: "Timeline")
 
     @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \SymptomEntry.createdAt, ascending: false)],
+        sortDescriptors: [
+            NSSortDescriptor(keyPath: \SymptomEntry.backdatedAt, ascending: true),
+            NSSortDescriptor(keyPath: \SymptomEntry.createdAt, ascending: true)
+        ],
         animation: .default
     ) private var allEntries: FetchedResults<SymptomEntry>
 
     @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \ActivityEvent.createdAt, ascending: false)],
+        sortDescriptors: [
+            NSSortDescriptor(keyPath: \ActivityEvent.backdatedAt, ascending: true),
+            NSSortDescriptor(keyPath: \ActivityEvent.createdAt, ascending: true)
+        ],
         animation: .default
     ) private var allActivities: FetchedResults<ActivityEvent>
+
+    private var daySections: [DaySection] {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        guard let startDate = calendar.date(byAdding: .day, value: -fetchedDays, to: today) else { return [] }
+
+        // Filter entries and activities within the date range
+        let filteredEntries = allEntries.filter { entry in
+            let date = entry.backdatedAt ?? entry.createdAt ?? Date()
+            return date >= startDate
+        }
+
+        let filteredActivities = allActivities.filter { activity in
+            let date = activity.backdatedAt ?? activity.createdAt ?? Date()
+            return date >= startDate
+        }
+
+        return DaySection.sectionsFromArrays(entries: Array(filteredEntries), activities: Array(filteredActivities))
+    }
+
+    private var palette: ColorPalette {
+        appearanceManager.currentPalette(for: colorScheme)
+    }
 
     var body: some View {
         List {
@@ -35,6 +64,7 @@ struct TimelineView: View {
                         }
                     }
                 }
+                .listRowBackground(palette.surfaceColor)
                 .onAppear {
                     // Load more when we're near the bottom
                     if section == daySections.last {
@@ -55,83 +85,25 @@ struct TimelineView: View {
             }
         }
         .listStyle(.insetGrouped)
+        .themedScrollBackground()
         .navigationTitle("Murmur")
-        .task {
-            await loadInitialData()
-        }
-        .onChange(of: allEntries.count) { _, _ in
-            Task {
-                await fetchDaySections(days: fetchedDays)
-            }
-        }
-        .onChange(of: allActivities.count) { _, _ in
-            Task {
-                await fetchDaySections(days: fetchedDays)
-            }
-        }
-    }
-
-    private func loadInitialData() async {
-        await fetchDaySections(days: fetchedDays)
     }
 
     private func loadMoreDays() {
         guard !isLoadingMore else { return }
         isLoadingMore = true
         fetchedDays += daysPerPage
-        Task {
-            await fetchDaySections(days: fetchedDays)
+        // Trigger after a short delay to allow the view to update
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             isLoadingMore = false
         }
-    }
-
-    @MainActor
-    private func fetchDaySections(days: Int) async {
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-        guard let startDate = calendar.date(byAdding: .day, value: -days, to: today) else { return }
-
-        let sections = await context.perform {
-            do {
-                // Fetch entries within date range
-                let entriesRequest = SymptomEntry.fetchRequest()
-                entriesRequest.predicate = NSPredicate(
-                    format: "((backdatedAt >= %@) OR (backdatedAt == nil AND createdAt >= %@))",
-                    startDate as NSDate, startDate as NSDate
-                )
-                entriesRequest.sortDescriptors = [
-                    NSSortDescriptor(keyPath: \SymptomEntry.backdatedAt, ascending: true),
-                    NSSortDescriptor(keyPath: \SymptomEntry.createdAt, ascending: true)
-                ]
-                let entries = try self.context.fetch(entriesRequest)
-
-                // Fetch activities within date range
-                let activitiesRequest = ActivityEvent.fetchRequest()
-                activitiesRequest.predicate = NSPredicate(
-                    format: "((backdatedAt >= %@) OR (backdatedAt == nil AND createdAt >= %@))",
-                    startDate as NSDate, startDate as NSDate
-                )
-                activitiesRequest.sortDescriptors = [
-                    NSSortDescriptor(keyPath: \ActivityEvent.backdatedAt, ascending: true),
-                    NSSortDescriptor(keyPath: \ActivityEvent.createdAt, ascending: true)
-                ]
-                let activities = try self.context.fetch(activitiesRequest)
-
-                return DaySection.sectionsFromArrays(entries: entries, activities: activities)
-            } catch {
-                self.logger.error("Error fetching timeline data: \(error.localizedDescription)")
-                return []
-            }
-        }
-
-        self.daySections = sections
     }
 
     private func sectionHeader(for section: DaySection) -> some View {
         NavigationLink(destination: DayDetailView(date: section.date)) {
             HStack(spacing: 12) {
                 RoundedRectangle(cornerRadius: 3)
-                    .fill(section.summary?.dominantColor ?? Color.gray.opacity(0.3))
+                    .fill(section.summary?.dominantColor(for: colorScheme) ?? Color.gray.opacity(0.3))
                     .frame(width: 6, height: 28)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(section.date, style: .date)
@@ -212,7 +184,7 @@ private struct TimelineEntryRow: View {
                             .foregroundStyle(state.color)
                     }
                 }
-                Text(SeverityScale.descriptor(for: Int(entry.severity)))
+                Text(SeverityScale.descriptor(for: Int(entry.severity), isPositive: entry.symptomType?.isPositive ?? false))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 if let note = entry.note, !note.isEmpty {
@@ -223,7 +195,7 @@ private struct TimelineEntryRow: View {
                 }
             }
             Spacer()
-            SeverityBadge(value: Double(entry.severity), precision: .integer)
+            SeverityBadge(value: Double(entry.severity), precision: .integer, isPositive: entry.symptomType?.isPositive ?? false)
         }
         .padding(.vertical, 6)
         .accessibilityElement(children: .combine)
@@ -347,12 +319,12 @@ private enum TimelineItem: Identifiable {
     case symptom(SymptomEntry)
     case activity(ActivityEvent)
 
-    var id: UUID {
+    var id: NSManagedObjectID {
         switch self {
         case .symptom(let entry):
-            return entry.id ?? UUID()
+            return entry.objectID
         case .activity(let activity):
-            return activity.id ?? UUID()
+            return activity.objectID
         }
     }
 
@@ -374,7 +346,17 @@ private struct DaySection: Identifiable, Equatable {
     let summary: DaySummary?
 
     static func == (lhs: DaySection, rhs: DaySection) -> Bool {
-        lhs.date == rhs.date
+        guard lhs.date == rhs.date else { return false }
+
+        let lhsEntryIDs = lhs.entries.map { $0.objectID }
+        let rhsEntryIDs = rhs.entries.map { $0.objectID }
+
+        let lhsActivityIDs = lhs.activities.map { $0.objectID }
+        let rhsActivityIDs = rhs.activities.map { $0.objectID }
+
+        return lhsEntryIDs == rhsEntryIDs &&
+            lhsActivityIDs == rhsActivityIDs &&
+            lhs.summary == rhs.summary
     }
 
     var timelineItems: [TimelineItem] {

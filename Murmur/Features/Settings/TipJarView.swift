@@ -4,6 +4,12 @@ import StoreKit
 struct TipJarView: View {
     @StateObject private var store = StoreManager()
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var appearanceManager: AppearanceManager
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var palette: ColorPalette {
+        appearanceManager.currentPalette(for: colorScheme)
+    }
 
     var body: some View {
         VStack(spacing: 24) {
@@ -22,7 +28,7 @@ struct TipJarView: View {
         VStack(spacing: 24) {
             Image(systemName: "heart.circle.fill")
                 .font(.system(size: 60))
-                .foregroundStyle(.pink)
+                .foregroundStyle(palette.accentColor)
                 .padding(.top, 40)
 
             VStack(spacing: 12) {
@@ -30,7 +36,7 @@ struct TipJarView: View {
                     .font(.title2)
                     .fontWeight(.semibold)
 
-                Text("Support Murmur's development with a small tip. Your support helps keep this app free and privacy-focused.")
+                Text("Support Murmur’s development with a tip. Your support helps me pay the bills while I develop the app, and enables me to keep it free and privacy-focused.")
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -51,8 +57,8 @@ struct TipJarView: View {
                         }
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background(Color.accentColor)
-                        .foregroundStyle(.white)
+                       .background(Color.accentColor)
+                       .foregroundStyle(.white)
                         .cornerRadius(12)
                     }
                     .disabled(store.purchaseState == .purchasing)
@@ -81,7 +87,7 @@ struct TipJarView: View {
         VStack(spacing: 24) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 80))
-                .foregroundStyle(.green)
+                .foregroundStyle(palette.accentColor)
                 .padding(.top, 60)
 
             VStack(spacing: 12) {
@@ -112,7 +118,7 @@ struct TipJarView: View {
             Spacer()
         }
         .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
                 store.resetPurchaseState()
             }
         }
@@ -123,4 +129,5 @@ struct TipJarView: View {
     NavigationStack {
         TipJarView()
     }
+    .environmentObject(AppearanceManager.shared)
 }

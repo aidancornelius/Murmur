@@ -1,7 +1,17 @@
 {
   "images" : [
     {
-      "filename" : "murmur@2x.png",
+      "filename" : "hand-ls-L.png",
+      "idiom" : "universal"
+    },
+    {
+      "appearances" : [
+        {
+          "appearance" : "luminosity",
+          "value" : "dark"
+        }
+      ],
+      "filename" : "hand-ls-D.png",
       "idiom" : "universal"
     }
   ],

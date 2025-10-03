@@ -68,6 +68,7 @@ struct ReminderFormView: View {
             }
         }
         .navigationTitle(editingReminder == nil ? "Add a reminder" : "Update reminder")
+        .themedScrollBackground()
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel", role: .cancel) { dismiss() }

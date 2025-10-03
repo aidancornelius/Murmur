@@ -3,8 +3,14 @@ import SwiftUI
 
 struct SecuritySettingsView: View {
     @EnvironmentObject private var appLock: AppLockController
+    @EnvironmentObject private var appearanceManager: AppearanceManager
+    @Environment(\.colorScheme) private var colorScheme
     @State private var biometricsAvailable = false
     @State private var biometricTypeDescription = ""
+
+    private var palette: ColorPalette {
+        appearanceManager.currentPalette(for: colorScheme)
+    }
 
     var body: some View {
         Form {
@@ -29,13 +35,16 @@ struct SecuritySettingsView: View {
                     }
                 }
             }
+            .listRowBackground(palette.surfaceColor)
 
             Section("Status") {
                 Label(appLock.isLockEnabled ? "On" : "Off", systemImage: appLock.isLockEnabled ? "lock.fill" : "lock.open")
                     .foregroundStyle(appLock.isLockEnabled ? .green : .secondary)
             }
+            .listRowBackground(palette.surfaceColor)
         }
         .navigationTitle("Privacy & security")
+        .themedScrollBackground()
         .onAppear(perform: loadBiometricStatus)
     }
 

@@ -105,6 +105,7 @@ struct AddActivityView: View {
             }
         }
         .navigationTitle("Log an activity")
+        .themedScrollBackground()
         .onAppear {
             Task {
                 if calendarAssistant.authorizationStatus == .fullAccess {
@@ -253,6 +254,7 @@ private struct CalendarEventPicker: View {
                     }
                 }
             }
+            .themedScrollBackground()
             .navigationTitle("Choose event")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -261,6 +263,7 @@ private struct CalendarEventPicker: View {
                 }
             }
         }
+        .themedSurface()
     }
 
     private func eventAccessibilityLabel(for event: EKEvent) -> String {

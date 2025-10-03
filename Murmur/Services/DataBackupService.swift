@@ -38,12 +38,29 @@ final class DataBackupService {
         let createdAt: Date
         let entries: [EntryBackup]
         let symptomTypes: [SymptomTypeBackup]
+        let activities: [ActivityBackup]
+        let manualCycleEntries: [ManualCycleEntryBackup]
+        let reminders: [ReminderBackup]
+        let manualCyclePreferences: ManualCyclePreferences
 
-        init(version: Int = 1, createdAt: Date, entries: [EntryBackup], symptomTypes: [SymptomTypeBackup]) {
+        init(
+            version: Int = 1,
+            createdAt: Date,
+            entries: [EntryBackup],
+            symptomTypes: [SymptomTypeBackup],
+            activities: [ActivityBackup],
+            manualCycleEntries: [ManualCycleEntryBackup],
+            reminders: [ReminderBackup],
+            manualCyclePreferences: ManualCyclePreferences
+        ) {
             self.version = version
             self.createdAt = createdAt
             self.entries = entries
             self.symptomTypes = symptomTypes
+            self.activities = activities
+            self.manualCycleEntries = manualCycleEntries
+            self.reminders = reminders
+            self.manualCyclePreferences = manualCyclePreferences
         }
 
         struct EntryBackup: Codable {
@@ -74,6 +91,39 @@ final class DataBackupService {
             let isDefault: Bool
             let isStarred: Bool
             let starOrder: Int16
+        }
+
+        struct ActivityBackup: Codable {
+            let id: UUID
+            let createdAt: Date
+            let backdatedAt: Date?
+            let name: String
+            let note: String?
+            let physicalExertion: Int16
+            let cognitiveExertion: Int16
+            let emotionalLoad: Int16
+            let durationMinutes: Int?
+            let calendarEventID: String?
+        }
+
+        struct ManualCycleEntryBackup: Codable {
+            let id: UUID
+            let date: Date
+            let flowLevel: String
+        }
+
+        struct ReminderBackup: Codable {
+            let id: UUID
+            let hour: Int16
+            let minute: Int16
+            let repeatsOn: [String]
+            let isEnabled: Bool
+        }
+
+        struct ManualCyclePreferences: Codable {
+            let isEnabled: Bool
+            let cycleDay: Int?
+            let cycleDaySetDate: Date?
         }
     }
 
@@ -116,15 +166,14 @@ final class DataBackupService {
         let types = try context.fetch(typeRequest)
 
         let entryBackups = entries.compactMap { entry -> BackupData.EntryBackup? in
-            guard let id = entry.id,
-                  let createdAt = entry.createdAt,
-                  let symptomTypeID = entry.symptomType?.id else {
+            // Use safe accessors
+            guard let symptomTypeID = entry.symptomType?.safeId else {
                 return nil
             }
 
             return BackupData.EntryBackup(
-                id: id,
-                createdAt: createdAt,
+                id: entry.safeId,
+                createdAt: entry.safeCreatedAt,
                 backdatedAt: entry.backdatedAt,
                 severity: entry.severity,
                 note: entry.note,
@@ -140,17 +189,13 @@ final class DataBackupService {
             )
         }
 
-        let typeBackups = types.compactMap { type -> BackupData.SymptomTypeBackup? in
-            guard let id = type.id,
-                  let name = type.name else {
-                return nil
-            }
-
+        let typeBackups = types.map { type -> BackupData.SymptomTypeBackup in
+            // Use safe accessors
             return BackupData.SymptomTypeBackup(
-                id: id,
-                name: name,
-                color: type.color ?? "#808080",
-                iconName: type.iconName ?? "questionmark.circle",
+                id: type.safeId,
+                name: type.safeName,
+                color: type.safeColor,
+                iconName: type.safeIconName,
                 category: type.category,
                 isDefault: type.isDefault,
                 isStarred: type.isStarred,
@@ -158,10 +203,71 @@ final class DataBackupService {
             )
         }
 
+        let activityRequest = ActivityEvent.fetchRequest()
+        activityRequest.sortDescriptors = [
+            NSSortDescriptor(keyPath: \ActivityEvent.createdAt, ascending: false)
+        ]
+        let activities = try context.fetch(activityRequest)
+
+        let activityBackups = activities.compactMap { activity -> BackupData.ActivityBackup? in
+            guard let id = activity.id, let createdAt = activity.createdAt, let name = activity.name else {
+                return nil
+            }
+            return BackupData.ActivityBackup(
+                id: id,
+                createdAt: createdAt,
+                backdatedAt: activity.backdatedAt,
+                name: name,
+                note: activity.note,
+                physicalExertion: activity.physicalExertion,
+                cognitiveExertion: activity.cognitiveExertion,
+                emotionalLoad: activity.emotionalLoad,
+                durationMinutes: activity.durationMinutes?.intValue,
+                calendarEventID: activity.calendarEventID
+            )
+        }
+
+        let manualCycleEntries = try ManualCycleEntry.fetchAll(in: context)
+        let manualCycleBackups = manualCycleEntries.map { entry in
+            BackupData.ManualCycleEntryBackup(
+                id: entry.id,
+                date: entry.date,
+                flowLevel: entry.flowLevel
+            )
+        }
+
+        let reminderRequest = Reminder.fetchRequest()
+        reminderRequest.sortDescriptors = [
+            NSSortDescriptor(key: "hour", ascending: true),
+            NSSortDescriptor(key: "minute", ascending: true)
+        ]
+        let reminders = try context.fetch(reminderRequest)
+        let reminderBackups = reminders.compactMap { reminder -> BackupData.ReminderBackup? in
+            guard let id = reminder.id else { return nil }
+            let repeats = (reminder.repeatsOn as? [String]) ?? []
+            return BackupData.ReminderBackup(
+                id: id,
+                hour: reminder.hour,
+                minute: reminder.minute,
+                repeatsOn: repeats,
+                isEnabled: reminder.isEnabled
+            )
+        }
+
+        let manualCyclePreferences = BackupData.ManualCyclePreferences(
+            isEnabled: UserDefaults.standard.bool(forKey: "ManualCycleTrackingEnabled"),
+            cycleDay: UserDefaults.standard.object(forKey: "ManualCycleDay") as? Int,
+            cycleDaySetDate: UserDefaults.standard.object(forKey: "ManualCycleDaySetDate") as? Date
+        )
+
         return BackupData(
             createdAt: Date(),
             entries: entryBackups,
-            symptomTypes: typeBackups
+            symptomTypes: typeBackups,
+            activities: activityBackups,
+            manualCycleEntries: manualCycleBackups,
+            reminders: reminderBackups,
+            manualCyclePreferences: manualCyclePreferences
         )
     }
 
@@ -182,16 +288,32 @@ final class DataBackupService {
 
     private func restoreToDatabase(backupData: BackupData) async throws {
         let context = stack.newBackgroundContext()
+        var enabledReminderIDs: [UUID] = []
 
         try await context.perform {
-            // Delete all existing data
-            let entryDeleteRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "SymptomEntry")
-            let entryDelete = NSBatchDeleteRequest(fetchRequest: entryDeleteRequest)
-            try context.execute(entryDelete)
+            // Delete all existing data with proper merge to view context
+            func deleteAll(entityName: String) throws -> [NSManagedObjectID] {
+                let request = NSFetchRequest<NSFetchRequestResult>(entityName: entityName)
+                let delete = NSBatchDeleteRequest(fetchRequest: request)
+                delete.resultType = .resultTypeObjectIDs
+                let result = try context.execute(delete) as? NSBatchDeleteResult
+                return (result?.result as? [NSManagedObjectID]) ?? []
+            }
 
-            let typeDeleteRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "SymptomType")
-            let typeDelete = NSBatchDeleteRequest(fetchRequest: typeDeleteRequest)
-            try context.execute(typeDelete)
+            let deletedObjectIDs: [NSManagedObjectID] = try [
+                deleteAll(entityName: "SymptomEntry"),
+                deleteAll(entityName: "SymptomType"),
+                deleteAll(entityName: "ActivityEvent"),
+                deleteAll(entityName: "ManualCycleEntry"),
+                deleteAll(entityName: "Reminder")
+            ].flatMap { $0 }
+
+            // Merge the deletions into the view context
+            let changes = [NSDeletedObjectsKey: deletedObjectIDs]
+            NSManagedObjectContext.mergeChanges(
+                fromRemoteContextSave: changes,
+                into: [self.stack.container.viewContext]
+            )
 
             // Create symptom types
             var typeMap: [UUID: SymptomType] = [:]
@@ -230,7 +352,77 @@ final class DataBackupService {
                 // Note: Location placemark restoration would need CLPlacemark reconstruction
             }
 
+            for activityBackup in backupData.activities {
+                let activity = ActivityEvent(context: context)
+                activity.id = activityBackup.id
+                activity.createdAt = activityBackup.createdAt
+                activity.backdatedAt = activityBackup.backdatedAt
+                activity.name = activityBackup.name
+                activity.note = activityBackup.note
+                activity.physicalExertion = activityBackup.physicalExertion
+                activity.cognitiveExertion = activityBackup.cognitiveExertion
+                activity.emotionalLoad = activityBackup.emotionalLoad
+                if let duration = activityBackup.durationMinutes {
+                    activity.durationMinutes = NSNumber(value: duration)
+                } else {
+                    activity.durationMinutes = nil
+                }
+                activity.calendarEventID = activityBackup.calendarEventID
+            }
+
+            for cycleBackup in backupData.manualCycleEntries {
+                let cycleEntry = ManualCycleEntry(context: context)
+                cycleEntry.id = cycleBackup.id
+                cycleEntry.date = cycleBackup.date
+                cycleEntry.flowLevel = cycleBackup.flowLevel
+            }
+
+            for reminderBackup in backupData.reminders {
+                let reminder = Reminder(context: context)
+                reminder.id = reminderBackup.id
+                reminder.hour = reminderBackup.hour
+                reminder.minute = reminderBackup.minute
+                reminder.repeatsOn = reminderBackup.repeatsOn as NSArray
+                reminder.isEnabled = reminderBackup.isEnabled
+                if reminderBackup.isEnabled {
+                    enabledReminderIDs.append(reminderBackup.id)
+                }
+            }
+
             try context.save()
+
+            // Restore manual cycle preferences
+            UserDefaults.standard.set(backupData.manualCyclePreferences.isEnabled, forKey: "ManualCycleTrackingEnabled")
+            if let cycleDay = backupData.manualCyclePreferences.cycleDay {
+                UserDefaults.standard.set(cycleDay, forKey: "ManualCycleDay")
+            } else {
+                UserDefaults.standard.removeObject(forKey: "ManualCycleDay")
+            }
+            if let setDate = backupData.manualCyclePreferences.cycleDaySetDate {
+                UserDefaults.standard.set(setDate, forKey: "ManualCycleDaySetDate")
+            } else {
+                UserDefaults.standard.removeObject(forKey: "ManualCycleDaySetDate")
+            }
+        }
+
+        if !enabledReminderIDs.isEmpty {
+            let viewContext = stack.container.viewContext
+            Task { @MainActor in
+                do {
+                    try await NotificationScheduler.requestAuthorization()
+                } catch {
+                    // Ignore authorization failures during restore; user can re-enable manually later
+                }
+
+                for id in enabledReminderIDs {
+                    let request: NSFetchRequest<Reminder> = Reminder.fetchRequest()
+                    request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
+                    request.fetchLimit = 1
+                    if let reminder = try? viewContext.fetch(request).first {
+                        try? await NotificationScheduler.schedule(reminder: reminder)
+                    }
+                }
+            }
         }
     }
 

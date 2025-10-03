@@ -3,6 +3,8 @@ import UniformTypeIdentifiers
 import CoreData
 
 struct DataManagementView: View {
+    @EnvironmentObject private var appearanceManager: AppearanceManager
+    @Environment(\.colorScheme) private var colorScheme
     @State private var showBackupSheet = false
     @State private var showRestoreSheet = false
     @State private var showResetConfirmation = false
@@ -10,6 +12,10 @@ struct DataManagementView: View {
     @State private var isProcessing = false
     @State private var errorMessage: String?
     @State private var successMessage: String?
+
+    private var palette: ColorPalette {
+        appearanceManager.currentPalette(for: colorScheme)
+    }
 
     var body: some View {
         List {
@@ -25,6 +31,7 @@ struct DataManagementView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            .listRowBackground(palette.surfaceColor)
 
             Section("Restore") {
                 Button {
@@ -38,6 +45,7 @@ struct DataManagementView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            .listRowBackground(palette.surfaceColor)
 
             Section("Reset") {
                 Button(role: .destructive) {
@@ -51,6 +59,7 @@ struct DataManagementView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            .listRowBackground(palette.surfaceColor)
 
             if let errorMessage {
                 Section {
@@ -58,6 +67,7 @@ struct DataManagementView: View {
                         .font(.caption)
                         .foregroundStyle(.red)
                 }
+                .listRowBackground(palette.surfaceColor)
             }
 
             if let successMessage {
@@ -66,9 +76,11 @@ struct DataManagementView: View {
                         .font(.caption)
                         .foregroundStyle(.green)
                 }
+                .listRowBackground(palette.surfaceColor)
             }
         }
         .navigationTitle("Data management")
+        .themedScrollBackground()
         .sheet(isPresented: $showBackupSheet) {
             BackupView(isProcessing: $isProcessing, errorMessage: $errorMessage, successMessage: $successMessage)
         }
@@ -100,6 +112,10 @@ struct DataManagementView: View {
 
         Task {
             do {
+                await MainActor.run {
+                    UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+                }
+
                 let context = CoreDataStack.shared.newBackgroundContext()
 
                 try await context.perform {
@@ -196,6 +212,7 @@ struct BackupView: View {
                     .disabled(!canCreateBackup || isProcessing)
                 }
             }
+            .themedScrollBackground()
             .navigationTitle("Create backup")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -212,6 +229,7 @@ struct BackupView: View {
                 }
             }
         }
+        .themedSurface()
     }
 
     private var canCreateBackup: Bool {
@@ -307,6 +325,7 @@ struct RestoreView: View {
                         .foregroundStyle(.orange)
                 }
             }
+            .themedScrollBackground()
             .navigationTitle("Restore backup")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -340,6 +359,7 @@ struct RestoreView: View {
                 Text("This will delete all current data and replace it with the backup. This cannot be undone.")
             }
         }
+        .themedSurface()
     }
 
     private var canRestore: Bool {

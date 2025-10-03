@@ -8,10 +8,14 @@ struct SeverityBadge: View {
 
     let value: Double
     var precision: Precision
+    var isPositive: Bool
 
-    init(value: Double, precision: Precision = .oneDecimal) {
+    @Environment(\.colorScheme) private var colorScheme
+
+    init(value: Double, precision: Precision = .oneDecimal, isPositive: Bool = false) {
         self.value = value
         self.precision = precision
+        self.isPositive = isPositive
     }
 
     var body: some View {
@@ -19,14 +23,14 @@ struct SeverityBadge: View {
             .font(.caption.weight(.semibold))
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
-            .background(Color.severityColor(for: value).opacity(0.2), in: Capsule())
-            .foregroundStyle(Color.severityColor(for: value).opacity(0.9))
+            .background(Color.severityColor(for: value, colorScheme: colorScheme).opacity(0.2), in: Capsule())
+            .foregroundStyle(Color.severityColor(for: value, colorScheme: colorScheme).opacity(0.9))
             .accessibilityLabel(accessibilityDescription)
     }
 
     private var accessibilityDescription: String {
         let level = Int(round(value))
-        return SeverityScale.descriptor(for: level)
+        return SeverityScale.descriptor(for: level, isPositive: isPositive)
     }
 
     private var formattedValue: String {

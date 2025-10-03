@@ -3,6 +3,8 @@ import SwiftUI
 
 struct HealthKitSettingsView: View {
     @EnvironmentObject private var healthKit: HealthKitAssistant
+    @EnvironmentObject private var appearanceManager: AppearanceManager
+    @Environment(\.colorScheme) private var colorScheme
     @State private var errorMessage: String?
     @State private var isRefreshing = false
 
@@ -13,6 +15,10 @@ struct HealthKitSettingsView: View {
         healthKit.latestWorkoutMinutes != nil ||
         healthKit.latestCycleDay != nil ||
         healthKit.latestFlowLevel != nil
+    }
+
+    private var palette: ColorPalette {
+        appearanceManager.currentPalette(for: colorScheme)
     }
 
     var body: some View {
@@ -37,12 +43,14 @@ struct HealthKitSettingsView: View {
                     Text("If you see data below, Health access is working. Apple's privacy design prevents apps from checking read permissions directly.")
                 }
             }
+            .listRowBackground(palette.surfaceColor)
 
             if let errorMessage {
                 Section {
                     Text(errorMessage)
                         .foregroundStyle(.red)
                 }
+                .listRowBackground(palette.surfaceColor)
             }
 
             Section {
@@ -111,8 +119,10 @@ struct HealthKitSettingsView: View {
             } footer: {
                 Text("These show whether Health access is working. If nothing appears, try requesting access again.")
             }
+            .listRowBackground(palette.surfaceColor)
         }
         .navigationTitle("Connect to Health")
+        .themedScrollBackground()
         .task {
             await healthKit.refreshContext()
         }

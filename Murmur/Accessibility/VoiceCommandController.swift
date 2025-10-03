@@ -208,8 +208,8 @@ class VoiceCommandController: NSObject, ObservableObject {
 
         let fetchRequest: NSFetchRequest<SymptomEntry> = SymptomEntry.fetchRequest()
         fetchRequest.sortDescriptors = [
-            NSSortDescriptor(keyPath: \SymptomEntry.backdatedAt, order: .reverse),
-            NSSortDescriptor(keyPath: \SymptomEntry.createdAt, order: .reverse)
+            NSSortDescriptor(keyPath: \SymptomEntry.backdatedAt, ascending: false),
+            NSSortDescriptor(keyPath: \SymptomEntry.createdAt, ascending: false)
         ]
         fetchRequest.fetchLimit = 5
 

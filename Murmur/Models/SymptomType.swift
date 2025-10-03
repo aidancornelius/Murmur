@@ -43,7 +43,46 @@ extension SymptomType: Identifiable {
 
 // Custom computed properties
 extension SymptomType {
+    /// Safe access to ID with fallback generation
+    var safeId: UUID {
+        if let id = self.id {
+            return id
+        } else {
+            let newId = UUID()
+            self.id = newId
+            return newId
+        }
+    }
+
+    /// Safe access to name with validation
+    var safeName: String {
+        guard let name = self.name, !name.isEmpty else {
+            return "Unnamed symptom"
+        }
+        return name
+    }
+
+    /// Safe access to color with default
+    var safeColor: String {
+        color ?? "#808080"
+    }
+
+    /// Safe access to icon name with default
+    var safeIconName: String {
+        iconName ?? "circle"
+    }
+
+    /// Safe access to category
+    var safeCategory: String? {
+        category
+    }
+
     var uiColor: Color {
-        Color(hex: color ?? "#808080")
+        Color(hex: safeColor)
+    }
+
+    /// Returns true if this symptom represents a positive state (higher is better)
+    var isPositive: Bool {
+        category == "Positive wellbeing"
     }
 }

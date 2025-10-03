@@ -4,15 +4,15 @@ import os.log
 
 struct SampleDataSeeder {
     private static let logger = Logger(subsystem: "app.murmur", category: "SampleData")
+    private static let currentSeedVersion = 3 // Increment this when adding new default symptoms
 
     #if targetEnvironment(simulator)
     /// Generates realistic sample timeline entries for simulator testing
     static func generateSampleEntries(in context: NSManagedObjectContext) {
-        let stackContext = CoreDataStack.shared.context
-        stackContext.perform {
+        context.perform {
             // Fetch existing symptom types
             let typeRequest: NSFetchRequest<SymptomType> = SymptomType.fetchRequest()
-            guard let types = try? stackContext.fetch(typeRequest), !types.isEmpty else {
+            guard let types = try? context.fetch(typeRequest), !types.isEmpty else {
                 logger.warning("No symptom types found - seed default types first")
                 return
             }
@@ -26,8 +26,12 @@ struct SampleDataSeeder {
                 ["Fatigue", "Brain fog", "Headache", "Muscle pain", "Joint pain", "Anxiety", "Insomnia"].contains(symptom.name ?? "")
             }
 
+            let positiveSymptoms = types.filter { symptom in
+                symptom.category == "Positive wellbeing"
+            }
+
             let occasionalSymptoms = types.filter { symptom in
-                !commonSymptoms.contains(symptom)
+                !commonSymptoms.contains(symptom) && symptom.category != "Positive wellbeing"
             }
 
             // Sample activities for realistic load tracking
@@ -78,7 +82,7 @@ struct SampleDataSeeder {
 
                 // Add activities for the day
                 for activityIndex in 0..<activityCount {
-                    let activity = ActivityEvent(context: stackContext)
+                    let activity = ActivityEvent(context: context)
                     activity.id = UUID()
 
                     // Spread activities throughout the day (8am to 8pm)
@@ -124,8 +128,27 @@ struct SampleDataSeeder {
                     }
                 }
 
+                // Add positive symptoms on better days
+                if isBetterDay && !positiveSymptoms.isEmpty {
+                    let positiveEntryCount = Int.random(in: 1...3)
+                    for positiveIndex in 0..<positiveEntryCount {
+                        let entry = SymptomEntry(context: context)
+                        entry.id = UUID()
+
+                        let hourOffset = positiveIndex * (12 / max(positiveEntryCount, 1)) + 9 // Morning to evening
+                        let minuteOffset = Int.random(in: 0..<60)
+                        guard let entryDate = calendar.date(byAdding: .hour, value: hourOffset, to: date),
+                              let finalDate = calendar.date(byAdding: .minute, value: minuteOffset, to: entryDate) else { continue }
+
+                        entry.createdAt = finalDate
+                        entry.backdatedAt = finalDate
+                        entry.symptomType = positiveSymptoms.randomElement()
+                        entry.severity = Int16.random(in: 4...5) // High severity = high wellbeing
+                    }
+                }
+
                 for entryIndex in 0..<entryCount {
-                    let entry = SymptomEntry(context: stackContext)
+                    let entry = SymptomEntry(context: context)
                     entry.id = UUID()
 
                     // Spread entries throughout the day
@@ -208,19 +231,18 @@ struct SampleDataSeeder {
                 }
             }
 
-            try? stackContext.save()
+            try? context.save()
             logger.info("Generated sample timeline entries (symptoms and activities) for simulator")
         }
     }
     #endif
 
-    static func seedIfNeeded(in context: NSManagedObjectContext) {
-        let stackContext = CoreDataStack.shared.context
-        stackContext.perform {
-            let fetchRequest: NSFetchRequest<NSFetchRequestResult> = SymptomType.fetchRequest()
-            fetchRequest.fetchLimit = 1
-            let existingCount = (try? stackContext.count(for: fetchRequest)) ?? 0
-            guard existingCount == 0 else { return }
+    static func seedIfNeeded(in context: NSManagedObjectContext, forceSeed: Bool = false) {
+        context.perform {
+            let lastSeedVersion = UserDefaults.standard.integer(forKey: "symptomSeedVersion")
+
+            // Check if we need to seed or update (unless forceSeed is true for testing)
+            guard forceSeed || lastSeedVersion < currentSeedVersion else { return }
 
             let defaults: [(name: String, color: String, icon: String, category: String)] = [
                 // Energy
@@ -288,12 +310,45 @@ struct SampleDataSeeder {
                 ("Swollen lymph nodes", "#FFC3A0", "heart.text.square", "Other"),
                 ("Temperature dysregulation", "#FFCBA4", "thermometer.medium", "Other"),
                 ("Inflammation", "#FFA894", "flame", "Other"),
-                ("Dry eyes/mouth", "#E8D4BF", "drop.triangle", "Other")
+                ("Dry eyes/mouth", "#E8D4BF", "drop.triangle", "Other"),
+
+                // Reproductive & hormonal
+                ("Irregular periods", "#E8A0BF", "calendar.badge.clock", "Reproductive & hormonal"),
+                ("Acne", "#FFC1CC", "face.smiling", "Reproductive & hormonal"),
+                ("Hirsutism (excess hair)", "#D4A5B8", "scissors", "Reproductive & hormonal"),
+                ("Hair loss/thinning", "#C9B6D0", "comb", "Reproductive & hormonal"),
+                ("Darkened skin patches", "#BFA6B8", "circle.lefthalf.filled", "Reproductive & hormonal"),
+                ("Heavy/painful periods", "#D9A8C7", "calendar.badge.exclamationmark", "Reproductive & hormonal"),
+                ("Hot flushes", "#FFB8A8", "flame.fill", "Reproductive & hormonal"),
+                ("Night sweats", "#F5C6B8", "moon.dust", "Reproductive & hormonal"),
+                ("Reduced libido", "#D4B8C9", "heart.slash.circle", "Reproductive & hormonal"),
+                ("Erectile dysfunction", "#C9B8D4", "exclamationmark.circle", "Reproductive & hormonal"),
+                ("Testicular pain", "#B8A8C9", "circle.circle", "Reproductive & hormonal"),
+                ("Gynaecomastia (breast tissue)", "#E8C8D9", "figure.stand", "Reproductive & hormonal"),
+
+                // Positive wellbeing
+                ("Energy", "#A8E6A3", "bolt.fill", "Positive wellbeing"),
+                ("Good concentration", "#A3D9E6", "brain.head.profile", "Positive wellbeing"),
+                ("Mental clarity", "#B8D9F2", "sparkles", "Positive wellbeing"),
+                ("Motivation", "#F2C6A3", "arrow.up.circle.fill", "Positive wellbeing"),
+                ("Passion", "#FFB3BA", "heart.fill", "Positive wellbeing"),
+                ("Joy", "#FFDFBA", "face.smiling.inverse", "Positive wellbeing"),
+                ("Calm", "#C2E8D4", "leaf.fill", "Positive wellbeing"),
+                ("Resilience", "#B8E6C9", "shield.fill", "Positive wellbeing"),
+                ("Creativity", "#E6C2FF", "paintbrush.fill", "Positive wellbeing"),
+                ("Social connection", "#FFD9B3", "person.2.fill", "Positive wellbeing")
             ]
 
-            for preset in defaults {
-                let type = SymptomType(context: stackContext)
+            // Only add symptoms that don't already exist (by name)
+            let fetchRequest: NSFetchRequest<SymptomType> = SymptomType.fetchRequest()
+            let existingSymptoms = (try? context.fetch(fetchRequest)) ?? []
+            let existingNames = Set(existingSymptoms.compactMap { $0.name })
 
+            for preset in defaults {
+                // Skip if this symptom already exists (preserves user modifications)
+                guard !existingNames.contains(preset.name) else { continue }
+
+                let type = SymptomType(context: context)
                 type.id = UUID()
                 type.name = preset.name
                 type.color = preset.color
@@ -304,7 +359,10 @@ struct SampleDataSeeder {
                 type.starOrder = 0
             }
 
-            try? stackContext.save()
+            if let _ = try? context.save() {
+                UserDefaults.standard.set(currentSeedVersion, forKey: "symptomSeedVersion")
+                logger.info("Updated default symptoms to version \(currentSeedVersion)")
+            }
         }
     }
 }

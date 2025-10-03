@@ -42,7 +42,6 @@ struct AddEntryView: View {
     @State private var includeLocation = false
     @State private var isSaving = false
     @State private var errorMessage: String?
-    @State private var showAddAnother = false
 
     @StateObject private var locationAssistant = LocationAssistant()
 
@@ -106,7 +105,7 @@ struct AddEntryView: View {
                                 }
                             }
                             HStack {
-                                Text(SeverityScale.descriptor(for: Int(sharedSeverity)))
+                                Text(sharedSeverityDescriptor)
                                     .font(.caption.bold())
                                     .foregroundStyle(.primary)
                                 Spacer()
@@ -115,7 +114,7 @@ struct AddEntryView: View {
                                     .foregroundStyle(.secondary)
                             }
                             .accessibilityElement(children: .combine)
-                            .accessibilityLabel("Severity level: \(SeverityScale.descriptor(for: Int(sharedSeverity))), \(Int(sharedSeverity)) out of 5")
+                            .accessibilityLabel("Severity level: \(sharedSeverityDescriptor), \(Int(sharedSeverity)) out of 5")
                         }
                     } else {
                         ForEach($selectedSymptoms) { $symptom in
@@ -132,7 +131,7 @@ struct AddEntryView: View {
                                     HapticFeedback.light.trigger()
                                 }
                                 HStack {
-                                    Text(SeverityScale.descriptor(for: Int(symptom.severity)))
+                                    Text(SeverityScale.descriptor(for: Int(symptom.severity), isPositive: symptom.symptomType.isPositive))
                                         .font(.caption.bold())
                                         .foregroundStyle(.primary)
                                     Spacer()
@@ -141,7 +140,7 @@ struct AddEntryView: View {
                                         .foregroundStyle(.secondary)
                                 }
                                 .accessibilityElement(children: .combine)
-                                .accessibilityLabel("Severity level: \(SeverityScale.descriptor(for: Int(symptom.severity))), \(Int(symptom.severity)) out of 5")
+                                .accessibilityLabel("Severity level: \(SeverityScale.descriptor(for: Int(symptom.severity), isPositive: symptom.symptomType.isPositive)), \(Int(symptom.severity)) out of 5")
                             }
                             .padding(.vertical, 4)
                             .accessibilityElement(children: .contain)
@@ -176,28 +175,40 @@ struct AddEntryView: View {
                 }
             }
         }
+        .themedScrollBackground()
         .navigationTitle("How are you feeling?")
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel", role: .cancel) { dismiss() }
             }
             ToolbarItem(placement: .confirmationAction) {
-                Menu {
-                    Button(action: { saveEntries(addAnother: false) }) {
-                        Label("Save", systemImage: "checkmark")
-                    }
-                    Button(action: { saveEntries(addAnother: true) }) {
-                        Label("Save & log another", systemImage: "plus.circle")
-                    }
-                } label: {
-                    if isSaving {
-                        ProgressView()
-                    } else {
-                        Text("Save")
-                    }
+                Button("Save") {
+                    saveEntries(addAnother: false)
                 }
                 .disabled(isSaving || selectedSymptoms.isEmpty)
             }
+        }
+    }
+
+    // When using shared severity, determine the descriptor based on all selected symptoms
+    // If all are positive or all are negative, use that; otherwise use a neutral descriptor
+    private var sharedSeverityDescriptor: String {
+        guard !selectedSymptoms.isEmpty else {
+            return SeverityScale.descriptor(for: Int(sharedSeverity))
+        }
+
+        let hasPositive = selectedSymptoms.contains { $0.symptomType.isPositive }
+        let hasNegative = selectedSymptoms.contains { !$0.symptomType.isPositive }
+
+        if hasPositive && !hasNegative {
+            // All positive
+            return SeverityScale.descriptor(for: Int(sharedSeverity), isPositive: true)
+        } else if hasNegative && !hasPositive {
+            // All negative
+            return SeverityScale.descriptor(for: Int(sharedSeverity), isPositive: false)
+        } else {
+            // Mixed - use level number
+            return "Level \(Int(sharedSeverity))"
         }
     }
 
@@ -253,16 +264,7 @@ struct AddEntryView: View {
             do {
                 try context.save()
                 HapticFeedback.success.trigger()
-                if addAnother {
-                    // Reset selections but keep timestamp and location
-                    self.selectedSymptoms = []
-                    self.sharedSeverity = 3
-                    self.useSameSeverity = true
-                    self.note = ""
-                    self.isSaving = false
-                } else {
-                    dismiss()
-                }
+                dismiss()
             } catch {
                 HapticFeedback.error.trigger()
                 errorMessage = error.localizedDescription
@@ -310,7 +312,7 @@ private struct SymptomMultiPicker: View {
     @State private var showAllSymptoms = false
     @Environment(\.managedObjectContext) private var context
 
-    private let maxSelection = 5
+    private let maxSelection = AppConstants.UI.maxSymptomSelection
 
     private var starredSymptoms: [SymptomType] {
         symptomTypes.filter { $0.isStarred }.sorted { ($0.name ?? "") < ($1.name ?? "") }
@@ -330,7 +332,7 @@ private struct SymptomMultiPicker: View {
             if let type = entry.symptomType, let id = type.id, !seen.contains(id) {
                 seen.insert(id)
                 recent.append(type)
-                if recent.count >= 5 { break }
+                if recent.count >= 6 { break }
             }
         }
 
@@ -447,7 +449,7 @@ private struct SymptomMultiPicker: View {
                 .padding(.vertical, 8)
             }
             .buttonStyle(.plain)
-            .foregroundStyle(.blue)
+            .foregroundStyle(Color.accentColor)
             .accessibilityLabel("Search all symptoms")
             .accessibilityHint("Opens a searchable list of all available symptoms")
         }
@@ -461,6 +463,7 @@ private struct SymptomMultiPicker: View {
                     maxSelection: maxSelection
                 )
             }
+            .themedSurface()
         }
     }
 }
@@ -472,6 +475,9 @@ private struct AllSymptomsSheet: View {
     let maxSelection: Int
 
     @State private var searchText: String = ""
+    @State private var showCreateSheet = false
+    @FocusState private var isSearchFocused: Bool
+    @Environment(\.managedObjectContext) private var context
 
     private var filteredSymptomTypes: [SymptomType] {
         if searchText.isEmpty {
@@ -489,7 +495,7 @@ private struct AllSymptomsSheet: View {
         }
 
         // Show user added symptoms first, then the rest
-        let categoryOrder = ["User added", "Energy", "Pain", "Cognitive", "Sleep", "Neurological", "Digestive", "Mental health", "Respiratory & cardiovascular", "Other"]
+        let categoryOrder = ["User added", "Positive wellbeing", "Energy", "Pain", "Cognitive", "Sleep", "Neurological", "Digestive", "Mental health", "Reproductive & hormonal", "Respiratory & cardiovascular", "Other"]
 
         return categoryOrder.compactMap { category in
             guard let symptoms = grouped[category], !symptoms.isEmpty else { return nil }
@@ -520,6 +526,7 @@ private struct AllSymptomsSheet: View {
                 TextField("Search symptoms", text: $searchText)
                     .textFieldStyle(.plain)
                     .autocorrectionDisabled()
+                    .focused($isSearchFocused)
                     .accessibilityLabel("Search symptoms")
                     .accessibilityHint("Type to filter symptoms by name")
                 if !searchText.isEmpty {
@@ -538,10 +545,29 @@ private struct AllSymptomsSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     if categorisedSymptoms.isEmpty {
-                        Text("No symptoms found matching '\(searchText)'")
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding()
+                        VStack(spacing: 16) {
+                            Text("No symptoms found matching '\(searchText)'")
+                                .foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .center)
+
+                            if !searchText.isEmpty {
+                                Button(action: {
+                                    showCreateSheet = true
+                                }) {
+                                    HStack {
+                                        Image(systemName: "plus.circle.fill")
+                                        Text("Create '\(searchText)'")
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 10)
+                                    .background(Color.accentColor)
+                                    .foregroundStyle(.white)
+                                    .clipShape(Capsule())
+                                }
+                                .accessibilityLabel("Create new symptom named \(searchText)")
+                            }
+                        }
+                        .padding()
                     } else {
                         ForEach(categorisedSymptoms, id: \.category) { group in
                             VStack(alignment: .leading, spacing: 8) {
@@ -573,6 +599,24 @@ private struct AllSymptomsSheet: View {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Done") { isPresented = false }
             }
+        }
+        .onAppear {
+            isSearchFocused = true
+        }
+        .sheet(isPresented: $showCreateSheet) {
+            NavigationStack {
+                SymptomTypeFormView(editingType: nil, prefillName: searchText) { newSymptom in
+                    // Auto-select the newly created symptom
+                    if selectedSymptoms.count < maxSelection {
+                        let newSelected = SelectedSymptom(symptomType: newSymptom)
+                        selectedSymptoms.append(newSelected)
+                        HapticFeedback.success.trigger()
+                    }
+                    searchText = ""
+                }
+                .environment(\.managedObjectContext, context)
+            }
+            .themedSurface()
         }
     }
 }

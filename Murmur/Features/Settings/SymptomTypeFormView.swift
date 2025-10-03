@@ -6,10 +6,12 @@ struct SymptomTypeFormView: View {
     @Environment(\.dismiss) private var dismiss
 
     let editingType: SymptomType?
+    let onSave: ((SymptomType) -> Void)?
 
     @State private var name: String = ""
     @State private var colorHex: String = "#6FA8DC"
     @State private var iconName: String = "heart.fill"
+    @State private var category: String = ""
     @State private var isStarred: Bool = false
     @State private var starOrder: Int = 0
     @State private var errorMessage: String?
@@ -17,11 +19,15 @@ struct SymptomTypeFormView: View {
     private let colorPalette = ["#6FA8DC", "#76C7C0", "#FFD966", "#F4B183", "#C27BA0", "#E06666", "#F5A3A3", "#8DC6D2", "#FFB570", "#B07BB4", "#A678B0"]
     private let iconOptions = ["heart.fill", "bolt.horizontal.circle", "dumbbell", "figure.stand", "brain", "heart.circle", "moon.zzz", "waveform.path.ecg", "bandage", "heart.text.square", "fork.knife", "lungs.fill", "sparkles"]
 
-    init(editingType: SymptomType?) {
+    private let categoryOptions = ["", "Positive wellbeing"]
+
+    init(editingType: SymptomType?, prefillName: String = "", onSave: ((SymptomType) -> Void)? = nil) {
         self.editingType = editingType
-        _name = State(initialValue: editingType?.name ?? "")
+        self.onSave = onSave
+        _name = State(initialValue: editingType?.name ?? prefillName)
         _colorHex = State(initialValue: editingType?.color ?? "#6FA8DC")
         _iconName = State(initialValue: editingType?.iconName ?? "heart.fill")
+        _category = State(initialValue: editingType?.category ?? "")
         _isStarred = State(initialValue: editingType?.isStarred ?? false)
         _starOrder = State(initialValue: Int(editingType?.starOrder ?? 0))
     }
@@ -30,6 +36,7 @@ struct SymptomTypeFormView: View {
         Form {
             Section {
                 TextField("Symptom name", text: $name)
+                    .disabled(editingType?.isDefault == true)
             }
 
             Section("Color") {
@@ -71,6 +78,28 @@ struct SymptomTypeFormView: View {
             }
 
             Section {
+                Picker("Type", selection: $category) {
+                    Text("Negative symptom").tag("")
+                    Text("Positive wellbeing").tag("Positive wellbeing")
+                }
+                .pickerStyle(.segmented)
+                .onChange(of: category) { _, _ in
+                    HapticFeedback.selection.trigger()
+                }
+                .disabled(editingType?.isDefault == true)
+            } footer: {
+                if editingType?.isDefault == true {
+                    Text("Default symptoms cannot have their type changed.")
+                        .font(.caption)
+                } else {
+                    Text(category == "Positive wellbeing"
+                        ? "Positive symptoms track good days (higher ratings = better). Great for noting energy, joy, or mental clarity."
+                        : "Standard symptoms track challenges (higher ratings = worse). Use these for pain, fatigue, or other difficulties.")
+                        .font(.caption)
+                }
+            }
+
+            Section {
                 Toggle("Show first when logging", isOn: $isStarred)
                     .onChange(of: isStarred) { _, _ in
                         HapticFeedback.selection.trigger()
@@ -92,6 +121,7 @@ struct SymptomTypeFormView: View {
             }
         }
         .navigationTitle(editingType == nil ? "Add a symptom" : "Update symptom")
+        .themedScrollBackground()
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel", role: .cancel) { dismiss() }
@@ -116,11 +146,16 @@ struct SymptomTypeFormView: View {
         } else {
             target = SymptomType(context: context)
             target.id = UUID()
-            target.category = nil // User-added symptoms have no category
             target.isDefault = false
         }
 
-        target.name = trimmed
+        // Only allow changing name and category for non-default symptoms
+        if !target.isDefault {
+            target.name = trimmed
+            target.category = category.isEmpty ? nil : category
+        }
+
+        // Always allow changing color, icon, starred status
         target.color = colorHex
         target.iconName = iconName
         target.isStarred = isStarred
@@ -130,6 +165,7 @@ struct SymptomTypeFormView: View {
             if context.hasChanges {
                 try context.save()
                 HapticFeedback.success.trigger()
+                onSave?(target)
             }
             dismiss()
         } catch {

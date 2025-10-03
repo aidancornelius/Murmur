@@ -2,6 +2,8 @@ import SwiftUI
 
 struct ReminderListView: View {
     @Environment(\.managedObjectContext) private var context
+    @EnvironmentObject private var appearanceManager: AppearanceManager
+    @Environment(\.colorScheme) private var colorScheme
     @FetchRequest(
         entity: Reminder.entity(),
         sortDescriptors: [NSSortDescriptor(key: "hour", ascending: true), NSSortDescriptor(key: "minute", ascending: true)]
@@ -9,6 +11,10 @@ struct ReminderListView: View {
 
     @State private var presentingForm = false
     @State private var selectedReminder: Reminder?
+
+    private var palette: ColorPalette {
+        appearanceManager.currentPalette(for: colorScheme)
+    }
 
     var body: some View {
         List {
@@ -52,10 +58,12 @@ struct ReminderListView: View {
                     selectedReminder = reminder
                     presentingForm = true
                 }
+                .listRowBackground(palette.surfaceColor)
             }
             .onDelete(perform: delete)
         }
         .navigationTitle("Reminders")
+        .themedScrollBackground()
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
@@ -70,6 +78,7 @@ struct ReminderListView: View {
             NavigationStack {
                 ReminderFormView(editingReminder: selectedReminder)
             }
+            .themedSurface()
         }
     }
 

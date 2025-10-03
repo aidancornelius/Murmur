@@ -11,8 +11,8 @@ struct DaySummary: Hashable, Identifiable {
     let appleHealthMoodUUID: UUID?
     let loadScore: LoadScore?
 
-    var dominantColor: Color {
-        Color.severityColor(for: Double(severityLevel))
+    func dominantColor(for colorScheme: ColorScheme) -> Color {
+        Color.severityColor(for: Double(severityLevel), colorScheme: colorScheme)
     }
 
     static func make(for date: Date, entries: [SymptomEntry], activities: [ActivityEvent] = [], previousLoad: Double = 0.0) -> DaySummary? {

@@ -101,6 +101,12 @@ final class HealthKitAssistant: ObservableObject {
         }
     }
 
+    /// Force refresh all HealthKit data, useful for pull-to-refresh scenarios
+    @MainActor
+    public func forceRefreshAll() async {
+        await refreshContext()
+    }
+
 
     private func refreshHRVIfNeeded(force: Bool = false) async {
         guard let hrvType else {

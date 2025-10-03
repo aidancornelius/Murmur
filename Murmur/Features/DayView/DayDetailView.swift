@@ -4,6 +4,8 @@ import SwiftUI
 
 struct DayDetailView: View {
     @Environment(\.managedObjectContext) private var context
+    @Environment(\.colorScheme) private var colorScheme
+    @EnvironmentObject private var appearanceManager: AppearanceManager
     @EnvironmentObject private var healthKit: HealthKitAssistant
 
     private let date: Date
@@ -20,6 +22,10 @@ struct DayDetailView: View {
     @State private var errorMessage: String?
 
     private let calendar = Calendar.current
+
+    private var palette: ColorPalette {
+        appearanceManager.currentPalette(for: colorScheme)
+    }
 
     private var starredSymptoms: [SymptomType] {
         symptomTypes.filter { $0.isStarred }
@@ -45,7 +51,7 @@ struct DayDetailView: View {
                 Section {
                     DaySummaryCard(summary: summary, comparison: previousSummary, metrics: metrics)
                 }
-                .listRowBackground(summary.dominantColor.opacity(0.1))
+                .listRowBackground(summary.dominantColor(for: colorScheme).opacity(0.1))
             }
 
             if !dayEntries.isEmpty {
@@ -55,6 +61,7 @@ struct DayDetailView: View {
                     }
                     .onDelete(perform: deleteEntries)
                 }
+                .listRowBackground(palette.surfaceColor)
             }
 
             if !dayActivities.isEmpty {
@@ -64,6 +71,7 @@ struct DayDetailView: View {
                     }
                     .onDelete(perform: deleteActivities)
                 }
+                .listRowBackground(palette.surfaceColor)
             }
 
             if dayEntries.isEmpty && dayActivities.isEmpty {
@@ -72,6 +80,15 @@ struct DayDetailView: View {
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
+                .listRowBackground(palette.surfaceColor)
+            }
+
+            if #available(iOS 15.0, *), !dayEntries.isEmpty {
+                Section("Accessibility") {
+                    AudioGraphButton(entries: dayEntries)
+                    DayAudioSummaryButton(entries: dayEntries, date: date)
+                }
+                .listRowBackground(palette.surfaceColor)
             }
 
             if let errorMessage {
@@ -79,9 +96,11 @@ struct DayDetailView: View {
                     Text(errorMessage)
                         .foregroundStyle(.red)
                 }
+                .listRowBackground(palette.surfaceColor)
             }
         }
         .listStyle(.insetGrouped)
+        .themedScrollBackground()
         .navigationTitle(formatted(date: date))
         .onAppear(perform: bootstrap)
     }
@@ -320,12 +339,12 @@ private struct DaySymptomControl: View {
                 Label(type.name ?? "Unnamed", systemImage: type.iconName ?? "circle")
                     .labelStyle(.titleAndIcon)
                 Spacer()
-                SeverityBadge(value: severity)
+                SeverityBadge(value: severity, isPositive: type.isPositive)
             }
             Slider(value: $severity, in: 1...5, step: 1)
                 .tint(type.uiColor)
             HStack {
-                Text(SeverityScale.descriptor(for: Int(severity)))
+                Text(SeverityScale.descriptor(for: Int(severity), isPositive: type.isPositive))
                     .font(.caption.bold())
                     .foregroundStyle(.primary)
                 Spacer()
@@ -350,7 +369,7 @@ private struct DayEntryRow: View {
                 Label(entry.symptomType?.name ?? "Unnamed", systemImage: entry.symptomType?.iconName ?? "circle")
                     .labelStyle(.titleAndIcon)
                 Spacer()
-                SeverityBadge(value: Double(entry.severity), precision: .integer)
+                SeverityBadge(value: Double(entry.severity), precision: .integer, isPositive: entry.symptomType?.isPositive ?? false)
             }
             HStack(spacing: 12) {
                 Text(timeLabel)
@@ -367,7 +386,7 @@ private struct DayEntryRow: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            Text(SeverityScale.descriptor(for: Int(entry.severity)))
+            Text(SeverityScale.descriptor(for: Int(entry.severity), isPositive: entry.symptomType?.isPositive ?? false))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             if let note = entry.note, !note.isEmpty {
@@ -407,7 +426,7 @@ private struct DayEntryRow: View {
 
         parts.append("\(entry.symptomType?.name ?? "Unnamed") at \(timeLabel)")
 
-        let severityDesc = SeverityScale.descriptor(for: Int(entry.severity))
+        let severityDesc = SeverityScale.descriptor(for: Int(entry.severity), isPositive: entry.symptomType?.isPositive ?? false)
         parts.append("Level \(entry.severity): \(severityDesc)")
 
         if let state = physiologicalState {
@@ -530,6 +549,12 @@ private struct DaySummaryCard: View {
     let comparison: DaySummary?
     let metrics: DayMetrics?
 
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var severityTint: Color {
+        summary.dominantColor(for: colorScheme)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .center) {
@@ -537,7 +562,7 @@ private struct DaySummaryCard: View {
                     Text("Average intensity")
                         .font(.headline)
                     ProgressView(value: min(summary.averageSeverity, 5), total: 5)
-                        .tint(summary.dominantColor)
+                        .tint(severityTint)
                 }
                 Spacer()
                 SeverityBadge(value: summary.averageSeverity)

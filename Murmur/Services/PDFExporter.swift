@@ -84,7 +84,7 @@ struct PDFExporter {
                 }
 
                 // Entry header
-                let symptomName = entry.symptomType?.name ?? "Unknown symptom"
+                let symptomName = entry.symptomType?.safeName ?? "Unknown symptom"
                 let headerAttributes: [NSAttributedString.Key: Any] = [
                     .font: headerFont,
                     .foregroundColor: UIColor.label
@@ -102,11 +102,9 @@ struct PDFExporter {
                     .foregroundColor: UIColor.secondaryLabel
                 ]
 
-                if let date = entry.createdAt {
-                    let dateStr = dateFormatter.string(from: date)
-                    dateStr.draw(at: CGPoint(x: margin, y: yPosition), withAttributes: bodyAttributes)
-                    yPosition += 15
-                }
+                let dateStr = dateFormatter.string(from: entry.effectiveDate)
+                dateStr.draw(at: CGPoint(x: margin, y: yPosition), withAttributes: bodyAttributes)
+                yPosition += 15
 
                 let severityStr = "Severity: \(entry.severity)/5"
                 severityStr.draw(at: CGPoint(x: margin, y: yPosition), withAttributes: bodyAttributes)

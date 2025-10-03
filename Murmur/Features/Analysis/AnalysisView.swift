@@ -130,6 +130,7 @@ private struct TrendsAnalysisView: View {
                     }
                 }
                 .listStyle(.insetGrouped)
+                .themedScrollBackground()
             }
         }
         .task(id: days) {
@@ -191,7 +192,7 @@ private struct TrendRow: View {
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Average severity")
+                    Text(trend.isPositive ? "Average level" : "Average severity")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Text(String(format: "%.1f", trend.averageSeverity))
@@ -230,17 +231,17 @@ private struct TrendRow: View {
 
     private var trendText: String {
         switch trend.trend {
-        case .increasing: return "Increasing"
+        case .increasing: return "Improving"
         case .stable: return "Stable"
-        case .decreasing: return "Decreasing"
+        case .decreasing: return "Worsening"
         }
     }
 
     private var trendColor: Color {
         switch trend.trend {
-        case .increasing: return .red
+        case .increasing: return .green  // Improving is good
         case .stable: return .orange
-        case .decreasing: return .green
+        case .decreasing: return .red     // Worsening is bad
         }
     }
 }
@@ -283,6 +284,7 @@ private struct CorrelationsAnalysisView: View {
                     }
                 }
                 .listStyle(.insetGrouped)
+                .themedScrollBackground()
             }
         }
         .task(id: days) {
@@ -360,7 +362,10 @@ private struct CorrelationRow: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Spacer()
-                    Text(String(format: "%.1f severity (%d times)", correlation.averageSeverityAfterActivity, correlation.occurrencesWithSymptom))
+                    Text(String(format: "%.1f %@ (%d times)",
+                        correlation.averageSeverityAfterActivity,
+                        correlation.isPositive ? "level" : "severity",
+                        correlation.occurrencesWithSymptom))
                         .font(.caption.weight(.medium))
                 }
 
@@ -369,7 +374,10 @@ private struct CorrelationRow: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Spacer()
-                    Text(String(format: "%.1f severity (%d times)", correlation.averageSeverityWithoutActivity, correlation.occurrencesWithoutSymptom))
+                    Text(String(format: "%.1f %@ (%d times)",
+                        correlation.averageSeverityWithoutActivity,
+                        correlation.isPositive ? "level" : "severity",
+                        correlation.occurrencesWithoutSymptom))
                         .font(.caption.weight(.medium))
                 }
             }
@@ -441,6 +449,7 @@ private struct PatternsAnalysisView: View {
                     }
                 }
                 .listStyle(.insetGrouped)
+                .themedScrollBackground()
             }
         }
         .task(id: days) {
@@ -608,6 +617,7 @@ private struct HealthAnalysisView: View {
                     }
                 }
                 .listStyle(.insetGrouped)
+                .themedScrollBackground()
             }
         }
         .task(id: days) {
@@ -681,7 +691,7 @@ private struct HealthCorrelationRow: View {
                let low = correlation.averageWithLowSymptoms {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
-                        Text("High symptom days:")
+                        Text(correlation.isPositive ? "High level days:" : "High symptom days:")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         Spacer()
@@ -690,7 +700,7 @@ private struct HealthCorrelationRow: View {
                     }
 
                     HStack {
-                        Text("Low symptom days:")
+                        Text(correlation.isPositive ? "Low level days:" : "Low symptom days:")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         Spacer()
@@ -741,9 +751,9 @@ private struct HealthCorrelationRow: View {
         let diffPercent = (diff / max(high, low)) * 100
 
         if correlation.correlationStrength > 0.3 {
-            return String(format: "Higher %@ linked to worse symptoms (%.0f%% difference)", correlation.metricName.lowercased(), diffPercent)
+            return String(format: "Higher %@ linked to worsening (%.0f%% difference)", correlation.metricName.lowercased(), diffPercent)
         } else if correlation.correlationStrength < -0.3 {
-            return String(format: "Lower %@ linked to worse symptoms (%.0f%% difference)", correlation.metricName.lowercased(), diffPercent)
+            return String(format: "Lower %@ linked to worsening (%.0f%% difference)", correlation.metricName.lowercased(), diffPercent)
         } else {
             return "Moderate correlation"
         }

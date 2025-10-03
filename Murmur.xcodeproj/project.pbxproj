@@ -13,6 +13,9 @@
 		44108DB22E8E8A8D007F6FAB /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 44108DB12E8E8A8D007F6FAB /* SwiftUI.framework */; };
 		44108DBF2E8E8A8D007F6FAB /* MurmurWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 44108DAE2E8E8A8D007F6FAB /* MurmurWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		44108DDE2E8E9AB8007F6FAB /* HapticFeedback.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44108DDD2E8E9AB8007F6FAB /* HapticFeedback.swift */; };
+		44108E2B2E8F679A007F6FAB /* AppearanceSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44108E2A2E8F679A007F6FAB /* AppearanceSettingsView.swift */; };
+		44108E2D2E8F688B007F6FAB /* ColorPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44108E2C2E8F688B007F6FAB /* ColorPalette.swift */; };
+		44108E812E8F7613007F6FAB /* CoreDataErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44108E7E2E8F7613007F6FAB /* CoreDataErrorView.swift */; };
 		44475B402E8D2CD2006438DE /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 44475B3F2E8D2CD2006438DE /* StoreKit.framework */; };
 		44475B422E8D2D7E006438DE /* TipJarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44475B412E8D2D7E006438DE /* TipJarView.swift */; };
 		44475B442E8D2DC6006438DE /* PDFExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44475B432E8D2DC6006438DE /* PDFExporter.swift */; };
@@ -28,6 +31,7 @@
 		50FCD2583C3972904F781005 /* ControlWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC05C62E0723AD655ACE4A0A /* ControlWidgets.swift */; };
 		5AD864AFE0518CA55402FA1E /* DataQueryIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DFC5CD06EE9972460083E73 /* DataQueryIntents.swift */; };
 		765998504779325DC574C6D7 /* LogSymptomIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51BE1580EC676A9A33F11C8F /* LogSymptomIntent.swift */; };
+		86141CF43085FD7FFDA3C36F /* AudioGraphs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 862F623A8C46759594F11F3D /* AudioGraphs.swift */; };
 		9E0C21E481F74C6BA32DCBBB /* DateFormatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E0C21E481F74C6BA32DCBBC /* DateFormatters.swift */; };
 		A2B02010 /* MurmurApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B01010 /* MurmurApp.swift */; };
 		A2B02011 /* MurmurAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B01011 /* MurmurAppDelegate.swift */; };
@@ -59,6 +63,7 @@
 		A2B02032 /* Color+Severity.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B01033 /* Color+Severity.swift */; };
 		A2B02033 /* SeverityBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B01034 /* SeverityBadge.swift */; };
 		A2B02034 /* SeverityScale.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B01035 /* SeverityScale.swift */; };
+		A2B02036 /* View+Theming.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B01036 /* View+Theming.swift */; };
 		A2B0E002 /* SymptomType.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B0E001 /* SymptomType.swift */; };
 		A2B0E004 /* SymptomEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B0E003 /* SymptomEntry.swift */; };
 		A2B0E006 /* Reminder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B0E005 /* Reminder.swift */; };
@@ -69,8 +74,12 @@
 		ANALYSIS003 /* AnalysisView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ANALYSIS004 /* AnalysisView.swift */; };
 		B09A9B12F896570C98E49753 /* AppEntities.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA39D1E360BD7C97C14FDE11 /* AppEntities.swift */; };
 		B741096A07E5F656E2D9184F /* OpenAddActivityIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51820B9607477A9575B9187D /* OpenAddActivityIntent.swift */; };
+		BC174A9C1ABC45DEF405BD51 /* AccessibilityExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7002EC0739A0D3210C666C8 /* AccessibilityExtensions.swift */; };
 		CA1E2DA3000000000000002 /* CalendarAssistant.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA1E2DA3000000000000001 /* CalendarAssistant.swift */; };
 		DB578AEAF10FBA1C5E082434 /* ActivityEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 922D6703277F7323BF3470A6 /* ActivityEvent.swift */; };
+		E20F1216BDCFFF8E17DC9410 /* AccessibilityRotor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C19C6F25EF0BEF376CF60D9 /* AccessibilityRotor.swift */; };
+		E46A5914391CFE61CD7DA469 /* VoiceCommandController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 426C7E1B57AA8F5774DD7D80 /* VoiceCommandController.swift */; };
+		E4788CA8FF55BB1B7DC75653 /* SwitchControlSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DCFCC024E1E7AC33F80C0F6 /* SwitchControlSupport.swift */; };
 		E9DC63EC491B2D771AEC863F /* AddActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 721640201DABA6889C773545 /* AddActivityView.swift */; };
 		LS0000002 /* LoadScore.swift in Sources */ = {isa = PBXBuildFile; fileRef = LS0000001 /* LoadScore.swift */; };
 /* End PBXBuildFile section */
@@ -115,12 +124,18 @@
 
 /* Begin PBXFileReference section */
 		1AF6250365C78E47312492C4 /* OpenAddEntryIntent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpenAddEntryIntent.swift; sourceTree = "<group>"; };
+		1DCFCC024E1E7AC33F80C0F6 /* SwitchControlSupport.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Accessibility/SwitchControlSupport.swift; sourceTree = "<group>"; };
 		1F55FB26D3635ADEEA930C23 /* ControlWidgets.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ControlWidgets.swift; sourceTree = "<group>"; };
+		426C7E1B57AA8F5774DD7D80 /* VoiceCommandController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Accessibility/VoiceCommandController.swift; sourceTree = "<group>"; };
 		43CA3AFB288C4542B8A88E79 /* AppConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConstants.swift; sourceTree = "<group>"; };
 		44108DAE2E8E8A8D007F6FAB /* MurmurWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MurmurWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		44108DAF2E8E8A8D007F6FAB /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		44108DB12E8E8A8D007F6FAB /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		44108DDD2E8E9AB8007F6FAB /* HapticFeedback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticFeedback.swift; sourceTree = "<group>"; };
+		44108DDF2E8F28C5007F6FAB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		44108E2A2E8F679A007F6FAB /* AppearanceSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppearanceSettingsView.swift; sourceTree = "<group>"; };
+		44108E2C2E8F688B007F6FAB /* ColorPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorPalette.swift; sourceTree = "<group>"; };
+		44108E7E2E8F7613007F6FAB /* CoreDataErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDataErrorView.swift; sourceTree = "<group>"; };
 		44475B3F2E8D2CD2006438DE /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 		44475B412E8D2D7E006438DE /* TipJarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TipJarView.swift; sourceTree = "<group>"; };
 		44475B432E8D2DC6006438DE /* PDFExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFExporter.swift; sourceTree = "<group>"; };
@@ -139,7 +154,9 @@
 		51820B9607477A9575B9187D /* OpenAddActivityIntent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpenAddActivityIntent.swift; sourceTree = "<group>"; };
 		51BE1580EC676A9A33F11C8F /* LogSymptomIntent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LogSymptomIntent.swift; sourceTree = "<group>"; };
 		721640201DABA6889C773545 /* AddActivityView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AddActivityView.swift; sourceTree = "<group>"; };
+		862F623A8C46759594F11F3D /* AudioGraphs.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Accessibility/AudioGraphs.swift; sourceTree = "<group>"; };
 		922D6703277F7323BF3470A6 /* ActivityEvent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActivityEvent.swift; sourceTree = "<group>"; };
+		9C19C6F25EF0BEF376CF60D9 /* AccessibilityRotor.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Accessibility/AccessibilityRotor.swift; sourceTree = "<group>"; };
 		9E0C21E481F74C6BA32DCBBC /* DateFormatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateFormatters.swift; sourceTree = "<group>"; };
 		A2B01000 /* Murmur.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Murmur.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2B01001 /* MurmurTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MurmurTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -174,6 +191,7 @@
 		A2B01033 /* Color+Severity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Severity.swift"; sourceTree = "<group>"; };
 		A2B01034 /* SeverityBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeverityBadge.swift; sourceTree = "<group>"; };
 		A2B01035 /* SeverityScale.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeverityScale.swift; sourceTree = "<group>"; };
+		A2B01036 /* View+Theming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Theming.swift"; sourceTree = "<group>"; };
 		A2B0DE90 /* Murmur.xcdatamodeld */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodeld; path = Murmur.xcdatamodeld; sourceTree = "<group>"; };
 		A2B0E001 /* SymptomType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymptomType.swift; sourceTree = "<group>"; };
 		A2B0E003 /* SymptomEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymptomEntry.swift; sourceTree = "<group>"; };
@@ -183,12 +201,13 @@
 		ANALYSIS004 /* AnalysisView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisView.swift; sourceTree = "<group>"; };
 		CA1E2DA3000000000000001 /* CalendarAssistant.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarAssistant.swift; sourceTree = "<group>"; };
 		CA39D1E360BD7C97C14FDE11 /* AppEntities.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppEntities.swift; sourceTree = "<group>"; };
+		D7002EC0739A0D3210C666C8 /* AccessibilityExtensions.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Accessibility/AccessibilityExtensions.swift; sourceTree = "<group>"; };
 		FC05C62E0723AD655ACE4A0A /* ControlWidgets.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ControlWidgets.swift; sourceTree = "<group>"; };
 		LS0000001 /* LoadScore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadScore.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		44108DC02E8E8A8D007F6FAB /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		44108DC02E8E8A8D007F6FAB /* Exceptions for "MurmurWidgets" folder in "MurmurWidgetsExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -198,8 +217,29 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		44108DB32E8E8A8D007F6FAB /* MurmurWidgets */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (44108DC02E8E8A8D007F6FAB /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = MurmurWidgets; sourceTree = "<group>"; };
-		444760B22E8E094F006438DE /* MurmurUITests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = MurmurUITests; sourceTree = "<group>"; };
+		44108DB32E8E8A8D007F6FAB /* MurmurWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				44108DC02E8E8A8D007F6FAB /* Exceptions for "MurmurWidgets" folder in "MurmurWidgetsExtension" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = MurmurWidgets;
+			sourceTree = "<group>";
+		};
+		444760B22E8E094F006438DE /* MurmurUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = MurmurUITests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -300,6 +340,7 @@
 				D41904ADFB8C455494A74245 /* Utilities */,
 				A2B0000D /* Resources */,
 				C1D6D9D6EFDB5D2FC9924128 /* AppIntents */,
+				D7C0EC0B846898F3D164006A /* Accessibility */,
 			);
 			path = Murmur;
 			sourceTree = "<group>";
@@ -307,6 +348,7 @@
 		A2B00006 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				44108E2C2E8F688B007F6FAB /* ColorPalette.swift */,
 				A2B01012 /* CoreDataStack.swift */,
 				A2B01019 /* DaySummary.swift */,
 				LS0000001 /* LoadScore.swift */,
@@ -338,8 +380,10 @@
 				A2B0101F /* SampleDataSeeder.swift */,
 				A2B01020 /* Color+Hex.swift */,
 				A2B01033 /* Color+Severity.swift */,
+				A2B01036 /* View+Theming.swift */,
 				444760AB2E8DF7F8006438DE /* DataBackupService.swift */,
 				A2B01035 /* SeverityScale.swift */,
+				44108E7E2E8F7613007F6FAB /* CoreDataErrorView.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -386,6 +430,7 @@
 		A2B0000C /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				44108E2A2E8F679A007F6FAB /* AppearanceSettingsView.swift */,
 				444760A92E8DF7E4006438DE /* DataManagementView.swift */,
 				44475B412E8D2D7E006438DE /* TipJarView.swift */,
 				A2B01024 /* LockOverlayView.swift */,
@@ -405,6 +450,7 @@
 		A2B0000D /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				44108DDF2E8F28C5007F6FAB /* Info.plist */,
 				444760A72E8DF56F006438DE /* LaunchScreen.storyboard */,
 				A2B0102E /* Assets.xcassets */,
 				A2B0102F /* Colors.xcassets */,
@@ -460,6 +506,18 @@
 				44108DDD2E8E9AB8007F6FAB /* HapticFeedback.swift */,
 			);
 			path = Utilities;
+			sourceTree = "<group>";
+		};
+		D7C0EC0B846898F3D164006A /* Accessibility */ = {
+			isa = PBXGroup;
+			children = (
+				D7002EC0739A0D3210C666C8 /* AccessibilityExtensions.swift */,
+				9C19C6F25EF0BEF376CF60D9 /* AccessibilityRotor.swift */,
+				862F623A8C46759594F11F3D /* AudioGraphs.swift */,
+				1DCFCC024E1E7AC33F80C0F6 /* SwitchControlSupport.swift */,
+				426C7E1B57AA8F5774DD7D80 /* VoiceCommandController.swift */,
+			);
+			name = Accessibility;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -655,6 +713,7 @@
 				A2B02012 /* CoreDataStack.swift in Sources */,
 				A2B02020 /* Color+Hex.swift in Sources */,
 				A2B02032 /* Color+Severity.swift in Sources */,
+				A2B02036 /* View+Theming.swift in Sources */,
 				44475B422E8D2D7E006438DE /* TipJarView.swift in Sources */,
 				A2B02034 /* SeverityScale.swift in Sources */,
 				A2B02022 /* DayDetailView.swift in Sources */,
@@ -679,9 +738,11 @@
 				A2B0201B /* HealthKitAssistant.swift in Sources */,
 				CA1E2DA3000000000000002 /* CalendarAssistant.swift in Sources */,
 				A2B02011 /* MurmurAppDelegate.swift in Sources */,
+				44108E2D2E8F688B007F6FAB /* ColorPalette.swift in Sources */,
 				A2B02025 /* SymptomTypeListView.swift in Sources */,
 				444760AC2E8DF7F8006438DE /* DataBackupService.swift in Sources */,
 				A2B0E002 /* SymptomType.swift in Sources */,
+				44108E2B2E8F679A007F6FAB /* AppearanceSettingsView.swift in Sources */,
 				44475B442E8D2DC6006438DE /* PDFExporter.swift in Sources */,
 				A2B0E004 /* SymptomEntry.swift in Sources */,
 				A2B0E006 /* Reminder.swift in Sources */,
@@ -696,10 +757,16 @@
 				A2BB3598EF5E4007CFBC3896 /* OpenAddEntryIntent.swift in Sources */,
 				B741096A07E5F656E2D9184F /* OpenAddActivityIntent.swift in Sources */,
 				18BD91891ED3865FCE879F9D /* GetRecentEntriesIntent.swift in Sources */,
+				44108E812E8F7613007F6FAB /* CoreDataErrorView.swift in Sources */,
 				5AD864AFE0518CA55402FA1E /* DataQueryIntents.swift in Sources */,
 				B09A9B12F896570C98E49753 /* AppEntities.swift in Sources */,
 				50FCD2583C3972904F781005 /* ControlWidgets.swift in Sources */,
 				A5EE7E6CDB0E12FD21D961D0 /* ControlWidgets.swift in Sources */,
+				BC174A9C1ABC45DEF405BD51 /* AccessibilityExtensions.swift in Sources */,
+				E20F1216BDCFFF8E17DC9410 /* AccessibilityRotor.swift in Sources */,
+				86141CF43085FD7FFDA3C36F /* AudioGraphs.swift in Sources */,
+				E4788CA8FF55BB1B7DC75653 /* SwitchControlSupport.swift in Sources */,
+				E46A5914391CFE61CD7DA469 /* VoiceCommandController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -754,7 +821,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 1.12;
+				MARKETING_VERSION = 1.15;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.cornelius-bell.Murmur.MurmurWidgets";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -790,7 +857,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 1.12;
+				MARKETING_VERSION = 1.15;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.cornelius-bell.Murmur.MurmurWidgets";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -907,7 +974,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -964,7 +1031,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
@@ -982,7 +1049,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Murmur/Murmur.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1000;
+				CURRENT_PROJECT_VERSION = 1030;
 				DEVELOPMENT_TEAM = HK6R36PLNR;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -993,7 +1060,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.12;
+				MARKETING_VERSION = 1.20;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.cornelius-bell.Murmur";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -1009,7 +1076,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Murmur/Murmur.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1000;
+				CURRENT_PROJECT_VERSION = 1030;
 				DEVELOPMENT_TEAM = HK6R36PLNR;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -1020,7 +1087,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.12;
+				MARKETING_VERSION = 1.20;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.cornelius-bell.Murmur";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -1032,11 +1099,12 @@
 		A2B04021 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = MurmurTests/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1047,17 +1115,19 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.9;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Murmur.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Murmur";
 			};
 			name = Debug;
 		};
 		A2B04022 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = MurmurTests/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1068,6 +1138,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.9;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Murmur.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Murmur";
 			};
 			name = Release;
 		};

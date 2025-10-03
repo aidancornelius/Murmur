@@ -16,10 +16,14 @@ final class CalendarAssistant: ObservableObject {
     }
 
     private func updateAuthorizationStatus() {
+        authorizationStatus = EKEventStore.authorizationStatus(for: .event)
+    }
+
+    private var hasCalendarAccess: Bool {
         if #available(iOS 17.0, *) {
-            authorizationStatus = EKEventStore.authorizationStatus(for: .event)
+            return authorizationStatus == .fullAccess || authorizationStatus == .writeOnly
         } else {
-            authorizationStatus = EKEventStore.authorizationStatus(for: .event)
+            return authorizationStatus == .authorized
         }
     }
 
@@ -41,7 +45,7 @@ final class CalendarAssistant: ObservableObject {
     }
 
     func fetchRecentEvents(daysBack: Int = 7) async {
-        guard authorizationStatus == .fullAccess else {
+        guard hasCalendarAccess else {
             logger.warning("Calendar access not granted")
             return
         }
@@ -57,7 +61,7 @@ final class CalendarAssistant: ObservableObject {
     }
 
     func fetchUpcomingEvents(daysAhead: Int = 1) async {
-        guard authorizationStatus == .fullAccess else {
+        guard hasCalendarAccess else {
             logger.warning("Calendar access not granted")
             return
         }
@@ -73,7 +77,7 @@ final class CalendarAssistant: ObservableObject {
     }
 
     func fetchTodaysEvents() async {
-        guard authorizationStatus == .fullAccess else {
+        guard hasCalendarAccess else {
             logger.warning("Calendar access not granted")
             return
         }
