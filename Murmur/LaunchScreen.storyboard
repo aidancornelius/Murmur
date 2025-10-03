@@ -17,10 +17,10 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="LaunchScreenIcon" translatesAutoresizingMaskIntoConstraints="NO" id="tWc-Dq-wcI">
-                                <rect key="frame" x="146.66666666666666" y="376" width="100" height="100"/>
+                                <rect key="frame" x="96.5" y="326" width="200" height="200"/>
                                 <constraints>
-                                    <constraint firstAttribute="width" constant="100" id="8XL-2h-bDl"/>
-                                    <constraint firstAttribute="height" constant="100" id="K3T-Nh-dZr"/>
+                                    <constraint firstAttribute="width" constant="200" id="8XL-2h-bDl"/>
+                                    <constraint firstAttribute="height" constant="200" id="K3T-Nh-dZr"/>
                                 </constraints>
                             </imageView>
                         </subviews>
@@ -38,7 +38,7 @@
         </scene>
     </scenes>
     <resources>
-        <image name="LaunchScreenIcon" width="100" height="100"/>
+        <image name="LaunchScreenIcon" width="200" height="200"/>
         <namedColor name="LaunchScreenBackground">
             <color red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </namedColor>

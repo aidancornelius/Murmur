@@ -60,6 +60,7 @@ struct AddEntryView: View {
                     Text("Add some symptoms in Settings to get started.")
                         .foregroundStyle(.secondary)
                 }
+                .themedFormSection()
             } else {
                 Section {
                     SymptomMultiPicker(
@@ -77,6 +78,7 @@ struct AddEntryView: View {
                         Text("\(selectedSymptoms.count)/5 selected")
                     }
                 }
+                .themedFormSection()
             }
 
             if !selectedSymptoms.isEmpty {
@@ -147,10 +149,12 @@ struct AddEntryView: View {
                         }
                     }
                 }
+                .themedFormSection()
 
                 Section {
                     DatePicker("Time", selection: $timestamp)
                 }
+                .themedFormSection()
             }
 
             Section("Additional details") {
@@ -167,15 +171,17 @@ struct AddEntryView: View {
                     LocationStatusView(state: locationAssistant.state)
                 }
             }
+            .themedFormSection()
 
             if let errorMessage {
                 Section {
                     Text(errorMessage)
                         .foregroundStyle(.red)
                 }
+                .themedFormSection()
             }
         }
-        .themedScrollBackground()
+        .themedForm()
         .navigationTitle("How are you feeling?")
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
@@ -478,6 +484,12 @@ private struct AllSymptomsSheet: View {
     @State private var showCreateSheet = false
     @FocusState private var isSearchFocused: Bool
     @Environment(\.managedObjectContext) private var context
+    @EnvironmentObject private var appearanceManager: AppearanceManager
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var palette: ColorPalette {
+        appearanceManager.currentPalette(for: colorScheme)
+    }
 
     private var filteredSymptomTypes: [SymptomType] {
         if searchText.isEmpty {
@@ -538,7 +550,7 @@ private struct AllSymptomsSheet: View {
                 }
             }
             .padding(8)
-            .background(Color(.systemGray6))
+            .background(palette.surfaceColor)
             .clipShape(RoundedRectangle(cornerRadius: 10))
             .padding()
 
@@ -596,7 +608,7 @@ private struct AllSymptomsSheet: View {
         .navigationTitle("All symptoms")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
+            ToolbarItem(placement: .confirmationAction) {
                 Button("Done") { isPresented = false }
             }
         }

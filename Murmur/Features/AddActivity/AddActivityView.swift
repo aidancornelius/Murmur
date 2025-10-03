@@ -57,6 +57,7 @@ struct AddActivityView: View {
                     .accessibilityHint("Requests permission to access your calendar")
                 }
             }
+            .themedFormSection()
 
             Section {
                 VStack(alignment: .leading, spacing: 16) {
@@ -77,6 +78,7 @@ struct AddActivityView: View {
                     )
                 }
             }
+            .themedFormSection()
 
             Section {
                 DatePicker("Time", selection: $timestamp)
@@ -90,22 +92,25 @@ struct AddActivityView: View {
                         .frame(width: 100)
                 }
             }
+            .themedFormSection()
 
             Section("Additional details") {
                 TextField("Notes (optional)", text: $note, axis: .vertical)
                     .lineLimit(1...4)
                     .accessibilityHint("Add any additional details about this activity")
             }
+            .themedFormSection()
 
             if let errorMessage {
                 Section {
                     Text(errorMessage)
                         .foregroundStyle(.red)
                 }
+                .themedFormSection()
             }
         }
         .navigationTitle("Log an activity")
-        .themedScrollBackground()
+        .themedForm()
         .onAppear {
             Task {
                 if calendarAssistant.authorizationStatus == .fullAccess {

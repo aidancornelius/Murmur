@@ -34,6 +34,12 @@ struct SettingsRootView: View {
                     .accessibilityHint("Set up reminders to log symptoms regularly")
                     .listRowBackground(palette.surfaceColor)
             }
+            
+            Section("Personalisation") {
+                NavigationLink("Appearance", value: SettingsRoute.appearance)
+                    .accessibilityHint("Customise colour schemes for light and dark mode")
+                    .listRowBackground(palette.surfaceColor)
+            }
 
             Section("Your health data") {
                 NavigationLink("Connect to Health", value: SettingsRoute.healthKit)
@@ -53,12 +59,6 @@ struct SettingsRootView: View {
                     .listRowBackground(palette.surfaceColor)
                 NavigationLink("Privacy & security", value: SettingsRoute.security)
                     .accessibilityHint("Enable biometric lock and review privacy options")
-                    .listRowBackground(palette.surfaceColor)
-            }
-
-            Section("Personalisation") {
-                NavigationLink("Appearance", value: SettingsRoute.appearance)
-                    .accessibilityHint("Customise colour schemes for light and dark mode")
                     .listRowBackground(palette.surfaceColor)
             }
 
@@ -133,7 +133,7 @@ struct SettingsRootView: View {
                 } else {
                     NavigationLink(value: SettingsRoute.tipJar) {
                         HStack(spacing: 12) {
-                            Image(systemName: "heart")
+                            Image(systemName: "heart.fill")
                                 .foregroundStyle(palette.accentColor)
                                 .font(.title3)
                                 .frame(width: 28)

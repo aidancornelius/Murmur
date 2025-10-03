@@ -196,46 +196,37 @@ private struct FloatingActionButtons: View {
     }
 
     var body: some View {
+        // main buttons -- and some glass
         HStack {
-            Spacer()
             if #available(iOS 26.0, *) {
-                GlassEffectContainer(spacing: 20.0) {
-                    HStack(spacing: 20.0) {
+                Spacer()
+                GlassEffectContainer(spacing: 40.0) {
+                    HStack(spacing: 8.0) {
                         Button(action: onSymptom) {
                             Image(systemName: "heart.text.square")
-                                .font(.system(size: 24))
-                                .frame(width: 60, height: 60)
+                                .font(.system(size: 28, weight: .medium))
+                                .frame(width: 72, height: 72)
+                                .foregroundStyle(palette.accentColor)
                         }
-                        .glassEffect(in: Circle())
-                        .tint(palette.accentColor)
+                        .glassEffect(.regular.interactive())
                         .accessibilityLabel("Log symptom")
                         .accessibilityHint("Opens form to record a symptom")
 
                         Button(action: onActivity) {
                             Image(systemName: "calendar.badge.clock")
-                                .font(.system(size: 24))
-                                .frame(width: 60, height: 60)
+                                .font(.system(size: 28, weight: .medium))
+                                .frame(width: 72, height: 72)
+                                .foregroundStyle(palette.accentColor)
                         }
-                        .glassEffect(in: Circle())
-                        .tint(palette.accentColor.opacity(0.85))
+                        .glassEffect(.regular.interactive())
                         .accessibilityLabel("Log activity")
                         .accessibilityHint("Opens form to record an activity or event")
                     }
                 }
                 .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
             } else {
+                Spacer()
                 HStack(spacing: 12) {
-                    Button(action: onSymptom) {
-                        Image(systemName: "heart.text.square")
-                            .font(.title3.weight(.semibold))
-                            .padding(16)
-                            .foregroundStyle(palette.accentColor)
-                            .background(.ultraThinMaterial, in: Circle())
-                    }
-                    .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
-                    .accessibilityLabel("Log symptom")
-                    .accessibilityHint("Opens form to record a symptom")
-
                     Button(action: onActivity) {
                         Image(systemName: "calendar.badge.clock")
                             .font(.title3.weight(.semibold))
@@ -246,6 +237,17 @@ private struct FloatingActionButtons: View {
                     .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
                     .accessibilityLabel("Log activity")
                     .accessibilityHint("Opens form to record an activity or event")
+
+                    Button(action: onSymptom) {
+                        Image(systemName: "heart.text.square")
+                            .font(.title3.weight(.semibold))
+                            .padding(16)
+                            .foregroundStyle(palette.accentColor)
+                            .background(.ultraThinMaterial, in: Circle())
+                    }
+                    .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+                    .accessibilityLabel("Log symptom")
+                    .accessibilityHint("Opens form to record a symptom")
                 }
             }
         }

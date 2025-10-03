@@ -9,7 +9,7 @@ class StoreManager: ObservableObject {
     @Published private(set) var hasTipped: Bool = false
 
     private let logger = Logger(subsystem: "app.murmur", category: "StoreKit")
-    private let productIDs = ["com.murmur.tip.small"]
+    private let productIDs = ["com.murmur.tip.small", "com.murmur.tip.generous"]
 
     enum PurchaseState: Equatable {
         case idle

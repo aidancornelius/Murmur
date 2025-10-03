@@ -29,7 +29,7 @@ struct SymptomTypeListView: View {
                 Text("Track the symptoms that matter to you. Your custom symptoms help you notice patterns and understand what affects your wellbeing. Add one with the button above.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                    .listRowBackground(Color.clear)
+                    .listRowBackground(palette.backgroundColor)
             }
 
             ForEach(types) { type in

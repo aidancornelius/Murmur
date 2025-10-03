@@ -23,7 +23,23 @@ final class MurmurAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificati
             MurmurAppShortcuts.updateAppShortcutParameters()
         }
 
+        // Configure UIKit appearance for forms
+        configureFormAppearance()
+
         return true
+    }
+
+    private func configureFormAppearance() {
+        // Clear default form backgrounds
+        UITableView.appearance().backgroundColor = .clear
+        UITableViewCell.appearance().backgroundColor = .clear
+
+        // Configure text field appearances
+        UITextField.appearance().backgroundColor = .clear
+        UITextField.appearance().textColor = .label
+
+        // Configure section header/footer
+        UITableViewHeaderFooterView.appearance().tintColor = .clear
     }
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {

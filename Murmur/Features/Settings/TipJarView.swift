@@ -43,25 +43,11 @@ struct TipJarView: View {
                     .padding(.horizontal)
             }
 
-            if let product = store.products.first {
+            if !store.products.isEmpty {
                 VStack(spacing: 16) {
-                    Button(action: {
-                        Task {
-                            await store.purchase(product)
-                        }
-                    }) {
-                        HStack {
-                            Text("Send a tip")
-                            Spacer()
-                            Text(product.displayPrice)
-                        }
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                       .background(Color.accentColor)
-                       .foregroundStyle(.white)
-                        .cornerRadius(12)
+                    ForEach(store.products.sorted(by: { $0.price < $1.price }), id: \.id) { product in
+                        tipButton(for: product)
                     }
-                    .disabled(store.purchaseState == .purchasing)
 
                     if store.purchaseState == .purchasing {
                         ProgressView()
@@ -80,6 +66,54 @@ struct TipJarView: View {
             }
 
             Spacer()
+        }
+    }
+
+    @ViewBuilder
+    private func tipButton(for product: Product) -> some View {
+        Button(action: {
+            Task {
+                await store.purchase(product)
+            }
+        }) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text(product.displayName)
+                        .font(.headline)
+                    Spacer()
+                    Text(product.displayPrice)
+                        .font(.headline)
+                }
+                // Products in StoreKit Configuration have descriptions in localizations
+                if product.id == "com.murmur.tip.small" {
+                    Text("Support Murmur's development with a small tip")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.8))
+                        .multilineTextAlignment(.leading)
+                } else if product.id == "com.murmur.tip.generous" {
+                    Text("Generous support for Murmur's development")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.8))
+                        .multilineTextAlignment(.leading)
+                }
+            }
+            .padding()
+            .frame(maxWidth: .infinity)
+            .background(backgroundForProduct(product))
+            .foregroundStyle(.white)
+            .cornerRadius(12)
+        }
+        .disabled(store.purchaseState == .purchasing)
+    }
+
+    @ViewBuilder
+    private func backgroundForProduct(_ product: Product) -> some View {
+        if product.id == "com.murmur.tip.generous" {
+            LinearGradient(colors: [palette.accentColor, palette.accentColor.opacity(0.8)],
+                          startPoint: .topLeading,
+                          endPoint: .bottomTrailing)
+        } else {
+            palette.accentColor
         }
     }
 

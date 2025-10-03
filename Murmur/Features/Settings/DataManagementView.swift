@@ -226,6 +226,9 @@ struct BackupView: View {
             .sheet(isPresented: $showShareSheet) {
                 if let backupURL {
                     ShareSheet(items: [backupURL])
+                        .onDisappear {
+                            dismiss()
+                        }
                 }
             }
         }
@@ -250,7 +253,6 @@ struct BackupView: View {
                     isProcessing = false
                     successMessage = "Backup created successfully"
                     showShareSheet = true
-                    dismiss()
                 }
             } catch {
                 await MainActor.run {

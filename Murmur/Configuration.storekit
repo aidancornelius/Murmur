@@ -11,12 +11,27 @@
       "localizations" : [
         {
           "description" : "Support Murmur's development with a small tip",
-          "displayName" : "Tip jar",
+          "displayName" : "Small tip",
           "locale" : "en_AU"
         }
       ],
       "productID" : "com.murmur.tip.small",
       "referenceName" : "Small tip",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "19.99",
+      "familyShareable" : false,
+      "internalID" : "6738264820",
+      "localizations" : [
+        {
+          "description" : "Generous support for Murmur's development",
+          "displayName" : "Generous donation",
+          "locale" : "en_AU"
+        }
+      ],
+      "productID" : "com.murmur.tip.generous",
+      "referenceName" : "Generous donation",
       "type" : "Consumable"
     }
   ],
