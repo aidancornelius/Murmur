@@ -1,3 +1,10 @@
+//
+//  HapticFeedback.swift
+//  Murmur
+//
+//  Created by Aidan Cornelius-Bell on 02/10/2025.
+//
+
 import UIKit
 
 /// Provides light haptic feedback for user interactions throughout the app

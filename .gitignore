@@ -81,6 +81,17 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+fastlane/metadata/
+fastlane/Fastfile.swift
+fastlane/Snapfile
+
+# Screenshots
+screenshots/
+Screenshots/
+*.png
+*.jpg
+*.jpeg
+!AppIcon*.png
 
 # Code Injection
 #

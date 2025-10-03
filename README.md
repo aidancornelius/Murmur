@@ -2,6 +2,8 @@
 
 A gentle iOS companion for tracking symptoms and daily patterns.
 
+[![Download on the App Store](https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg)](https://apps.apple.com/us/app/murmur/id6753282722)
+
 ## What it does
 
 Murmur helps you notice and understand patterns in how you feel. Whether you're managing a chronic condition, tracking symptoms, or just trying to understand what affects your wellbeing, it offers a simple way to log what's happening and see connections over time.

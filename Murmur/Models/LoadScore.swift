@@ -1,3 +1,10 @@
+//
+//  LoadScore.swift
+//  Murmur
+//
+//  Created by Aidan Cornelius-Bell on 02/10/2025.
+//
+
 import Foundation
 
 /// Represents the accumulated activity load with symptom-aware decay
