@@ -21,34 +21,84 @@ struct AnalysisView: View {
         case correlations
         case patterns
         case health
+        case calendar
+        case history
+    }
+
+    private var tabTitle: String {
+        switch selectedTab {
+        case .trends: return "Trends"
+        case .correlations: return "Activities"
+        case .patterns: return "Patterns"
+        case .health: return "Health"
+        case .calendar: return "Calendar"
+        case .history: return "History"
+        }
     }
 
     var body: some View {
         VStack(spacing: 0) {
-            Picker("Analysis type", selection: $selectedTab) {
-                Text("Trends").tag(AnalysisTab.trends)
+            Menu {
+                Button {
+                    selectedTab = .trends
+                } label: {
+                    Label("Trends", systemImage: "chart.line.uptrend.xyaxis")
+                }
+                Button {
+                    selectedTab = .calendar
+                } label: {
+                    Label("Calendar", systemImage: "calendar")
+                }
+                Button {
+                    selectedTab = .history
+                } label: {
+                    Label("History", systemImage: "list.bullet")
+                }
                 if hasActivityData {
-                    Text("Activities").tag(AnalysisTab.correlations)
+                    Button {
+                        selectedTab = .correlations
+                    } label: {
+                        Label("Activities", systemImage: "figure.walk")
+                    }
                 }
-                Text("Patterns").tag(AnalysisTab.patterns)
+                Button {
+                    selectedTab = .patterns
+                } label: {
+                    Label("Patterns", systemImage: "clock")
+                }
                 if hasHealthData {
-                    Text("Health").tag(AnalysisTab.health)
+                    Button {
+                        selectedTab = .health
+                    } label: {
+                        Label("Health", systemImage: "heart")
+                    }
                 }
+            } label: {
+                HStack {
+                    Text(tabTitle)
+                        .font(.headline)
+                    Image(systemName: "chevron.down")
+                        .font(.caption)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color.gray.opacity(0.1), in: Capsule())
             }
-            .pickerStyle(.segmented)
             .padding()
             .task {
                 await checkAvailableData()
             }
 
-            Picker("Period", selection: $selectedPeriod) {
-                Text("7 days").tag(7)
-                Text("30 days").tag(30)
-                Text("90 days").tag(90)
+            if selectedTab != .calendar && selectedTab != .history {
+                Picker("Period", selection: $selectedPeriod) {
+                    Text("7 days").tag(7)
+                    Text("30 days").tag(30)
+                    Text("90 days").tag(90)
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal)
+                .padding(.bottom)
             }
-            .pickerStyle(.segmented)
-            .padding(.horizontal)
-            .padding(.bottom)
 
             switch selectedTab {
             case .trends:
@@ -59,6 +109,10 @@ struct AnalysisView: View {
                 PatternsAnalysisView(days: selectedPeriod)
             case .health:
                 HealthAnalysisView(days: selectedPeriod)
+            case .calendar:
+                CalendarHeatMapView()
+            case .history:
+                SymptomHistoryView()
             }
         }
         .navigationTitle("Analysis")
