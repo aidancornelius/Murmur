@@ -27,6 +27,7 @@ extension SymptomType {
     @NSManaged public var isStarred: Bool
     @NSManaged public var starOrder: Int16
     @NSManaged public var entries: NSSet?
+    @NSManaged public var sleepEvents: NSSet?
 }
 
 // MARK: Generated accessors for entries
@@ -42,6 +43,21 @@ extension SymptomType {
 
     @objc(removeEntries:)
     @NSManaged public func removeFromEntries(_ values: NSSet)
+}
+
+// MARK: Generated accessors for sleepEvents
+extension SymptomType {
+    @objc(addSleepEventsObject:)
+    @NSManaged public func addToSleepEvents(_ value: SleepEvent)
+
+    @objc(removeSleepEventsObject:)
+    @NSManaged public func removeFromSleepEvents(_ value: SleepEvent)
+
+    @objc(addSleepEvents:)
+    @NSManaged public func addToSleepEvents(_ values: NSSet)
+
+    @objc(removeSleepEvents:)
+    @NSManaged public func removeFromSleepEvents(_ values: NSSet)
 }
 
 extension SymptomType: Identifiable {

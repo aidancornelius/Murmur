@@ -24,30 +24,91 @@ struct AddActivityView: View {
     @State private var durationMinutes: String = ""
     @State private var isSaving = false
     @State private var errorMessage: String?
-    @State private var showingCalendarPicker = false
     @State private var selectedCalendarEvent: EKEvent?
     @State private var calendarEventID: String?
+    @FocusState private var isNameFieldFocused: Bool
+    @State private var parsedData: ParsedActivityInput?
+    @State private var userEditedTimestamp = false
+    @State private var userEditedDuration = false
+    @State private var calendarEventsExpanded = true
+
+    var allFilteredEvents: [EKEvent] {
+        guard calendarAssistant.authorizationStatus == .fullAccess else {
+            return []
+        }
+
+        let searchText = name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if searchText.isEmpty {
+            return calendarAssistant.recentEvents
+        }
+
+        return calendarAssistant.recentEvents.filter { event in
+            (event.title?.lowercased().contains(searchText) ?? false) ||
+            (event.location?.lowercased().contains(searchText) ?? false) ||
+            (event.notes?.lowercased().contains(searchText) ?? false)
+        }
+    }
+
+    var currentlyOccurringEvents: [EKEvent] {
+        let now = Date()
+        return allFilteredEvents.filter { event in
+            guard let startDate = event.startDate, let endDate = event.endDate else { return false }
+            return startDate <= now && endDate >= now
+        }
+    }
+
+    var recentlyOccurredEvents: [EKEvent] {
+        let now = Date()
+        let fortyFiveMinutesAgo = now.addingTimeInterval(-45 * 60)
+        return allFilteredEvents.filter { event in
+            guard let endDate = event.endDate else { return false }
+            return endDate >= fortyFiveMinutesAgo && endDate < now
+        }
+    }
+
+    var earlierTodayEvents: [EKEvent] {
+        let now = Date()
+        let fortyFiveMinutesAgo = now.addingTimeInterval(-45 * 60)
+        return allFilteredEvents.filter { event in
+            guard let endDate = event.endDate else { return false }
+            return endDate < fortyFiveMinutesAgo
+        }
+    }
+
+    var upcomingTodayEvents: [EKEvent] {
+        let now = Date()
+        return allFilteredEvents.filter { event in
+            guard let startDate = event.startDate else { return false }
+            return startDate > now
+        }
+    }
+
+    var hasAnyEvents: Bool {
+        !allFilteredEvents.isEmpty
+    }
+
+    var shouldCollapseCalendar: Bool {
+        !name.isEmpty || selectedCalendarEvent != nil
+    }
 
     var body: some View {
         Form {
-            Section("What happened") {
-                TextField("Activity name", text: $name)
+            Section {
+                TextField("What happened? (Event name)", text: $name, axis: .vertical)
+                    .focused($isNameFieldFocused)
+                    .lineLimit(1...3)
                     .accessibilityHint("Enter the name of the activity or event")
-
-                if calendarAssistant.authorizationStatus == .fullAccess {
-                    Button(action: { showingCalendarPicker = true }) {
-                        HStack {
-                            Image(systemName: "calendar")
-                            Text("Import from calendar")
-                            Spacer()
-                            if selectedCalendarEvent != nil {
-                                Image(systemName: "checkmark")
-                                    .foregroundStyle(.green)
+                    .onChange(of: name) { oldValue, newValue in
+                        parseNaturalLanguage(newValue)
+                        // Auto-collapse when user starts typing
+                        if !newValue.isEmpty && oldValue.isEmpty {
+                            withAnimation {
+                                calendarEventsExpanded = false
                             }
                         }
                     }
-                    .accessibilityHint("Select a calendar event to pre-fill activity details")
-                } else if calendarAssistant.authorizationStatus == .notDetermined {
+
+                if calendarAssistant.authorizationStatus == .notDetermined {
                     Button(action: {
                         Task {
                             let granted = await calendarAssistant.requestAccess()
@@ -58,13 +119,123 @@ struct AddActivityView: View {
                     }) {
                         HStack {
                             Image(systemName: "calendar.badge.plus")
+                                .foregroundStyle(.secondary)
                             Text("Connect calendar")
+                                .font(.subheadline)
+                            Spacer()
                         }
                     }
                     .accessibilityHint("Requests permission to access your calendar")
                 }
+
+                // Collapsed calendar button
+                if hasAnyEvents && !calendarEventsExpanded && shouldCollapseCalendar {
+                    Button(action: {
+                        withAnimation {
+                            calendarEventsExpanded = true
+                        }
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "calendar")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text("Or choose from today's events")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Image(systemName: "chevron.down")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
             }
             .themedFormSection()
+
+            // Expanded calendar events
+            if hasAnyEvents && calendarEventsExpanded {
+                Section {
+                    VStack(alignment: .leading, spacing: 12) {
+                        // Currently occurring events
+                        if !currentlyOccurringEvents.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Now")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .textCase(.uppercase)
+
+                                ForEach(currentlyOccurringEvents, id: \.eventIdentifier) { event in
+                                    CalendarEventButton(event: event, onSelect: {
+                                        populateFromCalendarEvent(event)
+                                        withAnimation {
+                                            calendarEventsExpanded = false
+                                        }
+                                    })
+                                }
+                            }
+                        }
+
+                        // Recently occurred events
+                        if !recentlyOccurredEvents.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Recent")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .textCase(.uppercase)
+
+                                ForEach(recentlyOccurredEvents, id: \.eventIdentifier) { event in
+                                    CalendarEventButton(event: event, onSelect: {
+                                        populateFromCalendarEvent(event)
+                                        withAnimation {
+                                            calendarEventsExpanded = false
+                                        }
+                                    })
+                                }
+                            }
+                        }
+
+                        // Earlier today events (for searching old events like gym at 8am when it's 4pm)
+                        if !earlierTodayEvents.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Earlier today")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .textCase(.uppercase)
+
+                                ForEach(earlierTodayEvents, id: \.eventIdentifier) { event in
+                                    CalendarEventButton(event: event, onSelect: {
+                                        populateFromCalendarEvent(event)
+                                        withAnimation {
+                                            calendarEventsExpanded = false
+                                        }
+                                    })
+                                }
+                            }
+                        }
+
+                        // Upcoming events
+                        if !upcomingTodayEvents.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Later today")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .textCase(.uppercase)
+
+                                ForEach(upcomingTodayEvents, id: \.eventIdentifier) { event in
+                                    CalendarEventButton(event: event, onSelect: {
+                                        populateFromCalendarEvent(event)
+                                        withAnimation {
+                                            calendarEventsExpanded = false
+                                        }
+                                    })
+                                }
+                            }
+                        }
+                    }
+                }
+                .themedFormSection()
+            }
 
             Section {
                 VStack(alignment: .leading, spacing: 16) {
@@ -89,6 +260,9 @@ struct AddActivityView: View {
 
             Section {
                 DatePicker("Time", selection: $timestamp)
+                    .onChange(of: timestamp) { _, _ in
+                        userEditedTimestamp = true
+                    }
 
                 HStack {
                     Text("Duration (minutes)")
@@ -97,11 +271,14 @@ struct AddActivityView: View {
                         .keyboardType(.numberPad)
                         .multilineTextAlignment(.trailing)
                         .frame(width: 100)
+                        .onChange(of: durationMinutes) { _, _ in
+                            userEditedDuration = true
+                        }
                 }
             }
             .themedFormSection()
 
-            Section("Additional details") {
+            Section {
                 TextField("Notes (optional)", text: $note, axis: .vertical)
                     .lineLimit(1...4)
                     .accessibilityHint("Add any additional details about this activity")
@@ -119,21 +296,12 @@ struct AddActivityView: View {
         .navigationTitle("Log an activity")
         .themedForm()
         .onAppear {
+            isNameFieldFocused = true
             Task {
                 if calendarAssistant.authorizationStatus == .fullAccess {
                     await calendarAssistant.fetchTodaysEvents()
                 }
             }
-        }
-        .sheet(isPresented: $showingCalendarPicker) {
-            CalendarEventPicker(
-                events: calendarAssistant.recentEvents,
-                selectedEvent: $selectedCalendarEvent,
-                onSelect: { event in
-                    populateFromCalendarEvent(event)
-                    showingCalendarPicker = false
-                }
-            )
         }
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
@@ -151,6 +319,20 @@ struct AddActivityView: View {
                 }
                 .disabled(isSaving || name.trimmingCharacters(in: .whitespaces).isEmpty)
             }
+        }
+    }
+
+    private func parseNaturalLanguage(_ input: String) {
+        let parsed = NaturalLanguageParser.parse(input)
+        parsedData = parsed
+
+        // Only update fields if the user hasn't manually edited them
+        if let parsedTimestamp = parsed.timestamp, !userEditedTimestamp {
+            timestamp = parsedTimestamp
+        }
+
+        if let parsedDuration = parsed.durationMinutes, !userEditedDuration {
+            durationMinutes = "\(parsedDuration)"
         }
     }
 
@@ -182,7 +364,13 @@ struct AddActivityView: View {
         activity.id = UUID()
         activity.createdAt = Date()
         activity.backdatedAt = timestamp
-        activity.name = name.trimmingCharacters(in: .whitespaces)
+
+        // Use cleaned text if available from natural language parsing, otherwise use raw name
+        let activityName = parsedData?.cleanedText.isEmpty == false
+            ? parsedData!.cleanedText
+            : name.trimmingCharacters(in: .whitespaces)
+        activity.name = activityName
+
         activity.note = note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : note
         activity.physicalExertion = Int16(physicalExertion)
         activity.cognitiveExertion = Int16(cognitiveExertion)
@@ -207,97 +395,53 @@ struct AddActivityView: View {
     }
 }
 
-private struct CalendarEventPicker: View {
-    let events: [EKEvent]
-    @Binding var selectedEvent: EKEvent?
-    let onSelect: (EKEvent) -> Void
-    @Environment(\.dismiss) private var dismiss
+private struct CalendarEventButton: View {
+    let event: EKEvent
+    let onSelect: () -> Void
 
     var body: some View {
-        NavigationStack {
-            List {
-                if events.isEmpty {
-                    Section {
-                        Text("No events found for today")
-                            .foregroundStyle(.secondary)
-                    }
-                } else {
-                    ForEach(events, id: \.eventIdentifier) { event in
-                        Button(action: {
-                            selectedEvent = event
-                            onSelect(event)
-                        }) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(event.title ?? "Untitled event")
-                                    .font(.headline)
-                                    .foregroundStyle(.primary)
+        Button(action: onSelect) {
+            HStack(spacing: 8) {
+                Image(systemName: "calendar")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 16)
 
-                                HStack {
-                                    if let startDate = event.startDate {
-                                        Text(startDate, style: .time)
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                    if let endDate = event.endDate, let startDate = event.startDate {
-                                        Text("–")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                        Text(endDate, style: .time)
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                        let duration = Int(endDate.timeIntervalSince(startDate) / 60)
-                                        Text("(\(duration) min)")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(event.title ?? "Untitled event")
+                        .font(.subheadline)
+                        .foregroundStyle(.primary)
 
-                                if let location = event.location, !location.isEmpty {
-                                    Label(location, systemImage: "mappin.circle")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                            .padding(.vertical, 4)
+                    HStack(spacing: 4) {
+                        if let startDate = event.startDate {
+                            Text(startDate, style: .time)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
-                        .accessibilityElement(children: .combine)
-                        .accessibilityLabel(eventAccessibilityLabel(for: event))
-                        .accessibilityHint("Selects this calendar event to pre-fill the activity form")
+                        if let endDate = event.endDate, let startDate = event.startDate {
+                            Text("·")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            let duration = Int(endDate.timeIntervalSince(startDate) / 60)
+                            Text("\(duration)m")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
             }
-            .themedScrollBackground()
-            .navigationTitle("Choose event")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-            }
+            .padding(.vertical, 4)
+            .padding(.horizontal, 8)
+            .background(Color.secondary.opacity(0.1))
+            .cornerRadius(8)
         }
-        .themedSurface()
-    }
-
-    private func eventAccessibilityLabel(for event: EKEvent) -> String {
-        var parts: [String] = []
-        parts.append(event.title ?? "Untitled event")
-
-        if let startDate = event.startDate {
-            let formatter = DateFormatter()
-            formatter.timeStyle = .short
-            parts.append("at \(formatter.string(from: startDate))")
-
-            if let endDate = event.endDate {
-                let duration = Int(endDate.timeIntervalSince(startDate) / 60)
-                parts.append("for \(duration) minutes")
-            }
-        }
-
-        if let location = event.location, !location.isEmpty {
-            parts.append("Location: \(location)")
-        }
-
-        return parts.joined(separator: ", ")
+        .buttonStyle(.plain)
     }
 }
 

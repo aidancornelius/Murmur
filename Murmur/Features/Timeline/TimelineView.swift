@@ -35,6 +35,22 @@ struct TimelineView: View {
         animation: .default
     ) private var allActivities: FetchedResults<ActivityEvent>
 
+    @FetchRequest(
+        sortDescriptors: [
+            NSSortDescriptor(keyPath: \SleepEvent.backdatedAt, ascending: true),
+            NSSortDescriptor(keyPath: \SleepEvent.createdAt, ascending: true)
+        ],
+        animation: .default
+    ) private var allSleepEvents: FetchedResults<SleepEvent>
+
+    @FetchRequest(
+        sortDescriptors: [
+            NSSortDescriptor(keyPath: \MealEvent.backdatedAt, ascending: true),
+            NSSortDescriptor(keyPath: \MealEvent.createdAt, ascending: true)
+        ],
+        animation: .default
+    ) private var allMealEvents: FetchedResults<MealEvent>
+
     private var daySections: [DaySection] {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
@@ -51,7 +67,22 @@ struct TimelineView: View {
             return date >= startDate
         }
 
-        return DaySection.sectionsFromArrays(entries: Array(filteredEntries), activities: Array(filteredActivities))
+        let filteredSleepEvents = allSleepEvents.filter { sleep in
+            let date = sleep.backdatedAt ?? sleep.createdAt ?? Date()
+            return date >= startDate
+        }
+
+        let filteredMealEvents = allMealEvents.filter { meal in
+            let date = meal.backdatedAt ?? meal.createdAt ?? Date()
+            return date >= startDate
+        }
+
+        return DaySection.sectionsFromArrays(
+            entries: Array(filteredEntries),
+            activities: Array(filteredActivities),
+            sleepEvents: Array(filteredSleepEvents),
+            mealEvents: Array(filteredMealEvents)
+        )
     }
 
     private var palette: ColorPalette {
@@ -68,6 +99,10 @@ struct TimelineView: View {
                             TimelineEntryRow(entry: entry)
                         case .activity(let activity):
                             TimelineActivityRow(activity: activity)
+                        case .sleep(let sleep):
+                            TimelineSleepRow(sleep: sleep)
+                        case .meal(let meal):
+                            TimelineMealRow(meal: meal)
                         }
                     }
                 }
@@ -322,9 +357,144 @@ private struct ExertionBadge: View {
     }
 }
 
+private struct TimelineSleepRow: View {
+    let sleep: SleepEvent
+
+    var body: some View {
+        HStack(spacing: 12) {
+            RoundedRectangle(cornerRadius: 4)
+                .fill(Color.indigo.opacity(0.6))
+                .frame(width: 6)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 4) {
+                    Image(systemName: "moon.stars.fill")
+                        .font(.caption)
+                        .foregroundStyle(.indigo)
+                    Text("Sleep")
+                        .font(.headline)
+                }
+                HStack(spacing: 8) {
+                    Text(timeLabel)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    if let duration = sleepDuration {
+                        Text(duration)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    HStack(spacing: 3) {
+                        Image(systemName: "star.fill")
+                        Text("\(sleep.quality)/5")
+                    }
+                    .font(.caption2)
+                    .foregroundStyle(.indigo)
+                }
+                if let note = sleep.note, !note.isEmpty {
+                    Text(note)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+            Spacer()
+        }
+        .padding(.vertical, 6)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityDescription)
+    }
+
+    private var timeLabel: String {
+        if let bedTime = sleep.bedTime {
+            return DateFormatters.shortTime.string(from: bedTime)
+        }
+        let reference = sleep.backdatedAt ?? sleep.createdAt ?? Date()
+        return DateFormatters.shortTime.string(from: reference)
+    }
+
+    private var sleepDuration: String? {
+        guard let bedTime = sleep.bedTime, let wakeTime = sleep.wakeTime else { return nil }
+        let hours = wakeTime.timeIntervalSince(bedTime) / 3600
+        return String(format: "%.1fh", hours)
+    }
+
+    private var accessibilityDescription: String {
+        var parts: [String] = []
+        parts.append("Sleep at \(timeLabel)")
+        if let duration = sleepDuration {
+            parts.append("Duration: \(duration)")
+        }
+        parts.append("Quality: \(sleep.quality) out of 5")
+        if let note = sleep.note, !note.isEmpty {
+            parts.append("Note: \(note)")
+        }
+        return parts.joined(separator: ". ")
+    }
+}
+
+private struct TimelineMealRow: View {
+    let meal: MealEvent
+
+    var body: some View {
+        HStack(spacing: 12) {
+            RoundedRectangle(cornerRadius: 4)
+                .fill(Color.orange.opacity(0.6))
+                .frame(width: 6)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 4) {
+                    Image(systemName: "fork.knife")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                    Text(meal.mealType?.capitalized ?? "Meal")
+                        .font(.headline)
+                }
+                HStack(spacing: 8) {
+                    Text(timeLabel)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                if let description = meal.mealDescription, !description.isEmpty {
+                    Text(description)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+                if let note = meal.note, !note.isEmpty {
+                    Text(note)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+            Spacer()
+        }
+        .padding(.vertical, 6)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityDescription)
+    }
+
+    private var timeLabel: String {
+        let reference = meal.backdatedAt ?? meal.createdAt ?? Date()
+        return DateFormatters.shortTime.string(from: reference)
+    }
+
+    private var accessibilityDescription: String {
+        var parts: [String] = []
+        parts.append("\(meal.mealType?.capitalized ?? "Meal") at \(timeLabel)")
+        if let description = meal.mealDescription, !description.isEmpty {
+            parts.append(description)
+        }
+        if let note = meal.note, !note.isEmpty {
+            parts.append("Note: \(note)")
+        }
+        return parts.joined(separator: ". ")
+    }
+}
+
 private enum TimelineItem: Identifiable {
     case symptom(SymptomEntry)
     case activity(ActivityEvent)
+    case sleep(SleepEvent)
+    case meal(MealEvent)
 
     var id: NSManagedObjectID {
         switch self {
@@ -332,6 +502,10 @@ private enum TimelineItem: Identifiable {
             return entry.objectID
         case .activity(let activity):
             return activity.objectID
+        case .sleep(let sleep):
+            return sleep.objectID
+        case .meal(let meal):
+            return meal.objectID
         }
     }
 
@@ -341,6 +515,10 @@ private enum TimelineItem: Identifiable {
             return entry.backdatedAt ?? entry.createdAt ?? Date()
         case .activity(let activity):
             return activity.backdatedAt ?? activity.createdAt ?? Date()
+        case .sleep(let sleep):
+            return sleep.backdatedAt ?? sleep.createdAt ?? Date()
+        case .meal(let meal):
+            return meal.backdatedAt ?? meal.createdAt ?? Date()
         }
     }
 }
@@ -350,6 +528,8 @@ private struct DaySection: Identifiable, Equatable {
     let date: Date
     let entries: [SymptomEntry]
     let activities: [ActivityEvent]
+    let sleepEvents: [SleepEvent]
+    let mealEvents: [MealEvent]
     let summary: DaySummary?
 
     static func == (lhs: DaySection, rhs: DaySection) -> Bool {
@@ -361,8 +541,16 @@ private struct DaySection: Identifiable, Equatable {
         let lhsActivityIDs = lhs.activities.map { $0.objectID }
         let rhsActivityIDs = rhs.activities.map { $0.objectID }
 
+        let lhsSleepIDs = lhs.sleepEvents.map { $0.objectID }
+        let rhsSleepIDs = rhs.sleepEvents.map { $0.objectID }
+
+        let lhsMealIDs = lhs.mealEvents.map { $0.objectID }
+        let rhsMealIDs = rhs.mealEvents.map { $0.objectID }
+
         return lhsEntryIDs == rhsEntryIDs &&
             lhsActivityIDs == rhsActivityIDs &&
+            lhsSleepIDs == rhsSleepIDs &&
+            lhsMealIDs == rhsMealIDs &&
             lhs.summary == rhs.summary
     }
 
@@ -370,6 +558,8 @@ private struct DaySection: Identifiable, Equatable {
         var items: [TimelineItem] = []
         items.append(contentsOf: entries.map { TimelineItem.symptom($0) })
         items.append(contentsOf: activities.map { TimelineItem.activity($0) })
+        items.append(contentsOf: sleepEvents.map { TimelineItem.sleep($0) })
+        items.append(contentsOf: mealEvents.map { TimelineItem.meal($0) })
         return items.sorted { $0.date > $1.date }
     }
 
@@ -385,7 +575,7 @@ private struct DaySection: Identifiable, Equatable {
         return lhsDate > rhsDate
     }
 
-    static func sectionsFromArrays(entries: [SymptomEntry], activities: [ActivityEvent]) -> [DaySection] {
+    static func sectionsFromArrays(entries: [SymptomEntry], activities: [ActivityEvent], sleepEvents: [SleepEvent], mealEvents: [MealEvent]) -> [DaySection] {
         let calendar = Calendar.current
 
         let groupedEntries = Dictionary(grouping: entries) { entry in
@@ -396,8 +586,20 @@ private struct DaySection: Identifiable, Equatable {
             calendar.startOfDay(for: activity.backdatedAt ?? activity.createdAt ?? Date())
         }
 
+        let groupedSleepEvents = Dictionary(grouping: sleepEvents) { sleep in
+            calendar.startOfDay(for: sleep.backdatedAt ?? sleep.createdAt ?? Date())
+        }
+
+        let groupedMealEvents = Dictionary(grouping: mealEvents) { meal in
+            calendar.startOfDay(for: meal.backdatedAt ?? meal.createdAt ?? Date())
+        }
+
         // Get all unique dates and sort chronologically (oldest first for decay calculation)
-        let allDates = Set(groupedEntries.keys).union(Set(groupedActivities.keys)).sorted()
+        let allDates = Set(groupedEntries.keys)
+            .union(Set(groupedActivities.keys))
+            .union(Set(groupedSleepEvents.keys))
+            .union(Set(groupedMealEvents.keys))
+            .sorted()
 
         guard !allDates.isEmpty else { return [] }
 
@@ -416,6 +618,8 @@ private struct DaySection: Identifiable, Equatable {
             .map { day in
                 let dayEntries = groupedEntries[day] ?? []
                 let dayActivities = groupedActivities[day] ?? []
+                let daySleepEvents = groupedSleepEvents[day] ?? []
+                let dayMealEvents = groupedMealEvents[day] ?? []
                 let sorted = dayEntries.sorted {
                     ($0.backdatedAt ?? $0.createdAt ?? Date()) > ($1.backdatedAt ?? $1.createdAt ?? Date())
                 }
@@ -424,6 +628,8 @@ private struct DaySection: Identifiable, Equatable {
                     date: day,
                     entries: sorted,
                     activities: dayActivities,
+                    sleepEvents: daySleepEvents,
+                    mealEvents: dayMealEvents,
                     summary: DaySummary.makeWithLoadScore(for: day, entries: sorted, loadScore: loadScore)
                 )
             }

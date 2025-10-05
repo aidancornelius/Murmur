@@ -23,6 +23,8 @@ struct DayDetailView: View {
     @State private var entriesByType: [UUID: SymptomEntry] = [:]
     @State private var dayEntries: [SymptomEntry] = []
     @State private var dayActivities: [ActivityEvent] = []
+    @State private var daySleepEvents: [SleepEvent] = []
+    @State private var dayMealEvents: [MealEvent] = []
     @State private var summary: DaySummary?
     @State private var previousSummary: DaySummary?
     @State private var metrics: DayMetrics?
@@ -81,7 +83,27 @@ struct DayDetailView: View {
                 .listRowBackground(palette.surfaceColor)
             }
 
-            if dayEntries.isEmpty && dayActivities.isEmpty {
+            if !daySleepEvents.isEmpty {
+                Section("Sleep") {
+                    ForEach(daySleepEvents.sorted(by: sortSleepEvents)) { sleep in
+                        DaySleepRow(sleep: sleep)
+                    }
+                    .onDelete(perform: deleteSleepEvents)
+                }
+                .listRowBackground(palette.surfaceColor)
+            }
+
+            if !dayMealEvents.isEmpty {
+                Section("Meals") {
+                    ForEach(dayMealEvents.sorted(by: sortMealEvents)) { meal in
+                        DayMealRow(meal: meal)
+                    }
+                    .onDelete(perform: deleteMealEvents)
+                }
+                .listRowBackground(palette.surfaceColor)
+            }
+
+            if dayEntries.isEmpty && dayActivities.isEmpty && daySleepEvents.isEmpty && dayMealEvents.isEmpty {
                 Section {
                     Text("Nothing logged on this day.")
                         .font(.footnote)
@@ -116,7 +138,11 @@ struct DayDetailView: View {
         do {
             let entries = try fetchEntries(for: date)
             let activities = try fetchActivities(for: date)
+            let sleepEvents = try fetchSleepEvents(for: date)
+            let mealEvents = try fetchMealEvents(for: date)
             dayActivities = activities.sorted(by: sortActivities)
+            daySleepEvents = sleepEvents.sorted(by: sortSleepEvents)
+            dayMealEvents = mealEvents.sorted(by: sortMealEvents)
 
             // Calculate load score with proper decay chain
             let loadScore = try calculateLoadScore(for: date)
@@ -231,6 +257,32 @@ struct DayDetailView: View {
         return try context.fetch(request)
     }
 
+    private func fetchSleepEvents(for targetDate: Date) throws -> [SleepEvent] {
+        let request = SleepEvent.fetchRequest()
+        let dayStart = calendar.startOfDay(for: targetDate)
+        guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else { return [] }
+        request.predicate = NSPredicate(
+            format: "((backdatedAt >= %@ AND backdatedAt < %@) OR (backdatedAt == nil AND createdAt >= %@ AND createdAt < %@))",
+            dayStart as NSDate, dayEnd as NSDate, dayStart as NSDate, dayEnd as NSDate
+        )
+        request.sortDescriptors = [NSSortDescriptor(keyPath: \SleepEvent.backdatedAt, ascending: false),
+                                   NSSortDescriptor(keyPath: \SleepEvent.createdAt, ascending: false)]
+        return try context.fetch(request)
+    }
+
+    private func fetchMealEvents(for targetDate: Date) throws -> [MealEvent] {
+        let request = MealEvent.fetchRequest()
+        let dayStart = calendar.startOfDay(for: targetDate)
+        guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else { return [] }
+        request.predicate = NSPredicate(
+            format: "((backdatedAt >= %@ AND backdatedAt < %@) OR (backdatedAt == nil AND createdAt >= %@ AND createdAt < %@))",
+            dayStart as NSDate, dayEnd as NSDate, dayStart as NSDate, dayEnd as NSDate
+        )
+        request.sortDescriptors = [NSSortDescriptor(keyPath: \MealEvent.backdatedAt, ascending: false),
+                                   NSSortDescriptor(keyPath: \MealEvent.createdAt, ascending: false)]
+        return try context.fetch(request)
+    }
+
     private func updateEntry(for type: SymptomType, severity: Int, note: String?, updateContext: Bool, persistMood: Bool) {
         let severity = max(1, min(5, severity))
         let dayStart = calendar.startOfDay(for: date)
@@ -294,6 +346,18 @@ struct DayDetailView: View {
         return lhsDate > rhsDate
     }
 
+    private func sortSleepEvents(_ lhs: SleepEvent, _ rhs: SleepEvent) -> Bool {
+        let lhsDate = lhs.backdatedAt ?? lhs.createdAt ?? Date()
+        let rhsDate = rhs.backdatedAt ?? rhs.createdAt ?? Date()
+        return lhsDate > rhsDate
+    }
+
+    private func sortMealEvents(_ lhs: MealEvent, _ rhs: MealEvent) -> Bool {
+        let lhsDate = lhs.backdatedAt ?? lhs.createdAt ?? Date()
+        let rhsDate = rhs.backdatedAt ?? rhs.createdAt ?? Date()
+        return lhsDate > rhsDate
+    }
+
     private func deleteEntries(at offsets: IndexSet) {
         let sortedEntries = dayEntries.sorted(by: sortEntries)
         for index in offsets {
@@ -327,6 +391,38 @@ struct DayDetailView: View {
         do {
             try context.save()
             dayActivities = try fetchActivities(for: date).sorted(by: sortActivities)
+        } catch {
+            errorMessage = error.localizedDescription
+            context.rollback()
+        }
+    }
+
+    private func deleteSleepEvents(at offsets: IndexSet) {
+        let sortedSleepEvents = daySleepEvents.sorted(by: sortSleepEvents)
+        for index in offsets {
+            let sleep = sortedSleepEvents[index]
+            context.delete(sleep)
+        }
+
+        do {
+            try context.save()
+            daySleepEvents = try fetchSleepEvents(for: date).sorted(by: sortSleepEvents)
+        } catch {
+            errorMessage = error.localizedDescription
+            context.rollback()
+        }
+    }
+
+    private func deleteMealEvents(at offsets: IndexSet) {
+        let sortedMealEvents = dayMealEvents.sorted(by: sortMealEvents)
+        for index in offsets {
+            let meal = sortedMealEvents[index]
+            context.delete(meal)
+        }
+
+        do {
+            try context.save()
+            dayMealEvents = try fetchMealEvents(for: date).sorted(by: sortMealEvents)
         } catch {
             errorMessage = error.localizedDescription
             context.rollback()
@@ -758,5 +854,126 @@ private struct LoadScoreCard: View {
 
     private var accessibilityDescription: String {
         "Activity load: \(Int(loadScore.decayedLoad)) percent. Risk level: \(loadScore.riskLevel.description). \(riskAdvice)"
+    }
+}
+
+private struct DaySleepRow: View {
+    let sleep: SleepEvent
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Label("Sleep", systemImage: "moon.stars.fill")
+                    .labelStyle(.titleAndIcon)
+                    .foregroundStyle(.indigo)
+                Spacer()
+            }
+            HStack(spacing: 12) {
+                if let bedTime = sleep.bedTime {
+                    Text(DateFormatters.shortTime.string(from: bedTime))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                if let duration = sleepDuration {
+                    Text(duration)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Text("\(sleep.quality)/5")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            if let symptoms = sleep.symptoms as? Set<SymptomType>, !symptoms.isEmpty {
+                let symptomNames = symptoms.compactMap { $0.name }.sorted()
+                Text("Symptoms: \(symptomNames.joined(separator: ", "))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            if let note = sleep.note, !note.isEmpty {
+                Text(note)
+                    .font(.callout)
+            }
+        }
+        .padding(.vertical, 6)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityDescription)
+        .accessibilityHint("Swipe left to delete this sleep event")
+    }
+
+    private var sleepDuration: String? {
+        guard let bedTime = sleep.bedTime, let wakeTime = sleep.wakeTime else { return nil }
+        let hours = wakeTime.timeIntervalSince(bedTime) / 3600
+        return String(format: "%.1fh", hours)
+    }
+
+    private var accessibilityDescription: String {
+        var parts: [String] = []
+        if let bedTime = sleep.bedTime {
+            parts.append("Sleep at \(DateFormatters.shortTime.string(from: bedTime))")
+        } else {
+            parts.append("Sleep")
+        }
+        if let duration = sleepDuration {
+            parts.append("Duration: \(duration)")
+        }
+        parts.append("Quality: \(sleep.quality) out of 5")
+        if let symptoms = sleep.symptoms as? Set<SymptomType>, !symptoms.isEmpty {
+            let symptomNames = symptoms.compactMap { $0.name }.sorted()
+            parts.append("Symptoms: \(symptomNames.joined(separator: ", "))")
+        }
+        if let note = sleep.note, !note.isEmpty {
+            parts.append("Note: \(note)")
+        }
+        return parts.joined(separator: ". ")
+    }
+}
+
+private struct DayMealRow: View {
+    let meal: MealEvent
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Label(meal.mealType?.capitalized ?? "Meal", systemImage: "fork.knife")
+                    .labelStyle(.titleAndIcon)
+                    .foregroundStyle(.orange)
+                Spacer()
+            }
+            HStack(spacing: 12) {
+                Text(timeLabel)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            if let description = meal.mealDescription, !description.isEmpty {
+                Text(description)
+                    .font(.callout)
+            }
+            if let note = meal.note, !note.isEmpty {
+                Text(note)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 6)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityDescription)
+        .accessibilityHint("Swipe left to delete this meal")
+    }
+
+    private var timeLabel: String {
+        let reference = meal.backdatedAt ?? meal.createdAt ?? Date()
+        return DateFormatters.shortTime.string(from: reference)
+    }
+
+    private var accessibilityDescription: String {
+        var parts: [String] = []
+        parts.append("\(meal.mealType?.capitalized ?? "Meal") at \(timeLabel)")
+        if let description = meal.mealDescription, !description.isEmpty {
+            parts.append("Description: \(description)")
+        }
+        if let note = meal.note, !note.isEmpty {
+            parts.append("Note: \(note)")
+        }
+        return parts.joined(separator: ". ")
     }
 }
