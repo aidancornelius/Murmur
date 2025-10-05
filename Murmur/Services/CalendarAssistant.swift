@@ -63,6 +63,7 @@ final class CalendarAssistant: ObservableObject {
 
         let predicate = eventStore.predicateForEvents(withStart: startDate, end: endDate, calendars: nil)
         let events = eventStore.events(matching: predicate)
+            .filter { !$0.isAllDay }
 
         recentEvents = events.sorted { ($0.startDate ?? Date.distantPast) > ($1.startDate ?? Date.distantPast) }
     }
@@ -79,6 +80,7 @@ final class CalendarAssistant: ObservableObject {
 
         let predicate = eventStore.predicateForEvents(withStart: startDate, end: endDate, calendars: nil)
         let events = eventStore.events(matching: predicate)
+            .filter { !$0.isAllDay }
 
         upcomingEvents = events.sorted { ($0.startDate ?? Date.distantPast) < ($1.startDate ?? Date.distantPast) }
     }
@@ -95,6 +97,7 @@ final class CalendarAssistant: ObservableObject {
 
         let predicate = eventStore.predicateForEvents(withStart: startDate, end: endDate, calendars: nil)
         let events = eventStore.events(matching: predicate)
+            .filter { !$0.isAllDay }
 
         recentEvents = events.sorted { ($0.startDate ?? Date.distantPast) < ($1.startDate ?? Date.distantPast) }
     }

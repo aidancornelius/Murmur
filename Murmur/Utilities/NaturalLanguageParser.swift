@@ -7,22 +7,118 @@
 
 import Foundation
 
+enum DetectedEventType {
+    case activity
+    case sleep
+    case meal
+    case unknown
+}
+
 struct ParsedActivityInput {
     var cleanedText: String
     var timestamp: Date?
     var durationMinutes: Int?
+    var detectedType: DetectedEventType = .unknown
+
+    // Sleep-specific
+    var bedTime: Date?
+    var wakeTime: Date?
+    var sleepQuality: Int?
+
+    // Meal-specific
+    var mealType: String?
+
+    // Activity-specific
+    var physicalExertion: Int?
+    var cognitiveExertion: Int?
+    var emotionalLoad: Int?
 }
 
 struct NaturalLanguageParser {
 
+    // Keywords for event type detection
+    private static let sleepKeywords = ["slept", "sleep", "nap", "rest", "bed", "wake", "woke", "awake", "tired", "insomnia", "nightmare", "dream"]
+    private static let mealKeywords = ["ate", "eat", "food", "meal", "breakfast", "lunch", "dinner", "snack", "drink", "drank", "coffee", "tea"]
+    private static let activityKeywords = ["ran", "run", "walk", "walked", "gym", "workout", "exercise", "meeting", "work", "study", "read", "watch", "play", "drive", "drove"]
+
+    // Meal type detection
+    private static let breakfastKeywords = ["breakfast", "morning", "cereal", "toast", "eggs", "bacon", "coffee"]
+    private static let lunchKeywords = ["lunch", "midday", "sandwich", "salad"]
+    private static let dinnerKeywords = ["dinner", "supper", "evening meal"]
+    private static let snackKeywords = ["snack", "quick bite", "nibble"]
+
+    // Exertion keywords
+    private static let highPhysicalKeywords = ["intense", "exhausting", "vigorous", "hard", "strenuous", "sprint", "heavy"]
+    private static let lowPhysicalKeywords = ["light", "easy", "gentle", "relaxed", "slow"]
+
+    /// Detects the type of event from input text
+    static func detectEventType(_ input: String, isFromCalendar: Bool = false) -> DetectedEventType {
+        let lowercased = input.lowercased()
+
+        // Check for sleep patterns
+        if sleepKeywords.contains(where: lowercased.contains) {
+            return .sleep
+        }
+
+        // Check for meal patterns
+        if mealKeywords.contains(where: lowercased.contains) {
+            return .meal
+        }
+
+        // Check for activity patterns
+        if activityKeywords.contains(where: lowercased.contains) {
+            return .activity
+        }
+
+        // If this is from a calendar event and no specific keywords found,
+        // default to activity (most calendar events are activities/meetings)
+        if isFromCalendar {
+            return .activity
+        }
+
+        // Check for time-based hints only if NOT from calendar
+        let calendar = Calendar.current
+        let hour = calendar.component(.hour, from: Date())
+
+        // If it mentions morning/night times, might be sleep
+        if lowercased.contains("hours") && (hour < 9 || hour > 21) {
+            return .sleep
+        }
+
+        // Default based on time of day (only when not from calendar)
+        switch hour {
+        case 5..<9:
+            if lowercased.contains("hours") { return .sleep }
+            return .meal // Breakfast time
+        case 11..<14:
+            return .meal // Lunch time
+        case 17..<20:
+            return .meal // Dinner time
+        case 21..<24, 0..<5:
+            return .sleep // Sleep time
+        default:
+            return .activity
+        }
+    }
+
     /// Parses natural language input for time, date, and duration hints
-    static func parse(_ input: String) -> ParsedActivityInput {
+    static func parse(_ input: String, isFromCalendar: Bool = false) -> ParsedActivityInput {
         var cleanedText = input
         var timestamp: Date? = nil
         var durationMinutes: Int? = nil
+        var bedTime: Date? = nil
+        var wakeTime: Date? = nil
+        var sleepQuality: Int? = nil
+        var mealType: String? = nil
+        var physicalExertion: Int? = nil
+        var cognitiveExertion: Int? = nil
+        var emotionalLoad: Int? = nil
 
         let calendar = Calendar.current
         let now = Date()
+
+        // Detect event type
+        let detectedType = detectEventType(input, isFromCalendar: isFromCalendar)
 
         // Parse time patterns (e.g., "at 3pm", "at 15:00", "@3pm")
         let timePatterns = [
@@ -94,6 +190,33 @@ struct NaturalLanguageParser {
             }
         }
 
+        // Parse sleep-specific patterns
+        if detectedType == .sleep {
+            // Parse "slept 8 hours" or "slept from 10pm to 6am"
+            if let sleepHours = extractSleepHours(from: input) {
+                durationMinutes = sleepHours * 60
+                // Calculate approximate bed/wake times
+                wakeTime = timestamp ?? now
+                bedTime = calendar.date(byAdding: .minute, value: -(sleepHours * 60), to: wakeTime!)
+            }
+
+            // Parse sleep quality
+            sleepQuality = extractSleepQuality(from: input)
+        }
+
+        // Parse meal-specific patterns
+        if detectedType == .meal {
+            mealType = detectMealType(input)
+        }
+
+        // Parse exertion levels for activities
+        if detectedType == .activity {
+            physicalExertion = extractPhysicalExertion(from: input)
+            // Default others to moderate if activity is detected
+            cognitiveExertion = 3
+            emotionalLoad = 3
+        }
+
         // Clean up extra whitespace
         cleanedText = cleanedText
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -102,8 +225,93 @@ struct NaturalLanguageParser {
         return ParsedActivityInput(
             cleanedText: cleanedText,
             timestamp: timestamp,
-            durationMinutes: durationMinutes
+            durationMinutes: durationMinutes,
+            detectedType: detectedType,
+            bedTime: bedTime,
+            wakeTime: wakeTime,
+            sleepQuality: sleepQuality,
+            mealType: mealType,
+            physicalExertion: physicalExertion,
+            cognitiveExertion: cognitiveExertion,
+            emotionalLoad: emotionalLoad
         )
+    }
+
+    private static func extractSleepHours(from input: String) -> Int? {
+        let patterns = [
+            #"slept?\s+(?:for\s+)?(\d+)\s*(?:hours?|hrs?)"#,
+            #"(\d+)\s*(?:hours?|hrs?)\s+(?:of\s+)?sleep"#
+        ]
+
+        for pattern in patterns {
+            let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive)
+            if let match = regex?.firstMatch(in: input, range: NSRange(input.startIndex..., in: input)),
+               let range = Range(match.range(at: 1), in: input),
+               let hours = Int(input[range]) {
+                return hours
+            }
+        }
+        return nil
+    }
+
+    private static func extractSleepQuality(from input: String) -> Int? {
+        let lowercased = input.lowercased()
+        if lowercased.contains("terrible") || lowercased.contains("awful") || lowercased.contains("poor") {
+            return 1
+        } else if lowercased.contains("bad") || lowercased.contains("restless") {
+            return 2
+        } else if lowercased.contains("okay") || lowercased.contains("decent") {
+            return 3
+        } else if lowercased.contains("good") || lowercased.contains("well") {
+            return 4
+        } else if lowercased.contains("great") || lowercased.contains("excellent") || lowercased.contains("amazing") {
+            return 5
+        }
+        return nil
+    }
+
+    private static func detectMealType(_ input: String) -> String {
+        let lowercased = input.lowercased()
+
+        if breakfastKeywords.contains(where: lowercased.contains) {
+            return "breakfast"
+        } else if lunchKeywords.contains(where: lowercased.contains) {
+            return "lunch"
+        } else if dinnerKeywords.contains(where: lowercased.contains) {
+            return "dinner"
+        } else if snackKeywords.contains(where: lowercased.contains) {
+            return "snack"
+        }
+
+        // Default based on time
+        let hour = Calendar.current.component(.hour, from: Date())
+        switch hour {
+        case 5..<11: return "breakfast"
+        case 11..<16: return "lunch"
+        case 16..<22: return "dinner"
+        default: return "snack"
+        }
+    }
+
+    private static func extractPhysicalExertion(from input: String) -> Int? {
+        let lowercased = input.lowercased()
+
+        if highPhysicalKeywords.contains(where: lowercased.contains) {
+            return 4
+        } else if lowPhysicalKeywords.contains(where: lowercased.contains) {
+            return 2
+        }
+
+        // Activity-specific defaults
+        if lowercased.contains("sprint") || lowercased.contains("hiit") {
+            return 5
+        } else if lowercased.contains("run") || lowercased.contains("gym") {
+            return 4
+        } else if lowercased.contains("walk") || lowercased.contains("yoga") {
+            return 2
+        }
+
+        return nil
     }
 
     private static func parseTime(from string: String, baseDate: Date) -> Date? {

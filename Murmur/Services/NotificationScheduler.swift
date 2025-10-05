@@ -29,8 +29,8 @@ struct NotificationScheduler {
     static func schedule(reminder: Reminder) async throws {
         let center = UNUserNotificationCenter.current()
         let content = UNMutableNotificationContent()
-        content.title = "Time to check in"
-        content.body = "Tap to record how you're feeling."
+        content.title = "Murmur: check in reminder"
+        content.body = "Tap to record your symptoms, events and sleep."
         content.sound = .default
         content.interruptionLevel = .timeSensitive
 

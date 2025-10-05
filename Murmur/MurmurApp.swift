@@ -130,7 +130,7 @@ private struct RootContainer: View {
                 }
                 .sheet(isPresented: $showingAddActivity) {
                     NavigationStack {
-                        AddEventView()
+                        UnifiedEventView()
                             .environment(\.managedObjectContext, context)
                             .environmentObject(healthKit)
                             .environmentObject(calendar)
