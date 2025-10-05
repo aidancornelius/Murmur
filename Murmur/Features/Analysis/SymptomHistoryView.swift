@@ -59,33 +59,44 @@ struct SymptomHistoryView: View {
                                 }
                             }
                         )
-                    }
 
-                    if let selected = selectedSymptom, selected.id == symptomCounts.first(where: { $0.id == selected.id })?.id {
-                        Section("Occurrences") {
-                            ForEach(detailEntries) { entry in
-                                SymptomOccurrenceRow(entry: entry)
-                            }
-
-                            if hasMoreEntries {
+                        // Show details right after the selected symptom row
+                        if selectedSymptom?.id == symptomCount.id {
+                            if detailEntries.isEmpty && !loadingMore {
+                                // Show loading state when first fetching
                                 HStack {
                                     Spacer()
-                                    if loadingMore {
-                                        ProgressView()
-                                            .scaleEffect(0.8)
-                                    } else {
-                                        Button("Load more") {
-                                            loadMoreEntries(for: selected.symptomType)
-                                        }
-                                        .font(.footnote)
-                                    }
+                                    ProgressView()
+                                        .scaleEffect(0.8)
                                     Spacer()
                                 }
                                 .padding(.vertical, 8)
                                 .listRowBackground(Color.clear)
+                            } else {
+                                ForEach(detailEntries) { entry in
+                                    SymptomOccurrenceRow(entry: entry)
+                                        .listRowBackground(Color.gray.opacity(0.05))
+                                }
+
+                                if hasMoreEntries {
+                                    HStack {
+                                        Spacer()
+                                        if loadingMore {
+                                            ProgressView()
+                                                .scaleEffect(0.8)
+                                        } else {
+                                            Button("Load more") {
+                                                loadMoreEntries(for: symptomCount.symptomType)
+                                            }
+                                            .font(.footnote)
+                                        }
+                                        Spacer()
+                                    }
+                                    .padding(.vertical, 8)
+                                    .listRowBackground(Color.clear)
+                                }
                             }
                         }
-                        .transition(.opacity)
                     }
                 }
                 .listStyle(.insetGrouped)
@@ -152,6 +163,7 @@ struct SymptomHistoryView: View {
         currentPage = 0
         hasMoreEntries = true
         detailEntries = []
+        loadingMore = true  // Set loading state immediately
         loadMoreEntries(for: symptomType)
     }
 

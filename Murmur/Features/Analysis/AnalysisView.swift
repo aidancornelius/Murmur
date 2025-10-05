@@ -38,57 +38,6 @@ struct AnalysisView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Menu {
-                Button {
-                    selectedTab = .trends
-                } label: {
-                    Label("Trends", systemImage: "chart.line.uptrend.xyaxis")
-                }
-                Button {
-                    selectedTab = .calendar
-                } label: {
-                    Label("Calendar", systemImage: "calendar")
-                }
-                Button {
-                    selectedTab = .history
-                } label: {
-                    Label("History", systemImage: "list.bullet")
-                }
-                if hasActivityData {
-                    Button {
-                        selectedTab = .correlations
-                    } label: {
-                        Label("Activities", systemImage: "figure.walk")
-                    }
-                }
-                Button {
-                    selectedTab = .patterns
-                } label: {
-                    Label("Patterns", systemImage: "clock")
-                }
-                if hasHealthData {
-                    Button {
-                        selectedTab = .health
-                    } label: {
-                        Label("Health", systemImage: "heart")
-                    }
-                }
-            } label: {
-                HStack {
-                    Text(tabTitle)
-                        .font(.headline)
-                    Image(systemName: "chevron.down")
-                        .font(.caption)
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(Color.gray.opacity(0.1), in: Capsule())
-            }
-            .padding()
-            .task {
-                await checkAvailableData()
-            }
-
             if selectedTab != .calendar && selectedTab != .history {
                 Picker("Period", selection: $selectedPeriod) {
                     Text("7 days").tag(7)
@@ -117,6 +66,56 @@ struct AnalysisView: View {
         }
         .navigationTitle("Analysis")
         .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Menu {
+                    Button {
+                        selectedTab = .trends
+                    } label: {
+                        Label("Trends", systemImage: "chart.line.uptrend.xyaxis")
+                    }
+                    Button {
+                        selectedTab = .calendar
+                    } label: {
+                        Label("Calendar", systemImage: "calendar")
+                    }
+                    Button {
+                        selectedTab = .history
+                    } label: {
+                        Label("History", systemImage: "list.bullet")
+                    }
+                    if hasActivityData {
+                        Button {
+                            selectedTab = .correlations
+                        } label: {
+                            Label("Activities", systemImage: "figure.walk")
+                        }
+                    }
+                    Button {
+                        selectedTab = .patterns
+                    } label: {
+                        Label("Patterns", systemImage: "clock")
+                    }
+                    if hasHealthData {
+                        Button {
+                            selectedTab = .health
+                        } label: {
+                            Label("Health", systemImage: "heart")
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(tabTitle)
+                            .font(.callout)
+                        Image(systemName: "chevron.down")
+                            .font(.caption2)
+                    }
+                }
+            }
+        }
+        .task {
+            await checkAvailableData()
+        }
     }
 
     private func checkAvailableData() async {
