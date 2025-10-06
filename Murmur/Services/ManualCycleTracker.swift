@@ -19,13 +19,9 @@ final class ManualCycleTracker: ObservableObject {
     @Published private(set) var latestFlowLevel: String?
     @Published private(set) var isEnabled: Bool
 
-    private let enabledKey = "ManualCycleTrackingEnabled"
-    private let cycleDayKey = "ManualCycleDay"
-    private let cycleDaySetDateKey = "ManualCycleDaySetDate"
-
     init(context: NSManagedObjectContext) {
         self.context = context
-        self.isEnabled = UserDefaults.standard.bool(forKey: enabledKey)
+        self.isEnabled = UserDefaults.standard.bool(forKey: UserDefaultsKeys.manualCycleTrackingEnabled)
         Task {
             await refreshCycleData()
         }
@@ -34,7 +30,7 @@ final class ManualCycleTracker: ObservableObject {
     /// Enable or disable manual cycle tracking
     func setEnabled(_ enabled: Bool) {
         isEnabled = enabled
-        UserDefaults.standard.set(enabled, forKey: enabledKey)
+        UserDefaults.standard.set(enabled, forKey: UserDefaultsKeys.manualCycleTrackingEnabled)
 
         if enabled {
             Task {
@@ -120,16 +116,16 @@ final class ManualCycleTracker: ObservableObject {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
 
-        UserDefaults.standard.set(day, forKey: cycleDayKey)
-        UserDefaults.standard.set(today, forKey: cycleDaySetDateKey)
+        UserDefaults.standard.set(day, forKey: UserDefaultsKeys.currentCycleDay)
+        UserDefaults.standard.set(today, forKey: UserDefaultsKeys.cycleDaySetDate)
 
         latestCycleDay = day
     }
 
     /// Clear the manually set cycle day
     func clearCycleDay() {
-        UserDefaults.standard.removeObject(forKey: cycleDayKey)
-        UserDefaults.standard.removeObject(forKey: cycleDaySetDateKey)
+        UserDefaults.standard.removeObject(forKey: UserDefaultsKeys.currentCycleDay)
+        UserDefaults.standard.removeObject(forKey: UserDefaultsKeys.cycleDaySetDate)
 
         Task {
             await refreshCycleData()
@@ -149,9 +145,9 @@ final class ManualCycleTracker: ObservableObject {
             let today = calendar.startOfDay(for: Date())
 
             // Check if user has manually set a cycle day
-            if let setDate = UserDefaults.standard.object(forKey: cycleDaySetDateKey) as? Date,
-               UserDefaults.standard.object(forKey: cycleDayKey) != nil {
-                let setDay = UserDefaults.standard.integer(forKey: cycleDayKey)
+            if let setDate = UserDefaults.standard.object(forKey: UserDefaultsKeys.cycleDaySetDate) as? Date,
+               UserDefaults.standard.object(forKey: UserDefaultsKeys.currentCycleDay) != nil {
+                let setDay = UserDefaults.standard.integer(forKey: UserDefaultsKeys.currentCycleDay)
                 let daysSinceSet = calendar.dateComponents([.day], from: calendar.startOfDay(for: setDate), to: today).day ?? 0
                 let calculatedDay = setDay + daysSinceSet
 
@@ -162,14 +158,14 @@ final class ManualCycleTracker: ObservableObject {
                     // Reset if cycle exceeds max length
                     logger.warning("Cycle day \(calculatedDay) exceeds max length, resetting")
                     latestCycleDay = nil
-                    UserDefaults.standard.removeObject(forKey: cycleDayKey)
-                    UserDefaults.standard.removeObject(forKey: cycleDaySetDateKey)
+                    UserDefaults.standard.removeObject(forKey: UserDefaultsKeys.currentCycleDay)
+                    UserDefaults.standard.removeObject(forKey: UserDefaultsKeys.cycleDaySetDate)
                 } else {
                     // Negative days are invalid
                     logger.warning("Invalid negative cycle day \(calculatedDay), resetting")
                     latestCycleDay = nil
-                    UserDefaults.standard.removeObject(forKey: cycleDayKey)
-                    UserDefaults.standard.removeObject(forKey: cycleDaySetDateKey)
+                    UserDefaults.standard.removeObject(forKey: UserDefaultsKeys.currentCycleDay)
+                    UserDefaults.standard.removeObject(forKey: UserDefaultsKeys.cycleDaySetDate)
                 }
             } else {
                 // Fall back to calculating from period entries

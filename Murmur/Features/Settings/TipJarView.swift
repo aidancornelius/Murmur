@@ -43,12 +43,30 @@ struct TipJarView: View {
                     .font(.title2)
                     .fontWeight(.semibold)
 
-                Text("Support Murmur’s development with a tip. Your support helps me pay the bills while I develop the app, and enables me to keep it free and privacy-focused.")
+                Text("Support Murmur's development with a tip. Your support helps me pay the bills while I develop the app, and enables me to keep it free and privacy-focused.")
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
             }
+
+            Button(action: {
+                if let url = URL(string: "https://apps.apple.com/us/app/murmur/id6753282722?action=write-review") {
+                    UIApplication.shared.open(url)
+                }
+            }) {
+                HStack {
+                    Image(systemName: "star.fill")
+                    Text("Add a rating or review")
+                        .font(.headline)
+                }
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(Color.purple)
+                .foregroundStyle(.white)
+                .cornerRadius(12)
+            }
+            .padding(.horizontal)
 
             if !store.products.isEmpty {
                 VStack(spacing: 16) {

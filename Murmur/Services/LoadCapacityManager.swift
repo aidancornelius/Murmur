@@ -347,7 +347,7 @@ class LoadCapacityManager: ObservableObject {
     }
 
     @Published var isCalibrating: Bool = false
-    private var calibrationDays: [Double] = []
+    @Published var calibrationDays: [Double] = []
 
     // MARK: - Initialization
 

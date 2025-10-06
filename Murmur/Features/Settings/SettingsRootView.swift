@@ -10,6 +10,7 @@ import SwiftUI
 enum SettingsRoute: Hashable {
     case symptomTypes
     case reminders
+    case loadCapacity
     case healthKit
     case manualCycle
     case dataManagement
@@ -40,6 +41,9 @@ struct SettingsRootView: View {
                 NavigationLink("Reminders", value: SettingsRoute.reminders)
                     .accessibilityHint("Set up reminders to log symptoms regularly")
                     .listRowBackground(palette.surfaceColor)
+                NavigationLink("Load capacity", value: SettingsRoute.loadCapacity)
+                    .accessibilityHint("Adjust thresholds based on your condition and recovery patterns")
+                    .listRowBackground(palette.surfaceColor)
             }
             
             Section("Personalisation") {
@@ -61,12 +65,12 @@ struct SettingsRootView: View {
                 NavigationLink("Data management", value: SettingsRoute.dataManagement)
                     .accessibilityHint("Backup, restore, or reset your data")
                     .listRowBackground(palette.surfaceColor)
-                NavigationLink("Export entries", value: SettingsRoute.export)
-                    .accessibilityHint("Generate a PDF export of your symptom history")
-                    .listRowBackground(palette.surfaceColor)
-                NavigationLink("Privacy & security", value: SettingsRoute.security)
-                    .accessibilityHint("Enable biometric lock and review privacy options")
-                    .listRowBackground(palette.surfaceColor)
+//                NavigationLink("Export entries", value: SettingsRoute.export)
+//                    .accessibilityHint("Generate a PDF export of your symptom history")
+//                    .listRowBackground(palette.surfaceColor)
+//                NavigationLink("Privacy & security", value: SettingsRoute.security)
+//                    .accessibilityHint("Enable biometric lock and review privacy options")
+//                    .listRowBackground(palette.surfaceColor)
             }
 
             Section("Accessibility") {
@@ -239,6 +243,8 @@ struct SettingsRootView: View {
                 SymptomTypeListView()
             case .reminders:
                 ReminderListView()
+            case .loadCapacity:
+                LoadCapacitySettingsView()
             case .healthKit:
                 HealthKitSettingsView()
             case .manualCycle:
@@ -261,8 +267,22 @@ struct SettingsRootView: View {
 }
 
 struct AccessibilityOptionsView: View {
+    @EnvironmentObject private var appearanceManager: AppearanceManager
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var palette: ColorPalette {
+        appearanceManager.currentPalette(for: colorScheme)
+    }
+
     var body: some View {
-        List {
+        Form {
+            Section {
+                Text("Murmur includes features to support different accessibility needs, including voice logging, audio summaries, and optimised controls for assistive technologies.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .listRowBackground(Color.clear)
+            }
+
             if #available(iOS 15.0, *) {
                 Section("Voice logging") {
                     NavigationLink {
@@ -274,6 +294,7 @@ struct AccessibilityOptionsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+                .listRowBackground(palette.surfaceColor)
             }
 
             if #available(iOS 15.0, *) {
@@ -283,6 +304,7 @@ struct AccessibilityOptionsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+                .listRowBackground(palette.surfaceColor)
             }
 
             Section("Switch Control & AssistiveTouch") {
@@ -291,9 +313,10 @@ struct AccessibilityOptionsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            .listRowBackground(palette.surfaceColor)
         }
-        .navigationTitle("Accessibility")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("Accessibility options")
+        .navigationBarTitleDisplayMode(.large)
         .themedScrollBackground()
     }
 }

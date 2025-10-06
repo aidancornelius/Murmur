@@ -38,7 +38,7 @@ struct AccessibilityRotorModifier: ViewModifier {
         formatter.dateStyle = .medium
         let dateString = formatter.string(from: summary.date)
 
-        let severityText = SeverityScale.descriptor(for: Int(summary.averageSeverity)).lowercased()
+        let severityText = SeverityScale.descriptor(for: Int(summary.rawAverageSeverity)).lowercased()
         return "\(dateString): \(severityText) severity, \(summary.entryCount) entries"
     }
 

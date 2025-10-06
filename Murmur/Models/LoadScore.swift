@@ -20,15 +20,6 @@ struct LoadScore: Hashable {
         case high = 2
         case critical = 3
 
-        var color: String {
-            switch self {
-            case .safe: return "green"
-            case .caution: return "yellow"
-            case .high: return "orange"
-            case .critical: return "red"
-            }
-        }
-
         var description: String {
             switch self {
             case .safe: return "Safe"
@@ -49,13 +40,18 @@ struct LoadScore: Hashable {
     ///   - activities: Activities on this day
     ///   - symptoms: Symptom entries on this day
     ///   - previousLoad: The decayed load from the previous day
+    ///   - configuration: Optional configuration override (uses LoadCapacityManager if nil)
     /// - Returns: LoadScore for the day
     static func calculate(
         for date: Date,
         activities: [ActivityEvent],
         symptoms: [SymptomEntry],
-        previousLoad: Double
+        previousLoad: Double,
+        configuration: LoadConfiguration? = nil
     ) -> LoadScore {
+        // Get configuration from LoadCapacityManager or use provided override
+        let config = configuration ?? LoadCapacityManager.shared.configuration
+
         // Calculate raw load from today's activities
         // Scaled to fit 0-100 range: max exertion (5) × max duration weight (2) × multiplier (6) = 60
         // Allows room for symptom load and multiple activities while staying under 100
@@ -66,31 +62,30 @@ struct LoadScore: Hashable {
             return total + (exertion * durationWeight * 6.0)
         }
 
-        // Calculate symptom load (high severity symptoms add load)
-        // Max symptom load: (5.0 - 3.0) * 10.0 = 20
-        let symptomLoad: Double
+        // Calculate normalized average severity (once)
+        let avgSeverity: Double
         if !symptoms.isEmpty {
-            let avgSeverity = symptoms.reduce(0.0) { $0 + Double($1.severity) } / Double(symptoms.count)
-            // Severity 4-5 adds load (indicating ongoing physiological stress)
-            // Scale: severity 1-3 → 0 load, severity 4 → 10 load, severity 5 → 20 load
-            symptomLoad = max(0, (avgSeverity - 3.0) * 10.0)
+            avgSeverity = symptoms.reduce(0.0) { total, entry in
+                return total + entry.normalisedSeverity
+            } / Double(symptoms.count)
         } else {
-            symptomLoad = 0.0
+            avgSeverity = 0.0
         }
+
+        // Calculate symptom load (high severity symptoms add load)
+        // Apply sensitivity multiplier from configuration
+        // Severity 4-5 adds load (indicating ongoing physiological stress)
+        // Scale: severity 1-3 → 0 load, severity 4 → 10 load, severity 5 → 20 load
+        let baseSymptomLoad = max(0, (avgSeverity - 3.0) * 10.0)
+        let symptomLoad = baseSymptomLoad * config.symptomMultiplier
 
         // Calculate symptom severity modifier (affects decay rate)
-        let symptomModifier: Double
-        if symptoms.isEmpty {
-            symptomModifier = 1.0 // Normal recovery if no symptoms
-        } else {
-            let avgSeverity = symptoms.reduce(0.0) { $0 + Double($1.severity) } / Double(symptoms.count)
-            // High symptoms = slower recovery (lower decay)
-            // Scale: severity 1 → 1.0 (normal), severity 5 → 0.4 (very slow recovery)
-            symptomModifier = max(0.4, 1.2 - (avgSeverity * 0.16))
-        }
+        // High symptoms = slower recovery (lower decay)
+        // Scale: severity 1 → 1.0 (normal), severity 5 → 0.4 (very slow recovery)
+        let symptomModifier = symptoms.isEmpty ? 1.0 : max(0.4, 1.2 - (avgSeverity * 0.16))
 
-        // Base decay rate (how much load naturally decreases per day)
-        let baseDecayRate = 0.7
+        // Use decay rate from configuration (based on recovery window)
+        let baseDecayRate = config.decayRate
 
         // Apply symptom-modified decay to previous load
         let decayedPreviousLoad = previousLoad * baseDecayRate * symptomModifier
@@ -99,13 +94,14 @@ struct LoadScore: Hashable {
         // Cap at 100 to keep scale between 1-100
         let totalLoad = min(activityLoad + symptomLoad + decayedPreviousLoad, 100.0)
 
-        // Determine risk level
+        // Determine risk level using configuration thresholds
         let risk: RiskLevel
-        if totalLoad < 25 {
+        let thresholds = config.thresholds
+        if totalLoad < thresholds.safe {
             risk = .safe
-        } else if totalLoad < 50 {
+        } else if totalLoad < thresholds.caution {
             risk = .caution
-        } else if totalLoad < 75 {
+        } else if totalLoad < thresholds.high {
             risk = .high
         } else {
             risk = .critical
@@ -125,12 +121,14 @@ struct LoadScore: Hashable {
     ///   - endDate: End of date range
     ///   - activitiesByDate: Dictionary of activities grouped by day
     ///   - symptomsByDate: Dictionary of symptoms grouped by day
+    ///   - configuration: Optional configuration override (uses LoadCapacityManager if nil)
     /// - Returns: Array of LoadScores, one per day
     static func calculateRange(
         from startDate: Date,
         to endDate: Date,
         activitiesByDate: [Date: [ActivityEvent]],
-        symptomsByDate: [Date: [SymptomEntry]]
+        symptomsByDate: [Date: [SymptomEntry]],
+        configuration: LoadConfiguration? = nil
     ) -> [LoadScore] {
         var scores: [LoadScore] = []
         var previousLoad: Double = 0.0
@@ -147,7 +145,8 @@ struct LoadScore: Hashable {
                 for: dayStart,
                 activities: activities,
                 symptoms: symptoms,
-                previousLoad: previousLoad
+                previousLoad: previousLoad,
+                configuration: configuration
             )
 
             scores.append(score)

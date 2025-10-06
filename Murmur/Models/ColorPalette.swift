@@ -21,18 +21,6 @@ struct ColorPalette: Identifiable, Hashable, Codable {
 
     static let lightPalettes: [ColorPalette] = [
         ColorPalette(
-            id: "default",
-            name: "Default",
-            background: "#F2F2F7",
-            surface: "#FFFFFF",
-            accent: "#007AFF",
-            severity1: "#CCE5FF",
-            severity2: "#99D1E7",
-            severity3: "#E68FB7",
-            severity4: "#BD5780",
-            severity5: "#8B3B50"
-        ),
-        ColorPalette(
             id: "warm",
             name: "Warm sunset",
             background: "#FFF8F0",
@@ -43,6 +31,18 @@ struct ColorPalette: Identifiable, Hashable, Codable {
             severity3: "#E5989B",
             severity4: "#B5838D",
             severity5: "#6D6875"
+        ),
+        ColorPalette(
+            id: "cool",
+            name: "Cool blue",
+            background: "#F2F2F7",
+            surface: "#FFFFFF",
+            accent: "#007AFF",
+            severity1: "#CCE5FF",
+            severity2: "#99D1E7",
+            severity3: "#E68FB7",
+            severity4: "#BD5780",
+            severity5: "#8B3B50"
         ),
         ColorPalette(
             id: "forest",
@@ -133,19 +133,19 @@ class AppearanceManager: ObservableObject {
 
     @Published var lightPaletteId: String {
         didSet {
-            UserDefaults.standard.set(lightPaletteId, forKey: "lightPaletteId")
+            UserDefaults.standard.set(lightPaletteId, forKey: UserDefaultsKeys.lightPaletteId)
         }
     }
 
     @Published var darkPaletteId: String {
         didSet {
-            UserDefaults.standard.set(darkPaletteId, forKey: "darkPaletteId")
+            UserDefaults.standard.set(darkPaletteId, forKey: UserDefaultsKeys.darkPaletteId)
         }
     }
 
     private init() {
-        self.lightPaletteId = UserDefaults.standard.string(forKey: "lightPaletteId") ?? "default"
-        self.darkPaletteId = UserDefaults.standard.string(forKey: "darkPaletteId") ?? "oled"
+        self.lightPaletteId = UserDefaults.standard.string(forKey: UserDefaultsKeys.lightPaletteId) ?? "warm"
+        self.darkPaletteId = UserDefaults.standard.string(forKey: UserDefaultsKeys.darkPaletteId) ?? "oled"
     }
 
     var currentLightPalette: ColorPalette {
@@ -162,8 +162,8 @@ class AppearanceManager: ObservableObject {
 
     // Static helper that doesn't require MainActor
     static func palette(for colorScheme: ColorScheme) -> ColorPalette {
-        let lightId = UserDefaults.standard.string(forKey: "lightPaletteId") ?? "default"
-        let darkId = UserDefaults.standard.string(forKey: "darkPaletteId") ?? "oled"
+        let lightId = UserDefaults.standard.string(forKey: UserDefaultsKeys.lightPaletteId) ?? "warm"
+        let darkId = UserDefaults.standard.string(forKey: UserDefaultsKeys.darkPaletteId) ?? "oled"
 
         if colorScheme == .dark {
             return ColorPalette.darkPalettes.first { $0.id == darkId } ?? ColorPalette.darkPalettes[0]

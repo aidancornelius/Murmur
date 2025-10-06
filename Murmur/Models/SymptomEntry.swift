@@ -65,4 +65,13 @@ extension SymptomEntry {
     var effectiveDate: Date {
         backdatedAt ?? safeCreatedAt
     }
+
+    /// Normalised severity for analysis and calculations.
+    /// For positive symptoms (where higher is better), inverts the 1-5 scale to 5-1.
+    /// For negative symptoms (where higher is worse), returns the raw severity.
+    /// This ensures all symptoms are on a consistent scale where higher = worse.
+    var normalisedSeverity: Double {
+        let rawSeverity = Double(severity)
+        return symptomType?.isPositive == true ? (6.0 - rawSeverity) : rawSeverity
+    }
 }

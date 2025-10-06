@@ -209,7 +209,7 @@ struct DayDetailView: View {
             metrics = nil
             return
         }
-        metrics = DayMetrics(entries: dayEntries, latestHRV: healthKit.latestHRV, latestRestingHR: healthKit.latestRestingHR)
+        metrics = DayMetrics(entries: dayEntries)
     }
 
     private func apply(entries: [SymptomEntry], loadScore: LoadScore?) {
@@ -391,6 +391,10 @@ struct DayDetailView: View {
         do {
             try context.save()
             dayActivities = try fetchActivities(for: date).sorted(by: sortActivities)
+            // Recalculate load score and summary after activity deletion
+            let refreshedEntries = try fetchEntries(for: date)
+            let loadScore = try calculateLoadScore(for: date)
+            apply(entries: refreshedEntries, loadScore: loadScore)
         } catch {
             errorMessage = error.localizedDescription
             context.rollback()
@@ -407,6 +411,10 @@ struct DayDetailView: View {
         do {
             try context.save()
             daySleepEvents = try fetchSleepEvents(for: date).sorted(by: sortSleepEvents)
+            // Recalculate summary after deletion
+            let refreshedEntries = try fetchEntries(for: date)
+            let loadScore = try calculateLoadScore(for: date)
+            apply(entries: refreshedEntries, loadScore: loadScore)
         } catch {
             errorMessage = error.localizedDescription
             context.rollback()
@@ -423,43 +431,14 @@ struct DayDetailView: View {
         do {
             try context.save()
             dayMealEvents = try fetchMealEvents(for: date).sorted(by: sortMealEvents)
+            // Recalculate summary after deletion
+            let refreshedEntries = try fetchEntries(for: date)
+            let loadScore = try calculateLoadScore(for: date)
+            apply(entries: refreshedEntries, loadScore: loadScore)
         } catch {
             errorMessage = error.localizedDescription
             context.rollback()
         }
-    }
-}
-
-private struct DaySymptomControl: View {
-    let type: SymptomType
-    @Binding var severity: Double
-    @Binding var note: String
-    var isStarred: Bool = false
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Label(type.name ?? "Unnamed", systemImage: type.iconName ?? "circle")
-                    .labelStyle(.titleAndIcon)
-                Spacer()
-                SeverityBadge(value: severity, isPositive: type.isPositive)
-            }
-            Slider(value: $severity, in: 1...5, step: 1)
-                .tint(type.uiColor)
-            HStack {
-                Text(SeverityScale.descriptor(for: Int(severity), isPositive: type.isPositive))
-                    .font(.caption.bold())
-                    .foregroundStyle(.primary)
-                Spacer()
-                Text("\(Int(severity))/5")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            TextField("Add details (optional)", text: $note, axis: .vertical)
-                .lineLimit(1...3)
-                .textFieldStyle(.roundedBorder)
-        }
-        .padding(.vertical, 6)
     }
 }
 
@@ -664,14 +643,14 @@ private struct DaySummaryCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Average intensity")
                         .font(.headline)
-                    ProgressView(value: min(summary.averageSeverity, 5), total: 5)
+                    ProgressView(value: min(summary.rawAverageSeverity, 5), total: 5)
                         .tint(severityTint)
                 }
                 Spacer()
-                SeverityBadge(value: summary.averageSeverity)
+                SeverityBadge(value: summary.rawAverageSeverity)
             }
             .accessibilityElement(children: .combine)
-            .accessibilityLabel("Average intensity: \(SeverityScale.descriptor(for: Int(summary.averageSeverity)))")
+            .accessibilityLabel("Average intensity: \(SeverityScale.descriptor(for: Int(summary.rawAverageSeverity)))")
 
             HStack(spacing: 16) {
                 MetricTile(title: "Logged", value: "\(summary.entryCount)")
@@ -749,19 +728,15 @@ private struct MetricTile: View {
 private struct DayMetrics {
     let averageHRV: Double?
     let averageRestingHR: Double?
-    let latestHRV: Double?
-    let latestRestingHR: Double?
     let primaryLocation: String?
     let predominantState: PhysiologicalState?
     let cycleDay: Int?
 
-    init(entries: [SymptomEntry], latestHRV: Double?, latestRestingHR: Double?) {
+    init(entries: [SymptomEntry]) {
         let hrvValues = entries.compactMap { $0.hkHRV?.doubleValue }
         averageHRV = hrvValues.isEmpty ? nil : hrvValues.reduce(0, +) / Double(hrvValues.count)
         let restingValues = entries.compactMap { $0.hkRestingHR?.doubleValue }
         averageRestingHR = restingValues.isEmpty ? nil : restingValues.reduce(0, +) / Double(restingValues.count)
-        self.latestHRV = latestHRV
-        self.latestRestingHR = latestRestingHR
         let locationStrings = entries.compactMap { entry -> String? in
             guard let placemark = entry.locationPlacemark else { return nil }
             let formatted = DayMetrics.format(placemark: placemark)
@@ -801,6 +776,12 @@ private struct DayMetrics {
 
 private struct LoadScoreCard: View {
     let loadScore: LoadScore
+    @EnvironmentObject private var appearanceManager: AppearanceManager
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var palette: ColorPalette {
+        appearanceManager.currentPalette(for: colorScheme)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -835,12 +816,7 @@ private struct LoadScoreCard: View {
     }
 
     private var colorForRisk: Color {
-        switch loadScore.riskLevel {
-        case .safe: return .green
-        case .caution: return .yellow
-        case .high: return .orange
-        case .critical: return .red
-        }
+        loadScore.riskLevel.displayColor
     }
 
     private var riskAdvice: String {
@@ -859,6 +835,10 @@ private struct LoadScoreCard: View {
 
 private struct DaySleepRow: View {
     let sleep: SleepEvent
+
+    private var hasHealthMetrics: Bool {
+        sleep.hkSleepHours != nil || sleep.hkHRV != nil || sleep.hkRestingHR != nil
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -882,6 +862,25 @@ private struct DaySleepRow: View {
                 Text("\(sleep.quality)/5")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            }
+            if hasHealthMetrics {
+                HStack(spacing: 12) {
+                    if let sleepHours = sleep.hkSleepHours?.doubleValue {
+                        Text(String(format: "%.1fh sleep", sleepHours))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    if let hrv = sleep.hkHRV?.doubleValue {
+                        Text(String(format: "%.0f ms HRV", hrv))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    if let rhr = sleep.hkRestingHR?.doubleValue {
+                        Text(String(format: "%.0f bpm", rhr))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
             if let symptoms = sleep.symptoms as? Set<SymptomType>, !symptoms.isEmpty {
                 let symptomNames = symptoms.compactMap { $0.name }.sorted()
@@ -917,6 +916,15 @@ private struct DaySleepRow: View {
             parts.append("Duration: \(duration)")
         }
         parts.append("Quality: \(sleep.quality) out of 5")
+        if let sleepHours = sleep.hkSleepHours?.doubleValue {
+            parts.append(String(format: "%.1f hours sleep", sleepHours))
+        }
+        if let hrv = sleep.hkHRV?.doubleValue {
+            parts.append(String(format: "HRV %.0f milliseconds", hrv))
+        }
+        if let rhr = sleep.hkRestingHR?.doubleValue {
+            parts.append(String(format: "Resting heart rate %.0f beats per minute", rhr))
+        }
         if let symptoms = sleep.symptoms as? Set<SymptomType>, !symptoms.isEmpty {
             let symptomNames = symptoms.compactMap { $0.name }.sorted()
             parts.append("Symptoms: \(symptomNames.joined(separator: ", "))")

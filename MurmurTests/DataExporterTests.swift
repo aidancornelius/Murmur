@@ -5,7 +5,9 @@
 //  Created by Aidan Cornelius-Bell on 03/10/2025.
 //
 
+import CommonCrypto
 import CoreData
+import CryptoKit
 import XCTest
 @testable import Murmur
 
@@ -93,5 +95,226 @@ final class DataExporterTests: XCTestCase {
         let typeRequest = SymptomType.fetchRequest()
         let types = try testStack.context.fetch(typeRequest)
         XCTAssertTrue(types.isEmpty)
+    }
+
+    // MARK: - Encryption/Decryption Round-Trip Tests
+
+    func testExportAndDecryptRoundTrip() throws {
+        // Create a temporary file-based Core Data stack
+        let tempStack = try createTemporaryFileBasedStack()
+        defer {
+            cleanupTemporaryStack(tempStack)
+        }
+
+        // Seed with test data
+        SampleDataSeeder.seedIfNeeded(in: tempStack.context, forceSeed: true)
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: tempStack.context))
+
+        let entry = SymptomEntry(context: tempStack.context)
+        entry.id = UUID()
+        entry.createdAt = Date()
+        entry.severity = 4
+        entry.symptomType = symptomType
+        entry.note = "Round trip test"
+        try tempStack.context.save()
+
+        // Export with encryption
+        let exporter = DataExporter(stack: tempStack)
+        let password = "TestPassword123!"
+        let encryptedURL = try exporter.exportDatabase(passphrase: password)
+
+        // Verify encrypted file exists
+        XCTAssertTrue(FileManager.default.fileExists(atPath: encryptedURL.path))
+
+        // Read encrypted data
+        let encryptedData = try Data(contentsOf: encryptedURL)
+
+        // Verify structure: 32-byte salt + encrypted payload
+        XCTAssertGreaterThan(encryptedData.count, 32, "Encrypted data should have salt prefix")
+
+        let salt = encryptedData.prefix(32)
+        XCTAssertEqual(salt.count, 32)
+
+        let combined = encryptedData.dropFirst(32)
+        XCTAssertGreaterThan(combined.count, 0)
+
+        // Decrypt with correct password
+        let decryptedData = try decryptData(combined: Data(combined), password: password, salt: Data(salt))
+
+        // Verify decrypted data is not empty
+        XCTAssertGreaterThan(decryptedData.count, 0)
+
+        // Verify it contains SQLite header
+        let sqliteHeader = "SQLite format 3"
+        if let headerString = String(data: decryptedData.prefix(15), encoding: .utf8) {
+            XCTAssertEqual(headerString, sqliteHeader, "Decrypted data should start with SQLite header")
+        }
+    }
+
+    func testExportWithWrongPassword() throws {
+        let tempStack = try createTemporaryFileBasedStack()
+        defer {
+            cleanupTemporaryStack(tempStack)
+        }
+
+        // Seed with test data
+        SampleDataSeeder.seedIfNeeded(in: tempStack.context, forceSeed: true)
+        try tempStack.context.save()
+
+        // Export with one password
+        let exporter = DataExporter(stack: tempStack)
+        let correctPassword = "CorrectPassword123!"
+        let encryptedURL = try exporter.exportDatabase(passphrase: correctPassword)
+
+        // Try to decrypt with wrong password
+        let encryptedData = try Data(contentsOf: encryptedURL)
+        let salt = encryptedData.prefix(32)
+        let combined = encryptedData.dropFirst(32)
+
+        let wrongPassword = "WrongPassword456!"
+
+        // Decryption should fail with wrong password
+        XCTAssertThrowsError(try decryptData(combined: Data(combined), password: wrongPassword, salt: Data(salt))) { error in
+            // AES-GCM will throw an error when authentication fails
+            XCTAssertTrue(error is CryptoKit.CryptoKitError || error is DataExporterTests.DecryptionError)
+        }
+    }
+
+    func testExportCleanupKeepsEncryptedFile() throws {
+        let tempStack = try createTemporaryFileBasedStack()
+        defer {
+            cleanupTemporaryStack(tempStack)
+        }
+
+        SampleDataSeeder.seedIfNeeded(in: tempStack.context, forceSeed: true)
+        try tempStack.context.save()
+
+        let exporter = DataExporter(stack: tempStack)
+        let password = "TestPassword123!"
+        let encryptedURL = try exporter.exportDatabase(passphrase: password)
+
+        // Verify encrypted file still exists after export (cleanup should keep it)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: encryptedURL.path))
+
+        // Verify intermediate SQLite files were cleaned up
+        let exportDir = encryptedURL.deletingLastPathComponent()
+        let contents = try FileManager.default.contentsOfDirectory(at: exportDir, includingPropertiesForKeys: nil)
+
+        // Should only have the .enc file
+        XCTAssertEqual(contents.count, 1)
+        XCTAssertEqual(contents.first?.pathExtension, "enc")
+    }
+
+    func testExportSaltIsUnique() throws {
+        let tempStack = try createTemporaryFileBasedStack()
+        defer {
+            cleanupTemporaryStack(tempStack)
+        }
+
+        SampleDataSeeder.seedIfNeeded(in: tempStack.context, forceSeed: true)
+        try tempStack.context.save()
+
+        let exporter = DataExporter(stack: tempStack)
+        let password = "TestPassword123!"
+
+        // Export twice with same password
+        let url1 = try exporter.exportDatabase(passphrase: password)
+        let data1 = try Data(contentsOf: url1)
+        let salt1 = data1.prefix(32)
+
+        // Clean up first export
+        try? FileManager.default.removeItem(at: url1.deletingLastPathComponent())
+
+        let url2 = try exporter.exportDatabase(passphrase: password)
+        let data2 = try Data(contentsOf: url2)
+        let salt2 = data2.prefix(32)
+
+        // Salts should be different (randomly generated)
+        XCTAssertNotEqual(salt1, salt2, "Each export should use a unique random salt")
+    }
+
+    // MARK: - Helper Methods
+
+    private func createTemporaryFileBasedStack() throws -> CoreDataStack {
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("MurmurTest-\(UUID().uuidString)", isDirectory: true)
+
+        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+
+        let storeURL = tempDir.appendingPathComponent("TestStore.sqlite")
+
+        let container = NSPersistentContainer(name: "Murmur", managedObjectModel: CoreDataStack.shared.container.managedObjectModel)
+        let description = NSPersistentStoreDescription(url: storeURL)
+        container.persistentStoreDescriptions = [description]
+
+        var loadError: Error?
+        container.loadPersistentStores { _, error in
+            loadError = error
+        }
+
+        if let error = loadError {
+            throw error
+        }
+
+        return CoreDataStack(container: container)
+    }
+
+    private func cleanupTemporaryStack(_ stack: CoreDataStack) {
+        guard let storeURL = stack.container.persistentStoreCoordinator.persistentStores.first?.url else {
+            return
+        }
+
+        let tempDir = storeURL.deletingLastPathComponent()
+        try? FileManager.default.removeItem(at: tempDir)
+    }
+
+    private func decryptData(combined: Data, password: String, salt: Data) throws -> Data {
+        // Replicate the key derivation from DataExporter
+        guard let passwordData = password.data(using: .utf8) else {
+            throw DecryptionError.invalidPassword
+        }
+
+        let key = try deriveKey(from: passwordData, salt: salt)
+
+        // Decrypt using AES-GCM
+        let sealedBox = try AES.GCM.SealedBox(combined: combined)
+        let decryptedData = try AES.GCM.open(sealedBox, using: key)
+
+        return decryptedData
+    }
+
+    private func deriveKey(from password: Data, salt: Data) throws -> SymmetricKey {
+        let iterations = 100_000
+        let keyLength = 32
+
+        var derivedKeyData = Data(count: keyLength)
+        let result = derivedKeyData.withUnsafeMutableBytes { derivedKeyBytes in
+            salt.withUnsafeBytes { saltBytes in
+                password.withUnsafeBytes { passwordBytes in
+                    CCKeyDerivationPBKDF(
+                        CCPBKDFAlgorithm(kCCPBKDF2),
+                        passwordBytes.baseAddress?.assumingMemoryBound(to: Int8.self),
+                        password.count,
+                        saltBytes.baseAddress?.assumingMemoryBound(to: UInt8.self),
+                        salt.count,
+                        CCPseudoRandomAlgorithm(kCCPRFHmacAlgSHA256),
+                        UInt32(iterations),
+                        derivedKeyBytes.baseAddress?.assumingMemoryBound(to: UInt8.self),
+                        keyLength
+                    )
+                }
+            }
+        }
+
+        guard result == kCCSuccess else {
+            throw DecryptionError.keyDerivationFailed
+        }
+
+        return SymmetricKey(data: derivedKeyData)
+    }
+
+    enum DecryptionError: Error {
+        case invalidPassword
+        case keyDerivationFailed
     }
 }

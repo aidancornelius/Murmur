@@ -13,75 +13,75 @@ struct TimelineView: View {
     @Environment(\.managedObjectContext) private var context
     @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject private var appearanceManager: AppearanceManager
-    @State private var fetchedDays: Int = 30 // Start with 30 days
-    @State private var isLoadingMore = false
 
-    private let daysPerPage = AppConstants.UI.timelinePageSize
     private let logger = Logger(subsystem: "app.murmur", category: "Timeline")
 
-    @FetchRequest(
-        sortDescriptors: [
-            NSSortDescriptor(keyPath: \SymptomEntry.backdatedAt, ascending: true),
-            NSSortDescriptor(keyPath: \SymptomEntry.createdAt, ascending: true)
-        ],
-        animation: .default
-    ) private var allEntries: FetchedResults<SymptomEntry>
+    // Use dynamic fetch requests that update automatically
+    @FetchRequest private var entries: FetchedResults<SymptomEntry>
+    @FetchRequest private var activities: FetchedResults<ActivityEvent>
+    @FetchRequest private var sleepEvents: FetchedResults<SleepEvent>
+    @FetchRequest private var mealEvents: FetchedResults<MealEvent>
 
-    @FetchRequest(
-        sortDescriptors: [
-            NSSortDescriptor(keyPath: \ActivityEvent.backdatedAt, ascending: true),
-            NSSortDescriptor(keyPath: \ActivityEvent.createdAt, ascending: true)
-        ],
-        animation: .default
-    ) private var allActivities: FetchedResults<ActivityEvent>
-
-    @FetchRequest(
-        sortDescriptors: [
-            NSSortDescriptor(keyPath: \SleepEvent.backdatedAt, ascending: true),
-            NSSortDescriptor(keyPath: \SleepEvent.createdAt, ascending: true)
-        ],
-        animation: .default
-    ) private var allSleepEvents: FetchedResults<SleepEvent>
-
-    @FetchRequest(
-        sortDescriptors: [
-            NSSortDescriptor(keyPath: \MealEvent.backdatedAt, ascending: true),
-            NSSortDescriptor(keyPath: \MealEvent.createdAt, ascending: true)
-        ],
-        animation: .default
-    ) private var allMealEvents: FetchedResults<MealEvent>
-
-    private var daySections: [DaySection] {
+    init() {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
-        guard let startDate = calendar.date(byAdding: .day, value: -fetchedDays, to: today) else { return [] }
+        let startDate = calendar.date(byAdding: .day, value: -30, to: today) ?? today
 
-        // Filter entries and activities within the date range
-        let filteredEntries = allEntries.filter { entry in
-            let date = entry.backdatedAt ?? entry.createdAt ?? Date()
-            return date >= startDate
-        }
+        _entries = FetchRequest<SymptomEntry>(
+            sortDescriptors: [
+                NSSortDescriptor(keyPath: \SymptomEntry.backdatedAt, ascending: false),
+                NSSortDescriptor(keyPath: \SymptomEntry.createdAt, ascending: false)
+            ],
+            predicate: NSPredicate(
+                format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
+                startDate as NSDate, startDate as NSDate
+            ),
+            animation: .default
+        )
 
-        let filteredActivities = allActivities.filter { activity in
-            let date = activity.backdatedAt ?? activity.createdAt ?? Date()
-            return date >= startDate
-        }
+        _activities = FetchRequest<ActivityEvent>(
+            sortDescriptors: [
+                NSSortDescriptor(keyPath: \ActivityEvent.backdatedAt, ascending: false),
+                NSSortDescriptor(keyPath: \ActivityEvent.createdAt, ascending: false)
+            ],
+            predicate: NSPredicate(
+                format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
+                startDate as NSDate, startDate as NSDate
+            ),
+            animation: .default
+        )
 
-        let filteredSleepEvents = allSleepEvents.filter { sleep in
-            let date = sleep.backdatedAt ?? sleep.createdAt ?? Date()
-            return date >= startDate
-        }
+        _sleepEvents = FetchRequest<SleepEvent>(
+            sortDescriptors: [
+                NSSortDescriptor(keyPath: \SleepEvent.backdatedAt, ascending: false),
+                NSSortDescriptor(keyPath: \SleepEvent.createdAt, ascending: false)
+            ],
+            predicate: NSPredicate(
+                format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
+                startDate as NSDate, startDate as NSDate
+            ),
+            animation: .default
+        )
 
-        let filteredMealEvents = allMealEvents.filter { meal in
-            let date = meal.backdatedAt ?? meal.createdAt ?? Date()
-            return date >= startDate
-        }
+        _mealEvents = FetchRequest<MealEvent>(
+            sortDescriptors: [
+                NSSortDescriptor(keyPath: \MealEvent.backdatedAt, ascending: false),
+                NSSortDescriptor(keyPath: \MealEvent.createdAt, ascending: false)
+            ],
+            predicate: NSPredicate(
+                format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
+                startDate as NSDate, startDate as NSDate
+            ),
+            animation: .default
+        )
+    }
 
-        return DaySection.sectionsFromArrays(
-            entries: Array(filteredEntries),
-            activities: Array(filteredActivities),
-            sleepEvents: Array(filteredSleepEvents),
-            mealEvents: Array(filteredMealEvents)
+    private var daySections: [DaySection] {
+        DaySection.sectionsFromArrays(
+            entries: Array(entries),
+            activities: Array(activities),
+            sleepEvents: Array(sleepEvents),
+            mealEvents: Array(mealEvents)
         )
     }
 
@@ -107,38 +107,14 @@ struct TimelineView: View {
                     }
                 }
                 .listRowBackground(palette.surfaceColor)
-                .onAppear {
-                    // Load more when we're near the bottom
-                    if section == daySections.last {
-                        loadMoreDays()
-                    }
-                }
             }
             if daySections.isEmpty {
                 emptyState
-            } else if isLoadingMore {
-                Section {
-                    HStack {
-                        Spacer()
-                        ProgressView()
-                        Spacer()
-                    }
-                }
             }
         }
         .listStyle(.insetGrouped)
         .themedScrollBackground()
         .navigationTitle("Murmur")
-    }
-
-    private func loadMoreDays() {
-        guard !isLoadingMore else { return }
-        isLoadingMore = true
-        fetchedDays += daysPerPage
-        // Trigger after a short delay to allow the view to update
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            isLoadingMore = false
-        }
     }
 
     private func sectionHeader(for section: DaySection) -> some View {
@@ -152,7 +128,7 @@ struct TimelineView: View {
                         .font(.headline)
                     if let summary = section.summary {
                         HStack(spacing: 6) {
-                            Text(String(format: "%.1f average • %d logged", summary.averageSeverity, summary.entryCount))
+                            Text(String(format: "%.1f average • %d logged", summary.rawAverageSeverity, summary.entryCount))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                             if let loadScore = summary.loadScore, loadScore.decayedLoad > 0.1 {
@@ -199,8 +175,8 @@ struct TimelineView: View {
             return dateString
         }
 
-        let severityDesc = SeverityScale.descriptor(for: Int(summary.averageSeverity))
-        return "\(dateString). \(summary.entryCount) \(summary.entryCount == 1 ? "entry" : "entries"). Average: Level \(Int(summary.averageSeverity)), \(severityDesc)"
+        let severityDesc = SeverityScale.descriptor(for: Int(summary.rawAverageSeverity))
+        return "\(dateString). \(summary.entryCount) \(summary.entryCount == 1 ? "entry" : "entries"). Average: Level \(Int(summary.rawAverageSeverity)), \(severityDesc)"
     }
 
 }
@@ -221,9 +197,7 @@ private struct TimelineEntryRow: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     if let state = physiologicalState {
-                        Label(state.displayText, systemImage: state.iconName)
-                            .font(.caption2)
-                            .foregroundStyle(state.color)
+                        PhysiologicalStateBadge(state: state)
                     }
                 }
                 Text(SeverityScale.descriptor(for: Int(entry.severity), isPositive: entry.symptomType?.isPositive ?? false))
@@ -265,7 +239,7 @@ private struct TimelineEntryRow: View {
 
         parts.append("\(entry.symptomType?.name ?? "Unnamed") at \(timeLabel)")
 
-        let severityDesc = SeverityScale.descriptor(for: Int(entry.severity))
+        let severityDesc = SeverityScale.descriptor(for: Int(entry.severity), isPositive: entry.symptomType?.isPositive ?? false)
         parts.append("Level \(entry.severity): \(severityDesc)")
 
         if let state = physiologicalState {
@@ -357,8 +331,36 @@ private struct ExertionBadge: View {
     }
 }
 
+private struct PhysiologicalStateBadge: View {
+    let state: PhysiologicalState
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: state.iconName)
+            Text(state.displayText)
+        }
+        .font(.caption2)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .foregroundStyle(state.color)
+        .background(
+            Capsule()
+                .fill(state.color.opacity(0.15))
+        )
+        .overlay(
+            Capsule()
+                .stroke(state.color.opacity(0.4), lineWidth: 0.5)
+        )
+        .accessibilityLabel(state.displayText)
+    }
+}
+
 private struct TimelineSleepRow: View {
     let sleep: SleepEvent
+
+    private var hasHealthMetrics: Bool {
+        sleep.hkSleepHours != nil || sleep.hkHRV != nil || sleep.hkRestingHR != nil
+    }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -388,6 +390,25 @@ private struct TimelineSleepRow: View {
                     }
                     .font(.caption2)
                     .foregroundStyle(.indigo)
+                }
+                if hasHealthMetrics {
+                    HStack(spacing: 8) {
+                        if let sleepHours = sleep.hkSleepHours?.doubleValue {
+                            Text(String(format: "%.1fh", sleepHours))
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        if let hrv = sleep.hkHRV?.doubleValue {
+                            Text(String(format: "%.0f ms", hrv))
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        if let rhr = sleep.hkRestingHR?.doubleValue {
+                            Text(String(format: "%.0f bpm", rhr))
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
                 if let note = sleep.note, !note.isEmpty {
                     Text(note)
@@ -424,6 +445,15 @@ private struct TimelineSleepRow: View {
             parts.append("Duration: \(duration)")
         }
         parts.append("Quality: \(sleep.quality) out of 5")
+        if let sleepHours = sleep.hkSleepHours?.doubleValue {
+            parts.append(String(format: "%.1f hours sleep", sleepHours))
+        }
+        if let hrv = sleep.hkHRV?.doubleValue {
+            parts.append(String(format: "HRV %.0f milliseconds", hrv))
+        }
+        if let rhr = sleep.hkRestingHR?.doubleValue {
+            parts.append(String(format: "Resting heart rate %.0f beats per minute", rhr))
+        }
         if let note = sleep.note, !note.isEmpty {
             parts.append("Note: \(note)")
         }

@@ -103,8 +103,9 @@ struct AddEntryView: View {
                             Slider(value: $sharedSeverity, in: 1...5, step: 1) {
                                 Text("Severity")
                             }
+                            .accessibilityIdentifier(AccessibilityIdentifiers.severitySlider)
                             .accessibilityLabel("Severity for all symptoms")
-                            .accessibilityValue(severityAccessibilityValue(for: sharedSeverity))
+                            .accessibilityValue(sharedSeverityAccessibilityValue)
                             .accessibilityHint("Adjust to change severity for all \(selectedSymptoms.count) selected symptoms")
                             .onChange(of: sharedSeverity) { _, newValue in
                                 HapticFeedback.light.trigger()
@@ -117,6 +118,7 @@ struct AddEntryView: View {
                                 Text(sharedSeverityDescriptor)
                                     .font(.caption.bold())
                                     .foregroundStyle(.primary)
+                                    .accessibilityIdentifier(AccessibilityIdentifiers.severityLabel)
                                 Spacer()
                                 Text("\(Int(sharedSeverity))/5")
                                     .font(.caption)
@@ -135,7 +137,7 @@ struct AddEntryView: View {
                                     Text("Severity for \(symptom.symptomType.name ?? "symptom")")
                                 }
                                 .accessibilityLabel("Severity for \(symptom.symptomType.name ?? "symptom")")
-                                .accessibilityValue(severityAccessibilityValue(for: symptom.severity))
+                                .accessibilityValue(SeverityScale.accessibilityValue(for: symptom.severity, isPositive: symptom.symptomType.isPositive))
                                 .onChange(of: symptom.severity) { _, _ in
                                     HapticFeedback.light.trigger()
                                 }
@@ -193,12 +195,14 @@ struct AddEntryView: View {
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel", role: .cancel) { dismiss() }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.cancelButton)
             }
             ToolbarItem(placement: .confirmationAction) {
                 Button("Save") {
                     saveEntries(addAnother: false)
                 }
                 .disabled(isSaving || selectedSymptoms.isEmpty)
+                .accessibilityIdentifier(AccessibilityIdentifiers.saveButton)
             }
         }
     }
@@ -225,14 +229,24 @@ struct AddEntryView: View {
         }
     }
 
-    private func severityAccessibilityValue(for severity: Double) -> String {
-        let level = Int(severity)
-        switch level {
-        case 1: return "Level 1: Stable, minimal impact"
-        case 2: return "Level 2: Manageable, mild discomfort"
-        case 3: return "Level 3: Challenging, moderate impact"
-        case 4: return "Level 4: Severe, significant difficulty"
-        default: return "Level 5: Crisis, immediate attention needed"
+    // Accessibility value for shared severity slider - adapts based on selected symptom types
+    private var sharedSeverityAccessibilityValue: String {
+        guard !selectedSymptoms.isEmpty else {
+            return SeverityScale.accessibilityValue(for: sharedSeverity)
+        }
+
+        let hasPositive = selectedSymptoms.contains { $0.symptomType.isPositive }
+        let hasNegative = selectedSymptoms.contains { !$0.symptomType.isPositive }
+
+        if hasPositive && !hasNegative {
+            // All positive
+            return SeverityScale.accessibilityValue(for: sharedSeverity, isPositive: true)
+        } else if hasNegative && !hasPositive {
+            // All negative
+            return SeverityScale.accessibilityValue(for: sharedSeverity, isPositive: false)
+        } else {
+            // Mixed - use neutral language
+            return "Level \(Int(sharedSeverity)) out of 5"
         }
     }
 
@@ -275,10 +289,21 @@ struct AddEntryView: View {
             }
 
             do {
-                try context.save()
+                // Ensure all changes are registered
+                context.processPendingChanges()
+
+                // Save to persistent store
+                if context.hasChanges {
+                    try context.save()
+                    print("✅ AddEntryView: Successfully saved \(selectedSymptoms.count) entries to persistent store")
+                } else {
+                    print("⚠️ AddEntryView: No changes to save")
+                }
+
                 HapticFeedback.success.trigger()
                 dismiss()
             } catch {
+                print("❌ AddEntryView: Failed to save - \(error.localizedDescription)")
                 HapticFeedback.error.trigger()
                 errorMessage = error.localizedDescription
                 context.rollback()
@@ -546,6 +571,7 @@ private struct AllSymptomsSheet: View {
                     .textFieldStyle(.plain)
                     .autocorrectionDisabled()
                     .focused($isSearchFocused)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.symptomSearchField)
                     .accessibilityLabel("Search symptoms")
                     .accessibilityHint("Type to filter symptoms by name")
                 if !searchText.isEmpty {

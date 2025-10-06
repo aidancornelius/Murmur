@@ -9,13 +9,22 @@ import SwiftUI
 
 // MARK: - Risk Level Color Extension
 extension LoadScore.RiskLevel {
-    func color(from palette: ColorPalette) -> Color {
+    /// Static, high-contrast colors for each risk level so the UI is consistent across themes
+    var displayColor: Color {
         switch self {
-        case .safe: return palette.color(for: "severity2")
-        case .caution: return palette.color(for: "severity3")
-        case .high: return palette.color(for: "severity4")
-        case .critical: return palette.color(for: "severity5")
+        case .safe:
+            return Color(red: 0.12, green: 0.63, blue: 0.38) // Emerald
+        case .caution:
+            return Color(red: 0.98, green: 0.77, blue: 0.18) // Amber
+        case .high:
+            return Color(red: 0.96, green: 0.55, blue: 0.15) // Orange
+        case .critical:
+            return Color(red: 0.86, green: 0.20, blue: 0.28) // Crimson
         }
+    }
+
+    func color(from _: ColorPalette) -> Color {
+        displayColor
     }
 }
 
@@ -43,6 +52,8 @@ struct LoadCapacitySettingsView: View {
             Section {
                 CurrentLoadStatusView()
                     .listRowBackground(palette.surfaceColor)
+            } header: {
+                Text("Your current thresholds")
             }
 
             // Condition Presets Section
@@ -109,6 +120,7 @@ struct LoadCapacitySettingsView: View {
                         }
                     }
                     .padding(.vertical, 8)
+                    .padding(.bottom, 0) 
                     .padding(.horizontal, 12)
                     .background(
                         RoundedRectangle(cornerRadius: 12)
@@ -271,12 +283,6 @@ struct CurrentLoadStatusView: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            // Heading
-            Text("Your current thresholds")
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(.primary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
             // Visual representation of thresholds
             HStack(spacing: 2) {
                 ForEach(0..<100, id: \.self) { value in
@@ -296,7 +302,7 @@ struct CurrentLoadStatusView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Label("Safe", systemImage: "checkmark.circle")
                         .font(.caption)
-                        .foregroundStyle(LoadScore.RiskLevel.safe.color(from: palette))
+                        .foregroundStyle(LoadScore.RiskLevel.safe.displayColor)
                     Text("< \(Int(loadManager.currentThresholds.safe))")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
@@ -307,7 +313,7 @@ struct CurrentLoadStatusView: View {
                 VStack(alignment: .center, spacing: 4) {
                     Label("Caution", systemImage: "exclamationmark.triangle")
                         .font(.caption)
-                        .foregroundStyle(LoadScore.RiskLevel.caution.color(from: palette))
+                        .foregroundStyle(LoadScore.RiskLevel.caution.displayColor)
                     Text("\(Int(loadManager.currentThresholds.safe))-\(Int(loadManager.currentThresholds.caution))")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
@@ -318,7 +324,7 @@ struct CurrentLoadStatusView: View {
                 VStack(alignment: .center, spacing: 4) {
                     Label("High", systemImage: "exclamationmark.2")
                         .font(.caption)
-                        .foregroundStyle(LoadScore.RiskLevel.high.color(from: palette))
+                        .foregroundStyle(LoadScore.RiskLevel.high.displayColor)
                     Text("\(Int(loadManager.currentThresholds.caution))-\(Int(loadManager.currentThresholds.high))")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
@@ -329,7 +335,7 @@ struct CurrentLoadStatusView: View {
                 VStack(alignment: .trailing, spacing: 4) {
                     Label("Critical", systemImage: "bed.double.fill")
                         .font(.caption)
-                        .foregroundStyle(LoadScore.RiskLevel.critical.color(from: palette))
+                        .foregroundStyle(LoadScore.RiskLevel.critical.displayColor)
                     Text("> \(Int(loadManager.currentThresholds.high))")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
@@ -380,7 +386,7 @@ struct CurrentLoadStatusView: View {
 
     private func colorForValue(_ value: Double) -> Color {
         let risk = loadManager.riskLevel(for: value)
-        return risk.color(from: palette).opacity(0.3)
+        return risk.displayColor.opacity(0.3)
     }
 }
 

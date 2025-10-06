@@ -41,6 +41,8 @@ struct SampleDataSeeder {
                 !commonSymptoms.contains(symptom) && symptom.category != "Positive wellbeing"
             }
 
+            let pemSymptom = types.first { $0.name == "Post-Exertional Malaise (PEM)" }
+
             // Sample activities for realistic load tracking
             let sampleActivities: [(name: String, physical: Int16, cognitive: Int16, emotional: Int16, duration: Int)] = [
                 // Light activities
@@ -65,27 +67,155 @@ struct SampleDataSeeder {
                 ("Extended family visit", 2, 3, 4, 180)
             ]
 
+            // Sample meals
+            let breakfasts = ["Porridge with berries", "Toast and eggs", "Smoothie", "Granola and yoghurt", "Avocado toast"]
+            let lunches = ["Salad with chicken", "Sandwich", "Soup and bread", "Leftover dinner", "Rice bowl"]
+            let dinners = ["Pasta with vegetables", "Stir fry", "Grilled fish and salad", "Curry and rice", "Roast chicken"]
+            let snacks = ["Apple", "Nuts", "Biscuits", "Yoghurt", "Cheese and crackers"]
+
+            // Determine if cycle tracking should be enabled (80% chance)
+            let hasCycleTracking = Double.random(in: 0...1) < 0.8
+            var currentCycleDay = Int.random(in: 1...28) // Random starting point
+            let cycleLength = Int.random(in: 26...32) // Realistic variation in cycle length
+
+            // Track previous day's load for temporal correlations
+            var previousDayTotalLoad = 0.0
+
             for dayOffset in 0..<60 {
                 guard let date = calendar.date(byAdding: .day, value: -dayOffset, to: now) else { continue }
 
-                // Determine daily pattern (some days worse than others)
-                let isFlareDay = (dayOffset % 7 == 0 || dayOffset % 11 == 0) // Periodic flares
-                let isBetterDay = (dayOffset % 5 == 4) // Some better days
-                let isRestDay = (dayOffset % 6 == 0) // Scheduled rest days
+                // Determine daily pattern with priority ordering (no conflicts)
+                let isPEMDay = previousDayTotalLoad > 15.0 // High load yesterday triggers PEM today
+                let isFlareDay = !isPEMDay && (dayOffset % 13 == 0) // Periodic flares (avoiding PEM days)
+                let isMenstrualDay = hasCycleTracking && currentCycleDay >= 1 && currentCycleDay <= 5
+                let isRestDay = (dayOffset % 6 == 0) && !isPEMDay && !isFlareDay // Scheduled rest days
+                let isBetterDay = !isPEMDay && !isFlareDay && !isMenstrualDay && (dayOffset % 9 == 8) // Some better days
 
-                let entryCount = isFlareDay ? Int.random(in: 4...8) : (isBetterDay ? Int.random(in: 1...2) : Int.random(in: 2...4))
-
-                // Generate activities (fewer on flare/rest days)
-                let activityCount: Int
-                if isRestDay {
-                    activityCount = Int.random(in: 1...2) // Minimal activities on rest days
+                // Determine symptom count based on day type
+                let baseSymptomCount: Int
+                if isPEMDay {
+                    baseSymptomCount = Int.random(in: 5...9)
                 } else if isFlareDay {
-                    activityCount = Int.random(in: 1...3) // Limited activities on flare days
+                    baseSymptomCount = Int.random(in: 4...7)
+                } else if isMenstrualDay {
+                    baseSymptomCount = Int.random(in: 3...6)
                 } else if isBetterDay {
-                    activityCount = Int.random(in: 3...5) // More activities on better days
+                    baseSymptomCount = Int.random(in: 0...2)
+                } else {
+                    baseSymptomCount = Int.random(in: 2...4)
+                }
+
+                // Generate sleep event for previous night
+                let sleepEvent = SleepEvent(context: context)
+                sleepEvent.id = UUID()
+
+                // Determine sleep quality and duration based on day type and previous activity
+                let sleepQuality: Int16
+                let sleepDuration: Double
+
+                if isPEMDay || isFlareDay {
+                    sleepQuality = Int16.random(in: 1...2) // Poor sleep
+                    sleepDuration = Double.random(in: 4.0...6.0)
+                } else if isMenstrualDay {
+                    sleepQuality = Int16.random(in: 2...3)
+                    sleepDuration = Double.random(in: 5.5...7.0)
+                } else if isBetterDay {
+                    sleepQuality = Int16.random(in: 4...5) // Good sleep
+                    sleepDuration = Double.random(in: 7.5...9.0)
+                } else {
+                    sleepQuality = Int16.random(in: 2...4)
+                    sleepDuration = Double.random(in: 6.0...8.0)
+                }
+
+                sleepEvent.quality = sleepQuality
+                sleepEvent.hkSleepHours = NSNumber(value: sleepDuration)
+
+                // Realistic bed and wake times
+                let bedHour = Int.random(in: 21...23)
+                let wakeHour = bedHour + Int(sleepDuration) - 24
+                guard let bedTime = calendar.date(bySettingHour: bedHour, minute: Int.random(in: 0...59), second: 0, of: calendar.date(byAdding: .day, value: -1, to: date) ?? date),
+                      let wakeTime = calendar.date(bySettingHour: wakeHour, minute: Int.random(in: 0...59), second: 0, of: date) else { continue }
+
+                sleepEvent.bedTime = bedTime
+                sleepEvent.wakeTime = wakeTime
+                sleepEvent.createdAt = wakeTime
+                sleepEvent.backdatedAt = wakeTime
+
+                // Add sleep-related health metrics
+                if isPEMDay || isFlareDay {
+                    sleepEvent.hkHRV = NSNumber(value: Double.random(in: 15...30))
+                    sleepEvent.hkRestingHR = NSNumber(value: Double.random(in: 72...85))
+                } else if isBetterDay {
+                    sleepEvent.hkHRV = NSNumber(value: Double.random(in: 50...70))
+                    sleepEvent.hkRestingHR = NSNumber(value: Double.random(in: 52...62))
+                } else {
+                    sleepEvent.hkHRV = NSNumber(value: Double.random(in: 30...50))
+                    sleepEvent.hkRestingHR = NSNumber(value: Double.random(in: 60...72))
+                }
+
+                // Link common sleep-related symptoms to sleep event
+                if sleepQuality <= 2 {
+                    let sleepSymptoms = types.filter { ["Insomnia", "Unrefreshing sleep", "Restless sleep"].contains($0.name ?? "") }
+                    if let symptom = sleepSymptoms.randomElement() {
+                        sleepEvent.addToSymptoms(symptom)
+                    }
+                }
+
+                // Generate meal events (3 main meals + occasional snacks)
+                let mealTimes: [(hour: Int, type: String, options: [String])] = [
+                    (8, "Breakfast", breakfasts),
+                    (13, "Lunch", lunches),
+                    (19, "Dinner", dinners)
+                ]
+
+                for mealTime in mealTimes {
+                    let meal = MealEvent(context: context)
+                    meal.id = UUID()
+                    meal.mealType = mealTime.type
+                    meal.mealDescription = mealTime.options.randomElement()
+
+                    guard let mealDate = calendar.date(bySettingHour: mealTime.hour, minute: Int.random(in: 0...59), second: 0, of: date) else { continue }
+                    meal.createdAt = mealDate
+                    meal.backdatedAt = mealDate
+
+                    // Occasional notes about meals
+                    if Double.random(in: 0...1) < 0.15 {
+                        let mealNotes = [
+                            "Felt nauseous after",
+                            "Enjoyed this",
+                            "Too much effort to prepare",
+                            "Needed help with preparation",
+                            "Simple and manageable"
+                        ]
+                        meal.note = mealNotes.randomElement()
+                    }
+                }
+
+                // Occasional snacks
+                if Double.random(in: 0...1) < 0.4 {
+                    let snack = MealEvent(context: context)
+                    snack.id = UUID()
+                    snack.mealType = "Snack"
+                    snack.mealDescription = snacks.randomElement()
+
+                    guard let snackDate = calendar.date(bySettingHour: Int.random(in: 10...16), minute: Int.random(in: 0...59), second: 0, of: date) else { continue }
+                    snack.createdAt = snackDate
+                    snack.backdatedAt = snackDate
+                }
+
+                // Generate activities (fewer on PEM/flare/rest days)
+                let activityCount: Int
+                if isPEMDay {
+                    activityCount = Int.random(in: 0...2) // Minimal activities on PEM days
+                } else if isFlareDay || isRestDay {
+                    activityCount = Int.random(in: 1...3) // Limited activities
+                } else if isBetterDay {
+                    activityCount = Int.random(in: 4...6) // More activities on better days
                 } else {
                     activityCount = Int.random(in: 2...4) // Normal day
                 }
+
+                var dayTotalLoad = 0.0
 
                 // Add activities for the day
                 for activityIndex in 0..<activityCount {
@@ -102,7 +232,7 @@ struct SampleDataSeeder {
 
                     // Select appropriate activity based on day type
                     let availableActivities: [(name: String, physical: Int16, cognitive: Int16, emotional: Int16, duration: Int)]
-                    if isFlareDay || isRestDay {
+                    if isPEMDay || isFlareDay || isRestDay {
                         // Only light activities on bad/rest days
                         availableActivities = Array(sampleActivities.prefix(5))
                     } else if isBetterDay {
@@ -120,24 +250,46 @@ struct SampleDataSeeder {
                     activity.emotionalLoad = selectedActivity.emotional
                     activity.durationMinutes = NSNumber(value: selectedActivity.duration)
 
+                    // Calculate load for this activity
+                    let activityLoad = Double(selectedActivity.physical + selectedActivity.cognitive + selectedActivity.emotional) * (Double(selectedActivity.duration) / 60.0)
+                    dayTotalLoad += activityLoad
+
                     // Add notes to some activities
-                    if Double.random(in: 0...1) < 0.2 {
-                        let activityNotes = [
-                            "Felt okay during this",
-                            "Had to take breaks",
-                            "Pushed through fatigue",
-                            "Paced well",
-                            "Overdid it",
-                            "Needed rest after",
-                            "Manageable today"
-                        ]
+                    if Double.random(in: 0...1) < 0.25 {
+                        let activityNotes: [String]
+                        if isPEMDay || isFlareDay {
+                            activityNotes = [
+                                "Had to take frequent breaks",
+                                "Really struggled with this",
+                                "Barely managed",
+                                "Needed help"
+                            ]
+                        } else if isBetterDay {
+                            activityNotes = [
+                                "Felt good during this",
+                                "Paced well",
+                                "Manageable today",
+                                "Felt capable"
+                            ]
+                        } else {
+                            activityNotes = [
+                                "Felt okay during this",
+                                "Had to take breaks",
+                                "Pushed through fatigue",
+                                "Paced reasonably well",
+                                "Needed rest after"
+                            ]
+                        }
                         activity.note = activityNotes.randomElement()
                     }
                 }
 
+                // Store load for next day's PEM calculation
+                previousDayTotalLoad = dayTotalLoad
+
                 // Add positive symptoms on better days
                 if isBetterDay && !positiveSymptoms.isEmpty {
-                    let positiveEntryCount = Int.random(in: 1...3)
+                    let positiveEntryCount = Int.random(in: 2...4)
                     for positiveIndex in 0..<positiveEntryCount {
                         let entry = SymptomEntry(context: context)
                         entry.id = UUID()
@@ -154,12 +306,13 @@ struct SampleDataSeeder {
                     }
                 }
 
-                for entryIndex in 0..<entryCount {
+                // Generate symptom entries
+                for entryIndex in 0..<baseSymptomCount {
                     let entry = SymptomEntry(context: context)
                     entry.id = UUID()
 
                     // Spread entries throughout the day
-                    let hourOffset = entryIndex * (24 / max(entryCount, 1))
+                    let hourOffset = entryIndex * (24 / max(baseSymptomCount, 1))
                     let minuteOffset = Int.random(in: 0..<60)
                     guard let entryDate = calendar.date(byAdding: .hour, value: hourOffset, to: date),
                           let finalDate = calendar.date(byAdding: .minute, value: minuteOffset, to: entryDate) else { continue }
@@ -167,14 +320,25 @@ struct SampleDataSeeder {
                     entry.createdAt = finalDate
                     entry.backdatedAt = finalDate
 
-                    // Choose symptom type based on frequency
-                    let useCommon = Double.random(in: 0...1) < 0.7
-                    let symptomPool = useCommon ? commonSymptoms : occasionalSymptoms
-                    entry.symptomType = symptomPool.randomElement() ?? types.randomElement()
+                    // Choose symptom type based on day type and frequency
+                    if isPEMDay && entryIndex == 0 && pemSymptom != nil {
+                        // First symptom on PEM day should be PEM
+                        entry.symptomType = pemSymptom
+                    } else if isMenstrualDay && entryIndex < 2 {
+                        // Menstrual-specific symptoms
+                        let menstrualSymptoms = types.filter { ["Heavy/painful periods", "Stomach pain", "Fatigue", "Headache"].contains($0.name ?? "") }
+                        entry.symptomType = menstrualSymptoms.randomElement() ?? commonSymptoms.randomElement()
+                    } else {
+                        let useCommon = Double.random(in: 0...1) < 0.7
+                        let symptomPool = useCommon ? commonSymptoms : occasionalSymptoms
+                        entry.symptomType = symptomPool.randomElement() ?? types.randomElement()
+                    }
 
-                    // Set severity - worse on flare days
-                    if isFlareDay {
+                    // Set severity - worse on PEM/flare days
+                    if isPEMDay {
                         entry.severity = Int16.random(in: 4...5)
+                    } else if isFlareDay || isMenstrualDay {
+                        entry.severity = Int16.random(in: 3...5)
                     } else if isBetterDay {
                         entry.severity = Int16.random(in: 1...2)
                     } else {
@@ -182,71 +346,93 @@ struct SampleDataSeeder {
                     }
 
                     // Add notes to some entries
-                    if Double.random(in: 0...1) < 0.3 {
-                        let notes = [
-                            "Worse after activity",
-                            "Improving gradually",
-                            "Triggered by stress",
-                            "Affecting sleep",
-                            "Better with rest",
-                            "No clear trigger",
-                            "Started suddenly",
-                            "Persistent today",
-                            "Manageable",
-                            "Very challenging"
-                        ]
+                    if Double.random(in: 0...1) < 0.35 {
+                        let notes: [String]
+                        if isPEMDay {
+                            notes = [
+                                "Worse after yesterday's activity",
+                                "Crashed after overdoing it",
+                                "Need complete rest",
+                                "Payback from yesterday"
+                            ]
+                        } else if isFlareDay {
+                            notes = [
+                                "Triggered by stress",
+                                "Affecting sleep",
+                                "No clear trigger",
+                                "Started suddenly",
+                                "Very challenging"
+                            ]
+                        } else {
+                            notes = [
+                                "Improving gradually",
+                                "Better with rest",
+                                "Persistent today",
+                                "Manageable",
+                                "Comes and goes"
+                            ]
+                        }
                         entry.note = notes.randomElement()
                     }
 
-                    // Add realistic health metrics
-                    // HRV: lower on bad days, higher on good days
-                    if Double.random(in: 0...1) < 0.6 {
-                        let baseHRV = isBetterDay ? 55.0 : (isFlareDay ? 25.0 : 40.0)
-                        entry.hkHRV = NSNumber(value: baseHRV + Double.random(in: -10...10))
-                    }
+                    // Add realistic health metrics (consistent for all entries on the day)
+                    if entryIndex == 0 {
+                        // HRV: lower on bad days, higher on good days
+                        let baseHRV = isBetterDay ? 55.0 : (isPEMDay || isFlareDay ? 22.0 : 38.0)
+                        entry.hkHRV = NSNumber(value: baseHRV + Double.random(in: -8...8))
 
-                    // Resting HR: higher on flare days
-                    if Double.random(in: 0...1) < 0.6 {
-                        let baseHR = isFlareDay ? 75.0 : (isBetterDay ? 58.0 : 65.0)
-                        entry.hkRestingHR = NSNumber(value: baseHR + Double.random(in: -5...5))
-                    }
+                        // Resting HR: higher on PEM/flare days
+                        let baseHR = isPEMDay || isFlareDay ? 78.0 : (isBetterDay ? 58.0 : 65.0)
+                        entry.hkRestingHR = NSNumber(value: baseHR + Double.random(in: -4...4))
 
-                    // Sleep: worse on flare days
-                    if Double.random(in: 0...1) < 0.5 {
-                        let baseSleep = isFlareDay ? 5.0 : (isBetterDay ? 8.5 : 6.5)
-                        entry.hkSleepHours = NSNumber(value: max(3.0, baseSleep + Double.random(in: -1.5...1.5)))
-                    }
+                        // Sleep hours from previous night
+                        entry.hkSleepHours = NSNumber(value: sleepDuration)
 
-                    // Workout: less on flare days, more on better days
-                    if Double.random(in: 0...1) < 0.3 {
-                        let baseWorkout = isFlareDay ? 0.0 : (isBetterDay ? 25.0 : 10.0)
-                        entry.hkWorkoutMinutes = NSNumber(value: max(0.0, baseWorkout + Double.random(in: -10...10)))
-                    }
-
-                    // Cycle tracking (if applicable)
-                    if Double.random(in: 0...1) < 0.4 { // 40% chance of cycle tracking
-                        let cycleLength = 28
-                        let cycleDay = (dayOffset % cycleLength) + 1
-                        entry.hkCycleDay = NSNumber(value: cycleDay)
-
-                        // Flow level during menstruation
-                        if cycleDay >= 1 && cycleDay <= 5 {
-                            let flowLevels = ["light", "medium", "heavy"]
-                            entry.hkFlowLevel = flowLevels.randomElement()
+                        // Workout: less on bad days, more on better days
+                        if Double.random(in: 0...1) < 0.25 {
+                            let baseWorkout = isPEMDay || isFlareDay ? 0.0 : (isBetterDay ? 25.0 : 10.0)
+                            entry.hkWorkoutMinutes = NSNumber(value: max(0.0, baseWorkout + Double.random(in: -8...8)))
                         }
+
+                        // Consistent cycle tracking across all entries on this day
+                        if hasCycleTracking {
+                            entry.hkCycleDay = NSNumber(value: currentCycleDay)
+
+                            // Flow level during menstruation
+                            if isMenstrualDay {
+                                let flowLevels: [String]
+                                let dayInPeriod = currentCycleDay
+                                if dayInPeriod == 1 || dayInPeriod == 5 {
+                                    flowLevels = ["light"]
+                                } else if dayInPeriod == 2 || dayInPeriod == 3 {
+                                    flowLevels = ["medium", "heavy"]
+                                } else {
+                                    flowLevels = ["light", "medium"]
+                                }
+                                entry.hkFlowLevel = flowLevels.randomElement()
+                            }
+                        }
+                    }
+                }
+
+                // Update cycle day for next iteration (working backwards through time)
+                if hasCycleTracking {
+                    currentCycleDay -= 1
+                    if currentCycleDay < 1 {
+                        currentCycleDay = cycleLength
                     }
                 }
             }
 
             try? context.save()
-            logger.info("Generated sample timeline entries (symptoms and activities) for simulator")
+            logger.info("Generated sample timeline entries (symptoms, activities, sleep, and meals) for simulator")
         }
     }
     #endif
 
     static func seedIfNeeded(in context: NSManagedObjectContext, forceSeed: Bool = false) {
         context.perform {
-            let lastSeedVersion = UserDefaults.standard.integer(forKey: "symptomSeedVersion")
+            let lastSeedVersion = UserDefaults.standard.integer(forKey: UserDefaultsKeys.symptomSeedVersion)
 
             // Check if we need to seed or update (unless forceSeed is true for testing)
             guard forceSeed || lastSeedVersion < currentSeedVersion else { return }
@@ -367,7 +553,7 @@ struct SampleDataSeeder {
             }
 
             if let _ = try? context.save() {
-                UserDefaults.standard.set(currentSeedVersion, forKey: "symptomSeedVersion")
+                UserDefaults.standard.set(currentSeedVersion, forKey: UserDefaultsKeys.symptomSeedVersion)
                 logger.info("Updated default symptoms to version \(currentSeedVersion)")
             }
         }

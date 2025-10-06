@@ -10,19 +10,33 @@ import SwiftUI
 // MARK: - Severity Accessibility
 extension SeverityScale {
     /// Provides semantic, human-friendly descriptions for VoiceOver
-    static func accessibilityLabel(for value: Int) -> String {
-        switch max(1, min(5, value)) {
-        case 1: return "Level 1: Stable, minimal impact"
-        case 2: return "Level 2: Manageable, mild discomfort"
-        case 3: return "Level 3: Challenging, moderate impact"
-        case 4: return "Level 4: Severe, significant difficulty"
-        default: return "Level 5: Crisis, immediate attention needed"
+    static func accessibilityLabel(for value: Int, isPositive: Bool = false) -> String {
+        let level = max(1, min(5, value))
+
+        if isPositive {
+            // For positive symptoms (higher is better)
+            switch level {
+            case 1: return "Level 1: Very low, minimal wellbeing"
+            case 2: return "Level 2: Low, some wellbeing"
+            case 3: return "Level 3: Moderate, decent wellbeing"
+            case 4: return "Level 4: High, good wellbeing"
+            default: return "Level 5: Very high, excellent wellbeing"
+            }
+        } else {
+            // For negative symptoms (lower is better)
+            switch level {
+            case 1: return "Level 1: Stable, minimal impact"
+            case 2: return "Level 2: Manageable, mild discomfort"
+            case 3: return "Level 3: Challenging, moderate impact"
+            case 4: return "Level 4: Severe, significant difficulty"
+            default: return "Level 5: Crisis, immediate attention needed"
+            }
         }
     }
 
-    static func accessibilityValue(for value: Double) -> String {
+    static func accessibilityValue(for value: Double, isPositive: Bool = false) -> String {
         let rounded = Int(round(value))
-        return accessibilityLabel(for: rounded)
+        return accessibilityLabel(for: rounded, isPositive: isPositive)
     }
 }
 
@@ -33,6 +47,7 @@ extension View {
         symptomName: String,
         severity: Int,
         time: String,
+        isPositive: Bool = false,
         note: String? = nil,
         physiologicalState: String? = nil
     ) -> some View {
@@ -42,6 +57,7 @@ extension View {
                 symptomName: symptomName,
                 severity: severity,
                 time: time,
+                isPositive: isPositive,
                 note: note,
                 physiologicalState: physiologicalState
             ))
@@ -52,6 +68,7 @@ extension View {
         symptomName: String,
         severity: Int,
         time: String,
+        isPositive: Bool,
         note: String?,
         physiologicalState: String?
     ) -> String {
@@ -61,7 +78,7 @@ extension View {
         parts.append("\(symptomName) at \(time)")
 
         // Severity with semantic description
-        parts.append(SeverityScale.accessibilityLabel(for: severity))
+        parts.append(SeverityScale.accessibilityLabel(for: severity, isPositive: isPositive))
 
         // Physiological state if available
         if let state = physiologicalState {
@@ -77,9 +94,9 @@ extension View {
     }
 
     /// Applies accessibility for severity slider
-    func severitySliderAccessibility(value: Double) -> some View {
+    func severitySliderAccessibility(value: Double, isPositive: Bool = false) -> some View {
         self
-            .accessibilityValue(SeverityScale.accessibilityValue(for: value))
+            .accessibilityValue(SeverityScale.accessibilityValue(for: value, isPositive: isPositive))
             .accessibilityAdjustableAction { direction in
                 // This will be handled by the slider binding
             }
@@ -105,28 +122,4 @@ extension View {
             .accessibilityLabel(label)
             .accessibilityHint("Double tap to view all entries for this day")
     }
-}
-
-// MARK: - Accessibility Identifiers
-enum AccessibilityIdentifiers {
-    // Main screens
-    static let timeline = "timeline_screen"
-    static let addEntry = "add_entry_screen"
-    static let dayDetail = "day_detail_screen"
-    static let settings = "settings_screen"
-
-    // Actions
-    static let addEntryButton = "add_entry_button"
-    static let saveButton = "save_entry_button"
-    static let cancelButton = "cancel_button"
-
-    // Inputs
-    static let symptomPicker = "symptom_picker"
-    static let severitySlider = "severity_slider"
-    static let noteField = "note_field"
-    static let dateTimePicker = "date_time_picker"
-
-    // Lists
-    static let entryList = "entry_list"
-    static let symptomTypeList = "symptom_type_list"
 }

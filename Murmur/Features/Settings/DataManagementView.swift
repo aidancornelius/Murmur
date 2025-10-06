@@ -25,7 +25,14 @@ struct DataManagementView: View {
     }
 
     var body: some View {
-        List {
+        Form {
+            Section {
+                Text("You may wish to back up your entries, for instance, to transfer them to a new device. You may also reset the app to start fresh.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .listRowBackground(Color.clear)
+            }
+
             Section("Backup") {
                 Button {
                     showBackupSheet = true

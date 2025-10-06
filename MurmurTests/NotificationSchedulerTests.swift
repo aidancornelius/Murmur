@@ -12,19 +12,20 @@ import UserNotifications
 
 final class NotificationSchedulerTests: XCTestCase {
     var testStack: InMemoryCoreDataStack!
-    var scheduler: NotificationScheduler!
 
     override func setUp() {
         super.setUp()
         testStack = InMemoryCoreDataStack()
-        scheduler = NotificationScheduler()
     }
 
     override func tearDown() {
-        scheduler = nil
+        // Clean up any test reminders from notification center
+        UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
         testStack = nil
         super.tearDown()
     }
+
+    // MARK: - Core Data Reminder Tests
 
     func testCreateReminder() throws {
         let reminder = Reminder(context: testStack.context)
@@ -36,7 +37,6 @@ final class NotificationSchedulerTests: XCTestCase {
 
         try testStack.context.save()
 
-        // Verify reminder was created
         let request = Reminder.fetchRequest()
         let reminders = try testStack.context.fetch(request)
 
@@ -46,93 +46,244 @@ final class NotificationSchedulerTests: XCTestCase {
         XCTAssertTrue(reminders.first?.isEnabled ?? false)
     }
 
-    func testMultipleReminders() throws {
-        // Create multiple reminders with different times
-        for i in 0..<5 {
-            let reminder = Reminder(context: testStack.context)
-            reminder.id = UUID()
-            reminder.hour = Int16(8 + i)
-            reminder.minute = Int16(i * 10)
-            reminder.isEnabled = i % 2 == 0
-            reminder.repeatsOn = NSArray(array: ["Monday"])
-        }
+    // MARK: - NotificationScheduler API Tests
+
+    func testScheduleReminderWithNoRepeatingDays() async throws {
+        let reminder = Reminder(context: testStack.context)
+        reminder.id = UUID()
+        reminder.hour = 10
+        reminder.minute = 30
+        reminder.isEnabled = true
+        reminder.repeatsOn = NSArray(array: [])
 
         try testStack.context.save()
 
-        // Verify all reminders are created
-        let request = Reminder.fetchRequest()
-        let reminders = try testStack.context.fetch(request)
-        XCTAssertEqual(reminders.count, 5)
+        // Schedule the reminder
+        try await NotificationScheduler.schedule(reminder: reminder)
 
-        // Check enabled count
-        let enabledReminders = reminders.filter { $0.isEnabled }
-        XCTAssertEqual(enabledReminders.count, 3)
+        // Verify notification was scheduled
+        let center = UNUserNotificationCenter.current()
+        let pendingRequests = await center.pendingNotificationRequests()
+
+        let matchingRequest = pendingRequests.first { $0.identifier == reminder.id?.uuidString }
+        XCTAssertNotNil(matchingRequest, "Notification request should be scheduled")
+        XCTAssertEqual(matchingRequest?.content.title, "Murmur: check in reminder")
+        XCTAssertEqual(matchingRequest?.content.body, "Tap to record your symptoms, events and sleep.")
+
+        // Verify trigger
+        if let trigger = matchingRequest?.trigger as? UNCalendarNotificationTrigger {
+            XCTAssertEqual(trigger.dateComponents.hour, 10)
+            XCTAssertEqual(trigger.dateComponents.minute, 30)
+            XCTAssertTrue(trigger.repeats)
+        } else {
+            XCTFail("Trigger should be UNCalendarNotificationTrigger")
+        }
     }
 
-    func testDisabledReminder() throws {
+    func testScheduleReminderWithRepeatingDays() async throws {
+        let reminder = Reminder(context: testStack.context)
+        reminder.id = UUID()
+        reminder.hour = 9
+        reminder.minute = 0
+        reminder.isEnabled = true
+        reminder.repeatsOn = NSArray(array: ["Monday", "Wednesday", "Friday"])
+
+        try testStack.context.save()
+
+        try await NotificationScheduler.schedule(reminder: reminder)
+
+        let center = UNUserNotificationCenter.current()
+        let pendingRequests = await center.pendingNotificationRequests()
+
+        // Should have 3 notifications (one per day)
+        let reminderId = try XCTUnwrap(reminder.id?.uuidString)
+        let mondayRequest = pendingRequests.first { $0.identifier == "\(reminderId)-Monday" }
+        let wednesdayRequest = pendingRequests.first { $0.identifier == "\(reminderId)-Wednesday" }
+        let fridayRequest = pendingRequests.first { $0.identifier == "\(reminderId)-Friday" }
+
+        XCTAssertNotNil(mondayRequest)
+        XCTAssertNotNil(wednesdayRequest)
+        XCTAssertNotNil(fridayRequest)
+
+        // Verify Monday trigger has weekday = 2
+        if let trigger = mondayRequest?.trigger as? UNCalendarNotificationTrigger {
+            XCTAssertEqual(trigger.dateComponents.weekday, 2) // Monday
+            XCTAssertEqual(trigger.dateComponents.hour, 9)
+            XCTAssertEqual(trigger.dateComponents.minute, 0)
+        } else {
+            XCTFail("Monday trigger should be UNCalendarNotificationTrigger")
+        }
+
+        // Verify Wednesday trigger has weekday = 4
+        if let trigger = wednesdayRequest?.trigger as? UNCalendarNotificationTrigger {
+            XCTAssertEqual(trigger.dateComponents.weekday, 4) // Wednesday
+        } else {
+            XCTFail("Wednesday trigger should be UNCalendarNotificationTrigger")
+        }
+
+        // Verify Friday trigger has weekday = 6
+        if let trigger = fridayRequest?.trigger as? UNCalendarNotificationTrigger {
+            XCTAssertEqual(trigger.dateComponents.weekday, 6) // Friday
+        } else {
+            XCTFail("Friday trigger should be UNCalendarNotificationTrigger")
+        }
+    }
+
+    func testScheduleReminderReplacesExisting() async throws {
+        let reminder = Reminder(context: testStack.context)
+        reminder.id = UUID()
+        reminder.hour = 8
+        reminder.minute = 0
+        reminder.isEnabled = true
+        reminder.repeatsOn = NSArray(array: [])
+
+        try testStack.context.save()
+
+        // Schedule first time
+        try await NotificationScheduler.schedule(reminder: reminder)
+
+        let center = UNUserNotificationCenter.current()
+        var pendingRequests = await center.pendingNotificationRequests()
+        XCTAssertEqual(pendingRequests.count, 1)
+
+        // Update time and reschedule
+        reminder.hour = 14
+        reminder.minute = 30
+        try await NotificationScheduler.schedule(reminder: reminder)
+
+        pendingRequests = await center.pendingNotificationRequests()
+
+        // Should still only have 1 notification (old one removed)
+        XCTAssertEqual(pendingRequests.count, 1)
+
+        // Verify new time
+        let matchingRequest = pendingRequests.first { $0.identifier == reminder.id?.uuidString }
+        if let trigger = matchingRequest?.trigger as? UNCalendarNotificationTrigger {
+            XCTAssertEqual(trigger.dateComponents.hour, 14)
+            XCTAssertEqual(trigger.dateComponents.minute, 30)
+        }
+    }
+
+    func testRemoveReminder() async throws {
         let reminder = Reminder(context: testStack.context)
         reminder.id = UUID()
         reminder.hour = 7
         reminder.minute = 0
-        reminder.isEnabled = false // Disabled
+        reminder.isEnabled = true
+        reminder.repeatsOn = NSArray(array: ["Monday", "Wednesday"])
 
         try testStack.context.save()
 
-        XCTAssertFalse(reminder.isEnabled)
+        // Schedule it
+        try await NotificationScheduler.schedule(reminder: reminder)
+
+        let center = UNUserNotificationCenter.current()
+        var pendingRequests = await center.pendingNotificationRequests()
+        XCTAssertEqual(pendingRequests.count, 2) // Monday and Wednesday
+
+        // Remove it
+        NotificationScheduler.remove(reminder: reminder)
+
+        // Wait a moment for removal to process
+        try await Task.sleep(nanoseconds: 100_000_000)
+
+        pendingRequests = await center.pendingNotificationRequests()
+        let reminderId = reminder.id?.uuidString ?? ""
+
+        // Should have no notifications with this reminder's ID
+        let remainingForReminder = pendingRequests.filter { req in
+            req.identifier.contains(reminderId)
+        }
+        XCTAssertTrue(remainingForReminder.isEmpty)
     }
 
-    func testReminderWithRepeatingDays() throws {
+    func testScheduleWithMissingIdentifier() async throws {
         let reminder = Reminder(context: testStack.context)
-        reminder.id = UUID()
-        reminder.hour = 20
+        reminder.id = nil // No ID
+        reminder.hour = 10
         reminder.minute = 0
-        reminder.isEnabled = true
 
-        let repeatDays = ["Monday", "Wednesday", "Friday", "Sunday"]
-        reminder.repeatsOn = NSArray(array: repeatDays)
-
-        try testStack.context.save()
-
-        // Verify repeat days
-        if let storedDays = reminder.repeatsOn as? [String] {
-            XCTAssertEqual(storedDays.count, 4)
-            XCTAssertTrue(storedDays.contains("Monday"))
-            XCTAssertTrue(storedDays.contains("Friday"))
-        } else {
-            XCTFail("Repeat days not stored correctly")
+        do {
+            try await NotificationScheduler.schedule(reminder: reminder)
+            XCTFail("Should throw missingIdentifier error")
+        } catch NotificationScheduler.SchedulerError.missingIdentifier {
+            // Expected
+        } catch {
+            XCTFail("Unexpected error: \(error)")
         }
     }
 
-    func testReminderTimeComponents() throws {
-        let reminder = Reminder(context: testStack.context)
-        reminder.id = UUID()
-        reminder.hour = 23  // 11 PM
-        reminder.minute = 59
-        reminder.isEnabled = true
+    func testWeekdayMappingAllDays() async throws {
+        let weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+        let expectedWeekdayNumbers = [1, 2, 3, 4, 5, 6, 7]
 
-        try testStack.context.save()
-
-        XCTAssertEqual(reminder.hour, 23)
-        XCTAssertEqual(reminder.minute, 59)
-    }
-
-    func testFetchEnabledReminders() throws {
-        // Create mix of enabled and disabled reminders
-        for i in 0..<10 {
+        for (index, day) in weekdays.enumerated() {
             let reminder = Reminder(context: testStack.context)
             reminder.id = UUID()
-            reminder.hour = Int16(i)
+            reminder.hour = 12
             reminder.minute = 0
-            reminder.isEnabled = i < 5 // First 5 are enabled
+            reminder.repeatsOn = NSArray(array: [day])
+
+            try await NotificationScheduler.schedule(reminder: reminder)
+
+            let center = UNUserNotificationCenter.current()
+            let pendingRequests = await center.pendingNotificationRequests()
+
+            let reminderId = try XCTUnwrap(reminder.id?.uuidString)
+            let request = pendingRequests.first { $0.identifier == "\(reminderId)-\(day)" }
+
+            if let trigger = request?.trigger as? UNCalendarNotificationTrigger {
+                XCTAssertEqual(trigger.dateComponents.weekday, expectedWeekdayNumbers[index],
+                             "\(day) should map to weekday \(expectedWeekdayNumbers[index])")
+            } else {
+                XCTFail("\(day) notification not scheduled correctly")
+            }
+
+            // Clean up for next iteration
+            NotificationScheduler.remove(reminder: reminder)
+            try await Task.sleep(nanoseconds: 50_000_000)
         }
+    }
 
-        try testStack.context.save()
+    func testScheduleWithCaseInsensitiveDays() async throws {
+        let reminder = Reminder(context: testStack.context)
+        reminder.id = UUID()
+        reminder.hour = 15
+        reminder.minute = 30
+        reminder.repeatsOn = NSArray(array: ["MONDAY", "wednesday", "FriDAY"])
 
-        // Fetch only enabled reminders
-        let request = Reminder.fetchRequest()
-        request.predicate = NSPredicate(format: "isEnabled == %@", NSNumber(value: true))
-        let enabledReminders = try testStack.context.fetch(request)
+        try await NotificationScheduler.schedule(reminder: reminder)
 
-        XCTAssertEqual(enabledReminders.count, 5)
+        let center = UNUserNotificationCenter.current()
+        let pendingRequests = await center.pendingNotificationRequests()
+
+        let reminderId = try XCTUnwrap(reminder.id?.uuidString)
+
+        // All should be scheduled regardless of case
+        XCTAssertNotNil(pendingRequests.first { $0.identifier == "\(reminderId)-MONDAY" })
+        XCTAssertNotNil(pendingRequests.first { $0.identifier == "\(reminderId)-wednesday" })
+        XCTAssertNotNil(pendingRequests.first { $0.identifier == "\(reminderId)-FriDAY" })
+    }
+
+    func testNotificationContent() async throws {
+        let reminder = Reminder(context: testStack.context)
+        reminder.id = UUID()
+        reminder.hour = 11
+        reminder.minute = 0
+        reminder.repeatsOn = NSArray(array: [])
+
+        try await NotificationScheduler.schedule(reminder: reminder)
+
+        let center = UNUserNotificationCenter.current()
+        let pendingRequests = await center.pendingNotificationRequests()
+
+        let request = pendingRequests.first { $0.identifier == reminder.id?.uuidString }
+        XCTAssertNotNil(request)
+
+        let content = try XCTUnwrap(request?.content)
+        XCTAssertEqual(content.title, "Murmur: check in reminder")
+        XCTAssertEqual(content.body, "Tap to record your symptoms, events and sleep.")
+        XCTAssertEqual(content.sound, .default)
+        XCTAssertEqual(content.interruptionLevel, .timeSensitive)
     }
 }

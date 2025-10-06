@@ -32,58 +32,53 @@ final class MurmurUITests: XCTestCase {
         // Simple test to verify app launches
         XCTAssertTrue(app.exists, "App should launch")
 
-        // Wait a bit for app to fully load
-        sleep(3)
-
-        // Try to find any UI element to confirm app is responsive
-        let logButton = app.buttons["Log symptom"]
+        // Use proper wait instead of sleep
+        let logButton = app.buttons.matching(identifier: "log-symptom-button").firstMatch
         XCTAssertTrue(logButton.waitForExistence(timeout: 10), "Log symptom button should exist after launch")
     }
 
     @MainActor
     func testNegativeSymptomShowsCrisis() throws {
         // Test that negative symptoms show "Crisis" at level 5 (opposite of positive)
-        sleep(2)
-
-        let logButton = app.buttons["Log symptom"]
+        let logButton = app.buttons.matching(identifier: "log-symptom-button").firstMatch
         XCTAssertTrue(logButton.waitForExistence(timeout: 5), "Log button should exist")
         logButton.tap()
-        sleep(1)
 
-        // Search for a negative symptom
-        let searchField = app.searchFields.firstMatch
-        if searchField.exists {
-            searchField.tap()
-            searchField.typeText("Fatigue")
-            sleep(1)
+        // Wait for sheet to appear by checking for search field
+        let searchButton = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Search all symptoms'")).firstMatch
+        XCTAssertTrue(searchButton.waitForExistence(timeout: 3), "Search button should appear")
+        searchButton.tap()
 
-            let fatigueCell = app.staticTexts["Fatigue"]
-            if fatigueCell.waitForExistence(timeout: 3) {
-                fatigueCell.tap()
-                sleep(1)
+        // Use accessibility identifier for search field
+        let searchField = app.textFields.matching(identifier: "symptom-search-field").firstMatch
+        XCTAssertTrue(searchField.waitForExistence(timeout: 2), "Search field should appear")
+        searchField.tap()
+        searchField.typeText("Fatigue")
 
-                // Set to maximum severity
-                let slider = app.sliders.firstMatch
-                if slider.exists {
-                    slider.adjust(toNormalizedSliderPosition: 1.0)
-                    sleep(1)
+        // Wait for search results
+        let fatigueCell = app.staticTexts["Fatigue"]
+        XCTAssertTrue(fatigueCell.waitForExistence(timeout: 3), "Fatigue symptom should appear in search results")
+        fatigueCell.tap()
 
-                    // Should show "Crisis" for negative symptom at level 5
-                    let crisisLabel = app.staticTexts["Crisis"]
-                    XCTAssertTrue(crisisLabel.exists, "Negative symptom at level 5 should show 'Crisis'")
+        // Wait for severity slider to appear
+        let slider = app.sliders.matching(identifier: "severity-slider").firstMatch
+        XCTAssertTrue(slider.waitForExistence(timeout: 2), "Severity slider should appear")
 
-                    // Should NOT show "Very high" (that's for positive symptoms)
-                    let veryHighLabel = app.staticTexts["Very high"]
-                    XCTAssertFalse(veryHighLabel.exists, "Negative symptom should not show 'Very high'")
-                }
-            }
-        }
+        // Set to maximum severity
+        slider.adjust(toNormalizedSliderPosition: 1.0)
 
-        // Cancel
-        let cancelButton = app.navigationBars.buttons["Cancel"]
-        if cancelButton.exists {
-            cancelButton.tap()
-        }
+        // Wait for crisis label to update
+        let crisisLabel = app.staticTexts["Crisis"]
+        XCTAssertTrue(crisisLabel.waitForExistence(timeout: 2), "Negative symptom at level 5 should show 'Crisis'")
+
+        // Should NOT show "Very high" (that's for positive symptoms)
+        let veryHighLabel = app.staticTexts["Very high"]
+        XCTAssertFalse(veryHighLabel.exists, "Negative symptom should not show 'Very high'")
+
+        // Cancel using accessibility identifier
+        let cancelButton = app.buttons.matching(identifier: "cancel-button").firstMatch
+        XCTAssertTrue(cancelButton.waitForExistence(timeout: 2), "Cancel button should exist")
+        cancelButton.tap()
     }
 
     @MainActor
@@ -126,51 +121,47 @@ final class MurmurUITests: XCTestCase {
     @MainActor
     func testSeveritySliderBehavior() throws {
         // Test that severity slider works correctly
-        sleep(2)
-
-        let logButton = app.buttons["Log symptom"]
+        let logButton = app.buttons.matching(identifier: "log-symptom-button").firstMatch
         XCTAssertTrue(logButton.waitForExistence(timeout: 5), "Log button should exist")
         logButton.tap()
-        sleep(1)
 
-        // Select any symptom
-        let searchField = app.searchFields.firstMatch
-        if searchField.exists {
-            searchField.tap()
-            searchField.typeText("Joy")
-            sleep(1)
+        // Wait for and tap search button
+        let searchButton = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Search all symptoms'")).firstMatch
+        XCTAssertTrue(searchButton.waitForExistence(timeout: 3), "Search button should appear")
+        searchButton.tap()
 
-            let joyCell = app.staticTexts["Joy"]
-            if joyCell.waitForExistence(timeout: 3) {
-                joyCell.tap()
-                sleep(1)
+        // Use accessibility identifier for search field
+        let searchField = app.textFields.matching(identifier: "symptom-search-field").firstMatch
+        XCTAssertTrue(searchField.waitForExistence(timeout: 2), "Search field should appear")
+        searchField.tap()
+        searchField.typeText("Joy")
 
-                let slider = app.sliders.firstMatch
-                XCTAssertTrue(slider.exists, "Severity slider should exist")
+        // Wait for Joy symptom
+        let joyCell = app.staticTexts["Joy"]
+        XCTAssertTrue(joyCell.waitForExistence(timeout: 3), "Joy symptom should appear")
+        joyCell.tap()
 
-                // Test different severity levels
-                slider.adjust(toNormalizedSliderPosition: 0.0) // Level 1
-                Thread.sleep(forTimeInterval: 0.5)
-                let veryLowLabel = app.staticTexts["Very low"]
-                XCTAssertTrue(veryLowLabel.exists, "Level 1 positive symptom should show 'Very low'")
+        // Wait for slider
+        let slider = app.sliders.matching(identifier: "severity-slider").firstMatch
+        XCTAssertTrue(slider.waitForExistence(timeout: 2), "Severity slider should exist")
 
-                slider.adjust(toNormalizedSliderPosition: 0.5) // Level 3
-                Thread.sleep(forTimeInterval: 0.5)
-                let moderateLabel = app.staticTexts["Moderate"]
-                XCTAssertTrue(moderateLabel.exists, "Level 3 positive symptom should show 'Moderate'")
+        // Test different severity levels with proper waits
+        slider.adjust(toNormalizedSliderPosition: 0.0) // Level 1
+        let veryLowLabel = app.staticTexts["Very low"]
+        XCTAssertTrue(veryLowLabel.waitForExistence(timeout: 1), "Level 1 positive symptom should show 'Very low'")
 
-                slider.adjust(toNormalizedSliderPosition: 1.0) // Level 5
-                Thread.sleep(forTimeInterval: 0.5)
-                let veryHighLabel = app.staticTexts["Very high"]
-                XCTAssertTrue(veryHighLabel.exists, "Level 5 positive symptom should show 'Very high'")
-            }
-        }
+        slider.adjust(toNormalizedSliderPosition: 0.5) // Level 3
+        let moderateLabel = app.staticTexts["Moderate"]
+        XCTAssertTrue(moderateLabel.waitForExistence(timeout: 1), "Level 3 positive symptom should show 'Moderate'")
 
-        // Cancel
-        let cancelButton = app.navigationBars.buttons["Cancel"]
-        if cancelButton.exists {
-            cancelButton.tap()
-        }
+        slider.adjust(toNormalizedSliderPosition: 1.0) // Level 5
+        let veryHighLabel = app.staticTexts["Very high"]
+        XCTAssertTrue(veryHighLabel.waitForExistence(timeout: 1), "Level 5 positive symptom should show 'Very high'")
+
+        // Cancel using accessibility identifier
+        let cancelButton = app.buttons.matching(identifier: "cancel-button").firstMatch
+        XCTAssertTrue(cancelButton.waitForExistence(timeout: 2), "Cancel button should exist")
+        cancelButton.tap()
     }
 
     @MainActor
@@ -293,48 +284,46 @@ final class MurmurUITests: XCTestCase {
 
     @MainActor
     func testPositiveSymptomEntry() throws {
-        // Wait for app to load
-        sleep(2)
-
         // Tap the "Log symptom" button
-        let logSymptomButton = app.buttons["Log symptom"]
+        let logSymptomButton = app.buttons.matching(identifier: "log-symptom-button").firstMatch
         XCTAssertTrue(logSymptomButton.waitForExistence(timeout: 5), "Log symptom button should exist")
         logSymptomButton.tap()
-        sleep(1)
 
-        // Search for and select "Energy"
-        let searchField = app.searchFields.firstMatch
-        if searchField.exists {
-            searchField.tap()
-            searchField.typeText("Energy")
-            sleep(1)
+        // Wait for and tap search button
+        let searchButton = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Search all symptoms'")).firstMatch
+        XCTAssertTrue(searchButton.waitForExistence(timeout: 3), "Search button should appear")
+        searchButton.tap()
 
-            // Tap on Energy symptom
-            let energyCell = app.staticTexts["Energy"]
-            if energyCell.waitForExistence(timeout: 3) {
-                energyCell.tap()
-                sleep(1)
+        // Use accessibility identifier for search field
+        let searchField = app.textFields.matching(identifier: "symptom-search-field").firstMatch
+        XCTAssertTrue(searchField.waitForExistence(timeout: 2), "Search field should appear")
+        searchField.tap()
+        searchField.typeText("Energy")
 
-                // Set severity to 5 (should show "Very high" for positive symptoms)
-                let slider = app.sliders.firstMatch
-                if slider.exists {
-                    slider.adjust(toNormalizedSliderPosition: 1.0) // Max value
-                    sleep(1)
+        // Wait for Energy symptom to appear
+        let energyCell = app.staticTexts["Energy"]
+        XCTAssertTrue(energyCell.waitForExistence(timeout: 3), "Energy symptom should appear in search results")
+        energyCell.tap()
 
-                    // Verify the descriptor shows "Very high" not "Crisis"
-                    let veryHighLabel = app.staticTexts["Very high"]
-                    XCTAssertTrue(veryHighLabel.exists, "Positive symptom at level 5 should show 'Very high'")
+        // Wait for severity slider
+        let slider = app.sliders.matching(identifier: "severity-slider").firstMatch
+        XCTAssertTrue(slider.waitForExistence(timeout: 2), "Severity slider should appear")
 
-                    // Verify NO "Crisis" label (would be for negative symptoms)
-                    let crisisLabel = app.staticTexts["Crisis"]
-                    XCTAssertFalse(crisisLabel.exists, "Positive symptom should not show 'Crisis'")
-                }
-            }
-        }
+        // Set severity to 5 (should show "Very high" for positive symptoms)
+        slider.adjust(toNormalizedSliderPosition: 1.0)
 
-        // Cancel
-        app.navigationBars.buttons["Cancel"].tap()
-        sleep(1)
+        // Wait for label to update
+        let veryHighLabel = app.staticTexts["Very high"]
+        XCTAssertTrue(veryHighLabel.waitForExistence(timeout: 2), "Positive symptom at level 5 should show 'Very high'")
+
+        // Verify NO "Crisis" label (would be for negative symptoms)
+        let crisisLabel = app.staticTexts["Crisis"]
+        XCTAssertFalse(crisisLabel.exists, "Positive symptom should not show 'Crisis'")
+
+        // Cancel using accessibility identifier
+        let cancelButton = app.buttons.matching(identifier: "cancel-button").firstMatch
+        XCTAssertTrue(cancelButton.waitForExistence(timeout: 2), "Cancel button should exist")
+        cancelButton.tap()
     }
 
     @MainActor
@@ -378,20 +367,22 @@ final class MurmurUITests: XCTestCase {
         snapshot("01Timeline")
 
         // Screenshot 2: Day detail view
-        // Find and tap on the first day section header
-        let firstSection = app.tables.cells.firstMatch
-        if firstSection.waitForExistence(timeout: 5) {
-            firstSection.tap()
-            sleep(1)
+        // Find and tap on the first day section header or timeline entry
+        let firstCell = app.tables.cells.firstMatch
+        if firstCell.waitForExistence(timeout: 5) {
+            firstCell.tap()
+            sleep(2)
             snapshot("02DayDetail")
 
             // Go back
-            app.navigationBars.buttons.element(boundBy: 0).tap()
-            sleep(1)
+            let backButton = app.navigationBars.buttons.element(boundBy: 0)
+            if backButton.exists {
+                backButton.tap()
+                sleep(1)
+            }
         }
 
         // Screenshot 3: Add symptom entry
-        // Tap the "Log symptom" button
         let logSymptomButton = app.buttons["Log symptom"]
         if logSymptomButton.waitForExistence(timeout: 5) {
             logSymptomButton.tap()
@@ -399,29 +390,58 @@ final class MurmurUITests: XCTestCase {
             snapshot("03AddSymptom")
 
             // Cancel
-            app.navigationBars.buttons["Cancel"].tap()
-            sleep(1)
+            let cancelButton = app.navigationBars.buttons["Cancel"]
+            if cancelButton.exists {
+                cancelButton.tap()
+                sleep(1)
+            }
         }
 
         // Screenshot 4: Analysis view
-        // Tap the analysis button in nav bar
         let analysisButton = app.navigationBars.buttons["Analysis"]
         if analysisButton.waitForExistence(timeout: 5) {
             analysisButton.tap()
-            sleep(1)
+            sleep(2)
             snapshot("04Analysis")
 
-            // Go back
-            app.navigationBars.buttons.element(boundBy: 0).tap()
-            sleep(1)
+            // Screenshot 5: Calendar heat map in analysis
+            // Look for calendar or heat map button/element
+            let calendarButton = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'calendar' OR label CONTAINS[c] 'heat map'")).firstMatch
+            if calendarButton.waitForExistence(timeout: 3) {
+                calendarButton.tap()
+                sleep(2)
+                snapshot("05CalendarHeatMap")
+
+                // Go back from calendar
+                let backButton = app.navigationBars.buttons.element(boundBy: 0)
+                if backButton.exists {
+                    backButton.tap()
+                    sleep(1)
+                }
+            }
+
+            // Go back from analysis
+            let backButton = app.navigationBars.buttons.element(boundBy: 0)
+            if backButton.exists {
+                backButton.tap()
+                sleep(1)
+            }
         }
 
-        // Screenshot 5: Settings
+        // Screenshot 6: Settings
         let settingsButton = app.navigationBars.buttons.matching(identifier: "gearshape").firstMatch
         if settingsButton.waitForExistence(timeout: 5) {
             settingsButton.tap()
-            sleep(1)
-            snapshot("05Settings")
+            sleep(2)
+            snapshot("06Settings")
+
+            // Screenshot 7: Load capacity settings
+            let loadCapacityButton = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'load capacity'")).firstMatch
+            if loadCapacityButton.waitForExistence(timeout: 3) {
+                loadCapacityButton.tap()
+                sleep(2)
+                snapshot("07LoadCapacitySettings")
+            }
         }
     }
 }

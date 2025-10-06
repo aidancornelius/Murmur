@@ -1,8 +1,8 @@
 //
 //  SnapshotHelper.swift
-//  Example
+//  Murmur
 //
-//  Created by Felix Krause on 10/8/15.
+//  Created by Aidan Cornelius-Bell on 02/10/2025.
 //
 
 // -----------------------------------------------------

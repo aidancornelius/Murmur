@@ -31,11 +31,14 @@
 		444760AC2E8DF7F8006438DE /* DataBackupService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 444760AB2E8DF7F8006438DE /* DataBackupService.swift */; };
 		44C548A52E9328390062A8CC /* SymptomHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44C548A42E9328390062A8CC /* SymptomHistoryView.swift */; };
 		44C548A62E9328390062A8CC /* CalendarHeatMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44C548A32E9328390062A8CC /* CalendarHeatMapView.swift */; };
+		44C548A82E9331F00062A8CC /* LoadCapacityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44C548A72E9331F00062A8CC /* LoadCapacityManager.swift */; };
+		44C548AA2E9332070062A8CC /* LoadCapacitySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44C548A92E9332070062A8CC /* LoadCapacitySettingsView.swift */; };
+		44C548F42E933BB00062A8CC /* HealthMetricBaselines.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44C548F32E933BB00062A8CC /* HealthMetricBaselines.swift */; };
+		44C549512E9350890062A8CC /* AccessibilityIdentifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44C549502E9350890062A8CC /* AccessibilityIdentifiers.swift */; };
 		44D83F8D2E8BE8A900D63101 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44D83F8B2E8BE8A900D63101 /* OnboardingView.swift */; };
 		4D2F71B8F77F0C82FF3806A9 /* NaturalLanguageParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10BFF8DB15E38EE3684EF0B3 /* NaturalLanguageParser.swift */; };
 		5AD864AFE0518CA55402FA1E /* DataQueryIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DFC5CD06EE9972460083E73 /* DataQueryIntents.swift */; };
 		5B5EF874D0499FD80D801DF0 /* NaturalLanguageParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF7EAD836A5C645584330C84 /* NaturalLanguageParserTests.swift */; };
-		5FC686326011B6FBD4272AA8 /* AddEventView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE0F7FBE755EEBDDD95D12CF /* AddEventView.swift */; };
 		5FC686326011B6FBD4272AA9 /* UnifiedEventView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE0F7FBE755EEBDDD95D12D0 /* UnifiedEventView.swift */; };
 		6997E257E3DA35710DABB0F0 /* DaySummaryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 719FB614BA70F41CA553B92B /* DaySummaryTests.swift */; };
 		6E6533D7624779AB8E65E59F /* SleepEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13FEFD89394E10097FCE0ABB /* SleepEvent.swift */; };
@@ -44,6 +47,7 @@
 		86141CF43085FD7FFDA3C36F /* Accessibility/AudioGraphs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 862F623A8C46759594F11F3D /* Accessibility/AudioGraphs.swift */; };
 		917F41AD19EB8938A13F4255 /* DataExporterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7253F506723FBB515039C1B1 /* DataExporterTests.swift */; };
 		9E0C21E481F74C6BA32DCBBB /* DateFormatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E0C21E481F74C6BA32DCBBC /* DateFormatters.swift */; };
+		9E0C21E481F74C6BA32DCBBD /* UserDefaultsKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E0C21E481F74C6BA32DCBBE /* UserDefaultsKeys.swift */; };
 		A2B02010 /* MurmurApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B01010 /* MurmurApp.swift */; };
 		A2B02011 /* MurmurAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B01011 /* MurmurAppDelegate.swift */; };
 		A2B02012 /* CoreDataStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B01012 /* CoreDataStack.swift */; };
@@ -167,6 +171,10 @@
 		44B13E442E8BBB52003FC5E2 /* Murmur.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Murmur.entitlements; sourceTree = "<group>"; };
 		44C548A32E9328390062A8CC /* CalendarHeatMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarHeatMapView.swift; sourceTree = "<group>"; };
 		44C548A42E9328390062A8CC /* SymptomHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymptomHistoryView.swift; sourceTree = "<group>"; };
+		44C548A72E9331F00062A8CC /* LoadCapacityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadCapacityManager.swift; sourceTree = "<group>"; };
+		44C548A92E9332070062A8CC /* LoadCapacitySettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadCapacitySettingsView.swift; sourceTree = "<group>"; };
+		44C548F32E933BB00062A8CC /* HealthMetricBaselines.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthMetricBaselines.swift; sourceTree = "<group>"; };
+		44C549502E9350890062A8CC /* AccessibilityIdentifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityIdentifiers.swift; sourceTree = "<group>"; };
 		44D83F8B2E8BE8A900D63101 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		4DFC5CD06EE9972460083E73 /* DataQueryIntents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DataQueryIntents.swift; sourceTree = "<group>"; };
 		51820B9607477A9575B9187D /* OpenAddActivityIntent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OpenAddActivityIntent.swift; sourceTree = "<group>"; };
@@ -180,6 +188,7 @@
 		93CEC177D38137B4F7C50C93 /* CoreDataErrorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CoreDataErrorView.swift; sourceTree = "<group>"; };
 		9C19C6F25EF0BEF376CF60D9 /* Accessibility/AccessibilityRotor.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Accessibility/AccessibilityRotor.swift; sourceTree = "<group>"; };
 		9E0C21E481F74C6BA32DCBBC /* DateFormatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateFormatters.swift; sourceTree = "<group>"; };
+		9E0C21E481F74C6BA32DCBBE /* UserDefaultsKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDefaultsKeys.swift; sourceTree = "<group>"; };
 		A2B01000 /* Murmur.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Murmur.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2B01001 /* MurmurTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MurmurTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2B01010 /* MurmurApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MurmurApp.swift; sourceTree = "<group>"; };
@@ -223,7 +232,6 @@
 		ANALYSIS004 /* AnalysisView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisView.swift; sourceTree = "<group>"; };
 		CA1E2DA3000000000000001 /* CalendarAssistant.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarAssistant.swift; sourceTree = "<group>"; };
 		CA39D1E360BD7C97C14FDE11 /* AppEntities.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppEntities.swift; sourceTree = "<group>"; };
-		CE0F7FBE755EEBDDD95D12CF /* AddEventView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AddEventView.swift; sourceTree = "<group>"; };
 		CE0F7FBE755EEBDDD95D12D0 /* UnifiedEventView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UnifiedEventView.swift; sourceTree = "<group>"; };
 		D7002EC0739A0D3210C666C8 /* Accessibility/AccessibilityExtensions.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Accessibility/AccessibilityExtensions.swift; sourceTree = "<group>"; };
 		E87F7381C5CA68B8C7D89190 /* ManualCycleTrackerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ManualCycleTrackerTests.swift; sourceTree = "<group>"; };
@@ -304,7 +312,6 @@
 			isa = PBXGroup;
 			children = (
 				721640201DABA6889C773545 /* AddActivityView.swift */,
-				CE0F7FBE755EEBDDD95D12CF /* AddEventView.swift */,
 				CE0F7FBE755EEBDDD95D12D0 /* UnifiedEventView.swift */,
 			);
 			path = AddActivity;
@@ -392,6 +399,8 @@
 				A2B01036 /* View+Theming.swift */,
 				444760AB2E8DF7F8006438DE /* DataBackupService.swift */,
 				A2B01035 /* SeverityScale.swift */,
+				44C548A72E9331F00062A8CC /* LoadCapacityManager.swift */,
+				44C548F32E933BB00062A8CC /* HealthMetricBaselines.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -451,6 +460,7 @@
 				A2B0102A /* SecuritySettingsView.swift */,
 				A2B0102B /* HealthKitSettingsView.swift */,
 				A2B0102C /* ExportOptionsView.swift */,
+				44C548A92E9332070062A8CC /* LoadCapacitySettingsView.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -522,6 +532,8 @@
 				9E0C21E481F74C6BA32DCBBC /* DateFormatters.swift */,
 				44108DDD2E8E9AB8007F6FAB /* HapticFeedback.swift */,
 				10BFF8DB15E38EE3684EF0B3 /* NaturalLanguageParser.swift */,
+				9E0C21E481F74C6BA32DCBBE /* UserDefaultsKeys.swift */,
+				44C549502E9350890062A8CC /* AccessibilityIdentifiers.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -726,12 +738,14 @@
 				A2B02024 /* LockOverlayView.swift in Sources */,
 				A2B02028 /* ReminderFormView.swift in Sources */,
 				A2B0202A /* SecuritySettingsView.swift in Sources */,
+				44C548AA2E9332070062A8CC /* LoadCapacitySettingsView.swift in Sources */,
 				A2B0201F /* SampleDataSeeder.swift in Sources */,
 				A2B0202B /* HealthKitSettingsView.swift in Sources */,
 				A2B02012 /* CoreDataStack.swift in Sources */,
 				A2B02020 /* Color+Hex.swift in Sources */,
 				A2B02032 /* Color+Severity.swift in Sources */,
 				A2B02036 /* View+Theming.swift in Sources */,
+				44C548A82E9331F00062A8CC /* LoadCapacityManager.swift in Sources */,
 				44475B422E8D2D7E006438DE /* TipJarView.swift in Sources */,
 				A2B02034 /* SeverityScale.swift in Sources */,
 				A2B02022 /* DayDetailView.swift in Sources */,
@@ -752,6 +766,7 @@
 				444760AA2E8DF7E4006438DE /* DataManagementView.swift in Sources */,
 				44475B4E2E8D3839006438DE /* ManualCycleTracker.swift in Sources */,
 				A2B02019A /* PhysiologicalState.swift in Sources */,
+				44C549512E9350890062A8CC /* AccessibilityIdentifiers.swift in Sources */,
 				A2B02010 /* MurmurApp.swift in Sources */,
 				A2B0201B /* HealthKitAssistant.swift in Sources */,
 				CA1E2DA3000000000000002 /* CalendarAssistant.swift in Sources */,
@@ -766,10 +781,12 @@
 				A2B0E006 /* Reminder.swift in Sources */,
 				43CA3AFB288C4542B8A88E78 /* AppConstants.swift in Sources */,
 				9E0C21E481F74C6BA32DCBBB /* DateFormatters.swift in Sources */,
+				9E0C21E481F74C6BA32DCBBD /* UserDefaultsKeys.swift in Sources */,
 				DB578AEAF10FBA1C5E082434 /* ActivityEvent.swift in Sources */,
 				E9DC63EC491B2D771AEC863F /* AddActivityView.swift in Sources */,
 				ANALYSIS001 /* AnalysisModels.swift in Sources */,
 				44108DDE2E8E9AB8007F6FAB /* HapticFeedback.swift in Sources */,
+				44C548F42E933BB00062A8CC /* HealthMetricBaselines.swift in Sources */,
 				ANALYSIS003 /* AnalysisView.swift in Sources */,
 				765998504779325DC574C6D7 /* LogSymptomIntent.swift in Sources */,
 				A2BB3598EF5E4007CFBC3896 /* OpenAddEntryIntent.swift in Sources */,
@@ -782,7 +799,6 @@
 				86141CF43085FD7FFDA3C36F /* Accessibility/AudioGraphs.swift in Sources */,
 				E4788CA8FF55BB1B7DC75653 /* Accessibility/SwitchControlSupport.swift in Sources */,
 				E46A5914391CFE61CD7DA469 /* Accessibility/VoiceCommandController.swift in Sources */,
-				5FC686326011B6FBD4272AA8 /* AddEventView.swift in Sources */,
 				5FC686326011B6FBD4272AA9 /* UnifiedEventView.swift in Sources */,
 				ADB09E41F596CA44BE7EF2B9 /* CoreDataErrorView.swift in Sources */,
 				6E6533D7624779AB8E65E59F /* SleepEvent.swift in Sources */,

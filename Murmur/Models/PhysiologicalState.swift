@@ -19,14 +19,14 @@ enum PhysiologicalState: String {
 
     var displayText: String {
         switch self {
-        case .relaxed: return "Relaxed"
-        case .elevated: return "Elevated"
-        case .fatigued: return "Fatigued"
-        case .recovered: return "Recovered"
-        case .active: return "Active"
-        case .menstrual: return "Menstrual"
-        case .preMenstrual: return "Pre-menstrual"
-        case .ovulation: return "Ovulation"
+        case .relaxed: return "Body: quiet signals"
+        case .elevated: return "Body: higher tension"
+        case .fatigued: return "Body: fatigue markers"
+        case .recovered: return "Body: recovery pattern"
+        case .active: return "Body: busy signals"
+        case .menstrual: return "Cycle: menstrual"
+        case .preMenstrual: return "Cycle: pre-menstrual"
+        case .ovulation: return "Cycle: ovulation"
         }
     }
 
@@ -57,6 +57,14 @@ enum PhysiologicalState: String {
     }
 
     /// Compute physiological state from available health metrics
+    /// - Parameters:
+    ///   - hrv: Heart rate variability in milliseconds
+    ///   - restingHR: Resting heart rate in bpm
+    ///   - sleepHours: Sleep duration in hours
+    ///   - workoutMinutes: Workout duration in minutes
+    ///   - cycleDay: Day of menstrual cycle
+    ///   - flowLevel: Menstrual flow level
+    ///   - baselines: Optional personalised baselines (defaults to shared instance)
     /// - Returns: The computed state, or nil if insufficient data
     static func compute(
         hrv: Double?,
@@ -64,8 +72,11 @@ enum PhysiologicalState: String {
         sleepHours: Double?,
         workoutMinutes: Double?,
         cycleDay: Int?,
-        flowLevel: String?
+        flowLevel: String?,
+        baselines: HealthMetricBaselines? = nil
     ) -> PhysiologicalState? {
+        let baselineManager = baselines ?? HealthMetricBaselines.shared
+
         // Cycle phase is weighted heavily if present
         if let cycleDay = cycleDay {
             if cycleDay >= 1 && cycleDay <= 5 {
@@ -89,15 +100,36 @@ enum PhysiologicalState: String {
         var recoveredScore = 0
         var activeScore = 0
 
-        // HRV assessment
+        // HRV assessment using personalised baselines
         if let hrv = hrv {
-            if hrv > 50 {
+            let evaluation = baselineManager.evaluateHRV(hrv)
+            switch evaluation {
+            case 1:  // High HRV = good, relaxed
                 relaxedScore += 2
                 recoveredScore += 1
-            } else if hrv >= 30 {
+            case 0:  // Normal HRV
                 relaxedScore += 1
-            } else {
+            case -1: // Low HRV = stressed
                 elevatedScore += 2
+            default:
+                break
+            }
+        }
+
+        // Resting heart rate assessment using personalised baselines
+        if let restingHR = restingHR {
+            let evaluation = baselineManager.evaluateRestingHR(restingHR)
+            switch evaluation {
+            case -1:  // Low resting HR = good recovery
+                recoveredScore += 2
+                relaxedScore += 1
+            case 0:   // Normal resting HR
+                recoveredScore += 1
+            case 1:   // High resting HR = stressed/fatigued
+                elevatedScore += 1
+                fatiguedScore += 1
+            default:
+                break
             }
         }
 
@@ -114,12 +146,13 @@ enum PhysiologicalState: String {
         }
 
         // Workout assessment
+        // Recent workout indicates active state, not recovered
+        // (Previously incorrectly added to recoveredScore)
         if let workout = workoutMinutes {
             if workout > 30 {
-                activeScore += 2
-                recoveredScore += 1
+                activeScore += 3
             } else if workout > 0 {
-                activeScore += 1
+                activeScore += 2
             }
         }
 

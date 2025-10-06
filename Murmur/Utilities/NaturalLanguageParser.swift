@@ -86,17 +86,24 @@ struct NaturalLanguageParser {
         }
 
         // Default based on time of day (only when not from calendar)
+        // Be much more conservative about meal detection - only at explicit meal times
         switch hour {
-        case 5..<9:
-            if lowercased.contains("hours") { return .sleep }
-            return .meal // Breakfast time
-        case 11..<14:
+        case 4..<8:
+            // 4am-8am: Almost certainly logging sleep
+            return .sleep
+        case 8..<9:
+            // 8-9am could be breakfast but default to activity unless meal keywords present
+            return .activity
+        case 12..<13:
+            // Only noon hour suggests meal, not the entire lunch window
             return .meal // Lunch time
-        case 17..<20:
+        case 18..<19:
+            // Only dinner hour suggests meal
             return .meal // Dinner time
-        case 21..<24, 0..<5:
-            return .sleep // Sleep time
+        case 21..<24, 0..<4:
+            return .sleep // Late night sleep time
         default:
+            // Default to activity for all other times
             return .activity
         }
     }

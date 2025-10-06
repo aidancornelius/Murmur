@@ -29,6 +29,7 @@ final class DaySummaryTests: XCTestCase {
             entryCount: 4,
             uniqueSymptoms: 2,
             averageSeverity: 3.5,
+            rawAverageSeverity: 3.5,
             severityLevel: 4,
             appleHealthMoodUUID: nil,
             loadScore: nil
@@ -38,6 +39,7 @@ final class DaySummaryTests: XCTestCase {
         XCTAssertEqual(summary.entryCount, 4)
         XCTAssertEqual(summary.uniqueSymptoms, 2)
         XCTAssertEqual(summary.averageSeverity, 3.5)
+        XCTAssertEqual(summary.rawAverageSeverity, 3.5)
         XCTAssertEqual(summary.severityLevel, 4)
     }
 
@@ -83,6 +85,7 @@ final class DaySummaryTests: XCTestCase {
                 entryCount: i + 1,
                 uniqueSymptoms: 1,
                 averageSeverity: Double(i + 1),
+                rawAverageSeverity: Double(i + 1),
                 severityLevel: min(5, i + 1),
                 appleHealthMoodUUID: nil,
                 loadScore: nil
@@ -94,8 +97,8 @@ final class DaySummaryTests: XCTestCase {
         summaries.sort { $0.date > $1.date }
 
         XCTAssertEqual(summaries.count, 7)
-        XCTAssertEqual(summaries.first?.averageSeverity, 1.0)
-        XCTAssertEqual(summaries.last?.averageSeverity, 7.0)
+        XCTAssertEqual(summaries.first?.rawAverageSeverity, 1.0)
+        XCTAssertEqual(summaries.last?.rawAverageSeverity, 7.0)
     }
 
     func testDaySummaryWithNoEntries() throws {
@@ -150,6 +153,7 @@ final class DaySummaryTests: XCTestCase {
                 entryCount: 3,
                 uniqueSymptoms: 2,
                 averageSeverity: Double(5 - i), // 5, 4, 3, 2, 1
+                rawAverageSeverity: Double(5 - i),
                 severityLevel: 5 - i,
                 appleHealthMoodUUID: nil,
                 loadScore: nil

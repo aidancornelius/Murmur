@@ -11,7 +11,7 @@ import SwiftUI
 /// Controls optional biometric or passcode lock that protects the app on foreground events.
 @MainActor
 final class AppLockController: ObservableObject {
-    @AppStorage("appLockEnabled") private(set) var isEnabled: Bool = false
+    @AppStorage(UserDefaultsKeys.appLockEnabled) private(set) var isEnabled: Bool = false
     @Published private(set) var isLockActive = false
     private var isAuthenticating = false
 

@@ -38,11 +38,11 @@ struct MurmurApp: App {
                         // Handle UI test mode
                         if CommandLine.arguments.contains("-UITestMode") {
                             // Skip onboarding for UI tests
-                            UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
+                            UserDefaults.standard.set(true, forKey: UserDefaultsKeys.hasCompletedOnboarding)
 
                             // Seed sample data if requested
                             if CommandLine.arguments.contains("-SeedSampleData") {
-                                UserDefaults.standard.set(false, forKey: "hasGeneratedSampleData")
+                                UserDefaults.standard.set(false, forKey: UserDefaultsKeys.hasGeneratedSampleData)
                             }
                         }
                     }
@@ -61,7 +61,7 @@ private struct RootContainer: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var showingAddEntry = false
     @State private var showingAddActivity = false
-    @State private var hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
+    @State private var hasCompletedOnboarding = UserDefaults.standard.bool(forKey: UserDefaultsKeys.hasCompletedOnboarding)
 
     private let openAddEntryPublisher = NotificationCenter.default.publisher(for: .openAddEntry)
     private let openAddActivityPublisher = NotificationCenter.default.publisher(for: .openAddActivity)
@@ -106,10 +106,10 @@ private struct RootContainer: View {
                     cleanOrphanedEntries(in: context)
                     #if targetEnvironment(simulator)
                     // Check if we should generate sample data
-                    let hasGeneratedSampleData = UserDefaults.standard.bool(forKey: "hasGeneratedSampleData")
+                    let hasGeneratedSampleData = UserDefaults.standard.bool(forKey: UserDefaultsKeys.hasGeneratedSampleData)
                     if !hasGeneratedSampleData {
                         SampleDataSeeder.generateSampleEntries(in: context)
-                        UserDefaults.standard.set(true, forKey: "hasGeneratedSampleData")
+                        UserDefaults.standard.set(true, forKey: UserDefaultsKeys.hasGeneratedSampleData)
                     }
                     #endif
                 }
@@ -145,7 +145,7 @@ private struct RootContainer: View {
                 }
                 } else {
                     OnboardingView {
-                        UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
+                        UserDefaults.standard.set(true, forKey: UserDefaultsKeys.hasCompletedOnboarding)
                         hasCompletedOnboarding = true
                         SampleDataSeeder.seedIfNeeded(in: context)
                     }
@@ -180,7 +180,6 @@ private struct RootContainer: View {
             fetchRequest.predicate = NSPredicate(format: "symptomType == nil")
 
             if let orphanedEntries = try? context.fetch(fetchRequest), !orphanedEntries.isEmpty {
-                print("⚠️ Found \(orphanedEntries.count) orphaned symptom entries - cleaning up")
                 orphanedEntries.forEach(context.delete)
                 try? context.save()
             }
@@ -219,6 +218,7 @@ private struct FloatingActionButtons: View {
                         }
                         .glassEffect(.regular.interactive())
                         .accessibilityLabel("Log symptom")
+                        .accessibilityIdentifier(AccessibilityIdentifiers.logSymptomButton)
                         .accessibilityHint("Opens form to record a symptom")
 
                         Button(action: onActivity) {
@@ -229,6 +229,7 @@ private struct FloatingActionButtons: View {
                         }
                         .glassEffect(.regular.interactive())
                         .accessibilityLabel("Log activity")
+                        .accessibilityIdentifier(AccessibilityIdentifiers.logEventButton)
                         .accessibilityHint("Opens form to record an activity or event")
                     }
                 }
@@ -245,6 +246,7 @@ private struct FloatingActionButtons: View {
                     }
                     .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
                     .accessibilityLabel("Log activity")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.logEventButton)
                     .accessibilityHint("Opens form to record an activity or event")
 
                     Button(action: onSymptom) {
@@ -256,6 +258,7 @@ private struct FloatingActionButtons: View {
                     }
                     .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
                     .accessibilityLabel("Log symptom")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.logSymptomButton)
                     .accessibilityHint("Opens form to record a symptom")
                 }
             }

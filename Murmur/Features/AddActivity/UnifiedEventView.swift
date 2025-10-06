@@ -15,6 +15,12 @@ struct UnifiedEventView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var calendarAssistant: CalendarAssistant
     @EnvironmentObject private var healthKit: HealthKitAssistant
+    @EnvironmentObject private var appearanceManager: AppearanceManager
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var palette: ColorPalette {
+        appearanceManager.currentPalette(for: colorScheme)
+    }
 
     @FetchRequest(
         sortDescriptors: [
@@ -55,9 +61,18 @@ struct UnifiedEventView: View {
     @State private var durationMinutes: String = ""
     @State private var selectedTimeChip: TimeChip? = nil
 
-    // Sleep fields
-    @State private var bedTime = Date()
-    @State private var wakeTime = Date()
+    // Sleep fields - default to yesterday 10pm to today 7am
+    @State private var bedTime: Date = {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
+        return calendar.date(bySettingHour: 22, minute: 0, second: 0, of: yesterday)!
+    }()
+    @State private var wakeTime: Date = {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        return calendar.date(bySettingHour: 7, minute: 0, second: 0, of: today)!
+    }()
     @State private var sleepQuality: Int = 3
     @State private var selectedSleepSymptoms: [SelectedSymptom] = []
     @State private var showingSymptomPicker = false
@@ -76,7 +91,7 @@ struct UnifiedEventView: View {
     @State private var hasInteracted = false
 
     // Check if user has seen the hints before
-    @AppStorage("hasSeenUnifiedEventHints") private var hasSeenHints = false
+    @AppStorage(UserDefaultsKeys.hasSeenUnifiedEventHints) private var hasSeenHints = false
 
     // Time chips for quick selection
     enum TimeChip: String, CaseIterable {
@@ -454,15 +469,20 @@ struct UnifiedEventView: View {
                 TextField(smartPlaceholder, text: $mainInput, axis: .vertical)
                     .font(.title3)
                     .focused($isInputFocused)
-                    .lineLimit(1...3)
+                    .lineLimit(1)  // Single line only
+                    .submitLabel(.done)
+                    .onSubmit {
+                        // Dismiss keyboard on return/done
+                        isInputFocused = false
+                    }
                     .padding()
                     .background(
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(Color.secondary.opacity(0.1))
+                            .fill(palette.color(for: "surface").opacity(0.8))
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .strokeBorder(Color.secondary.opacity(0.2), lineWidth: 1)
+                            .strokeBorder(palette.accentColor.opacity(0.2), lineWidth: 1)
                     )
 
                 // Calendar indicator when auto-populated
@@ -501,12 +521,19 @@ struct UnifiedEventView: View {
                 Spacer()
 
                 HStack(spacing: 12) {
-                    // Calendar suggestions toggle
-                    if calendarAssistant.authorizationStatus == .fullAccess && !calendarAssistant.recentEvents.isEmpty {
-                        Button(action: { withAnimation { showCalendarCard.toggle() } }) {
-                            Image(systemName: showCalendarCard ? "calendar" : "calendar.badge.plus")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                    // Calendar suggestions toggle - only show if there are matching events
+                    if calendarAssistant.authorizationStatus == .fullAccess {
+                        let hasMatchingEvents = !calendarAssistant.recentEvents.filter { event in
+                            mainInput.trimmingCharacters(in: .whitespaces).isEmpty ||
+                            (event.title?.localizedCaseInsensitiveContains(mainInput) ?? false)
+                        }.isEmpty
+
+                        if hasMatchingEvents {
+                            Button(action: { withAnimation { showCalendarCard.toggle() } }) {
+                                Image(systemName: showCalendarCard ? "calendar" : "calendar.badge.plus")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                     }
 
@@ -584,7 +611,7 @@ struct UnifiedEventView: View {
                 .padding(.vertical, 6)
                 .background(
                     Capsule()
-                        .fill(selectedTimeChip == chip ? Color.accentColor : Color.secondary.opacity(0.1))
+                        .fill(selectedTimeChip == chip ? palette.accentColor : palette.surfaceColor.opacity(0.8))
                 )
                 .foregroundStyle(selectedTimeChip == chip ? .white : .primary)
         }
@@ -626,6 +653,30 @@ struct UnifiedEventView: View {
             isExpanded: .constant(true)
         ) {
             VStack(spacing: 12) {
+                // HealthKit autofill button if available
+                if healthKit.latestSleepHours != nil {
+                    Button(action: {
+                        Task {
+                            await loadHealthKitSleepData()
+                        }
+                    }) {
+                        HStack {
+                            Image(systemName: "heart.fill")
+                                .font(.caption)
+                            Text("Load logged sleep from Health")
+                                .font(.caption)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            Capsule()
+                                .fill(Color.red.opacity(0.15))
+                        )
+                        .foregroundStyle(.red)
+                    }
+                    .buttonStyle(.plain)
+                }
+
                 DatePicker("Bed time", selection: $bedTime, displayedComponents: [.date, .hourAndMinute])
                 DatePicker("Wake time", selection: $wakeTime, displayedComponents: [.date, .hourAndMinute])
 
@@ -766,8 +817,18 @@ struct UnifiedEventView: View {
 
     @ViewBuilder
     private var calendarSuggestionsCard: some View {
-        if !calendarAssistant.recentEvents.isEmpty {
-            let sortedEvents = calendarAssistant.recentEvents.sorted { event1, event2 in
+        // Filter events based on whether they match the input text
+        let filteredEvents = calendarAssistant.recentEvents.filter { event in
+            // If no input, show all events
+            if mainInput.trimmingCharacters(in: .whitespaces).isEmpty {
+                return true
+            }
+            // Check if event title contains the input text (case insensitive)
+            return event.title?.localizedCaseInsensitiveContains(mainInput) ?? false
+        }
+
+        if !filteredEvents.isEmpty {
+            let sortedEvents = filteredEvents.sorted { event1, event2 in
                 // Prioritise by status: happening > just ended > upcoming > other
                 let now = Date()
 
@@ -847,14 +908,25 @@ struct UnifiedEventView: View {
 
         // Show relevant cards based on detected type
         withAnimation {
+            // Check if there are matching calendar events
+            let hasMatchingCalendarEvents = !input.isEmpty &&
+                calendarAssistant.authorizationStatus == .fullAccess &&
+                !calendarAssistant.recentEvents.filter { event in
+                    event.title?.localizedCaseInsensitiveContains(input) ?? false
+                }.isEmpty
+
             switch eventType {
             case .activity:
                 showExertionCard = true
                 showTimeCard = true
-                showCalendarCard = !input.isEmpty && calendarAssistant.authorizationStatus == .fullAccess
+                showCalendarCard = hasMatchingCalendarEvents
             case .sleep:
                 showSleepQualityCard = true
                 showTimeCard = false
+                // Auto-load HealthKit sleep data when sleep is detected
+                Task {
+                    await loadHealthKitSleepData()
+                }
             case .meal:
                 showMealTypeCard = true
                 showTimeCard = true  // Enable time selection for meals
@@ -865,7 +937,7 @@ struct UnifiedEventView: View {
                     eventType = .sleep
                     showSleepQualityCard = true
                 } else {
-                    showCalendarCard = !input.isEmpty && calendarAssistant.authorizationStatus == .fullAccess
+                    showCalendarCard = hasMatchingCalendarEvents
                 }
             }
         }
@@ -961,27 +1033,40 @@ struct UnifiedEventView: View {
         isSaving = true
         errorMessage = nil
 
-        do {
-            switch eventType {
-            case .activity:
-                try saveActivity()
-            case .sleep:
-                try saveSleep()
-            case .meal:
-                try saveMeal()
-            case .unknown:
-                // Default to activity
-                try saveActivity()
-            }
+        Task { @MainActor in
+            do {
+                switch eventType {
+                case .activity:
+                    try saveActivity()
+                case .sleep:
+                    try await saveSleep()
+                case .meal:
+                    try saveMeal()
+                case .unknown:
+                    // Default to activity
+                    try saveActivity()
+                }
 
-            try context.save()
-            HapticFeedback.success.trigger()
-            dismiss()
-        } catch {
-            HapticFeedback.error.trigger()
-            errorMessage = error.localizedDescription
-            context.rollback()
-            isSaving = false
+                // Ensure all changes are registered
+                context.processPendingChanges()
+
+                // Save to persistent store
+                if context.hasChanges {
+                    try context.save()
+                    print("✅ UnifiedEventView: Successfully saved \(eventType) event to persistent store")
+                } else {
+                    print("⚠️ UnifiedEventView: No changes to save")
+                }
+
+                HapticFeedback.success.trigger()
+                dismiss()
+            } catch {
+                print("❌ UnifiedEventView: Failed to save - \(error.localizedDescription)")
+                HapticFeedback.error.trigger()
+                errorMessage = error.localizedDescription
+                context.rollback()
+                isSaving = false
+            }
         }
     }
 
@@ -1008,7 +1093,7 @@ struct UnifiedEventView: View {
         activity.calendarEventID = calendarEventID
     }
 
-    private func saveSleep() throws {
+    private func saveSleep() async throws {
         let sleep = SleepEvent(context: context)
         sleep.id = UUID()
         sleep.createdAt = Date()
@@ -1018,17 +1103,15 @@ struct UnifiedEventView: View {
         sleep.quality = Int16(sleepQuality)
         sleep.note = note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : note
 
-        // Add HealthKit data if available
-        Task {
-            if let hkSleepHours = await healthKit.recentSleepHours() {
-                sleep.hkSleepHours = NSNumber(value: hkSleepHours)
-            }
-            if let hkHRV = await healthKit.recentHRV() {
-                sleep.hkHRV = NSNumber(value: hkHRV)
-            }
-            if let hkRestingHR = await healthKit.recentRestingHR() {
-                sleep.hkRestingHR = NSNumber(value: hkRestingHR)
-            }
+        // Add HealthKit data if available - await these before saving
+        if let hkSleepHours = await healthKit.recentSleepHours() {
+            sleep.hkSleepHours = NSNumber(value: hkSleepHours)
+        }
+        if let hkHRV = await healthKit.recentHRV() {
+            sleep.hkHRV = NSNumber(value: hkHRV)
+        }
+        if let hkRestingHR = await healthKit.recentRestingHR() {
+            sleep.hkRestingHR = NSNumber(value: hkRestingHR)
         }
 
         // Add symptoms
@@ -1046,6 +1129,25 @@ struct UnifiedEventView: View {
         meal.mealDescription = mainInput.trimmingCharacters(in: .whitespaces)
         meal.note = note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : note
     }
+
+    private func loadHealthKitSleepData() async {
+        let sleepData = await healthKit.fetchDetailedSleepData()
+
+        // Update UI on main thread
+        await MainActor.run {
+            if let bedTimeValue = sleepData?.bedTime {
+                bedTime = bedTimeValue
+            }
+            if let wakeTimeValue = sleepData?.wakeTime {
+                wakeTime = wakeTimeValue
+            }
+
+            // Show a subtle animation to indicate the data was loaded
+            withAnimation(.easeInOut(duration: 0.3)) {
+                HapticFeedback.success.trigger()
+            }
+        }
+    }
 }
 
 // MARK: - Supporting Views
@@ -1055,6 +1157,12 @@ struct DisclosureCard<Content: View>: View {
     let icon: String
     var isExpanded: Binding<Bool>
     @ViewBuilder let content: () -> Content
+    @EnvironmentObject private var appearanceManager: AppearanceManager
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var palette: ColorPalette {
+        appearanceManager.currentPalette(for: colorScheme)
+    }
 
     init(title: String, icon: String, isExpanded: Binding<Bool> = .constant(true), @ViewBuilder content: @escaping () -> Content) {
         self.title = title
@@ -1099,11 +1207,11 @@ struct DisclosureCard<Content: View>: View {
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.secondary.opacity(0.05))
+                .fill(palette.surfaceColor.opacity(0.8))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(Color.secondary.opacity(0.1), lineWidth: 1)
+                .strokeBorder(palette.accentColor.opacity(0.1), lineWidth: 1)
         )
     }
 }
@@ -1206,6 +1314,12 @@ struct ExertionRingSelector: View {
 struct CalendarEventRow: View {
     let event: EKEvent
     let onSelect: () -> Void
+    @EnvironmentObject private var appearanceManager: AppearanceManager
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var palette: ColorPalette {
+        appearanceManager.currentPalette(for: colorScheme)
+    }
 
     private var eventStatus: EventStatus {
         let now = Date()
@@ -1221,20 +1335,20 @@ struct CalendarEventRow: View {
         return .other
     }
 
+    private func colorForStatus(_ status: EventStatus) -> Color {
+        switch status {
+        case .happening: return palette.color(for: "severity2") // Safe/green equivalent
+        case .justEnded: return palette.color(for: "severity3") // Caution/orange equivalent
+        case .upcoming: return palette.accentColor
+        case .other: return palette.accentColor.opacity(0.5)
+        }
+    }
+
     private enum EventStatus {
         case happening
         case justEnded
         case upcoming
         case other
-
-        var color: Color {
-            switch self {
-            case .happening: return .green
-            case .justEnded: return .orange
-            case .upcoming: return .blue
-            case .other: return .gray
-            }
-        }
 
         var icon: String {
             switch self {
@@ -1260,12 +1374,12 @@ struct CalendarEventRow: View {
             HStack(spacing: 12) {
                 ZStack {
                     Circle()
-                        .fill(eventStatus.color.opacity(0.15))
+                        .fill(colorForStatus(eventStatus).opacity(0.15))
                         .frame(width: 32, height: 32)
 
                     Image(systemName: eventStatus.icon)
                         .font(.caption.weight(.medium))
-                        .foregroundStyle(eventStatus.color)
+                        .foregroundStyle(colorForStatus(eventStatus))
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -1277,12 +1391,12 @@ struct CalendarEventRow: View {
                         if !eventStatus.label.isEmpty {
                             Text(eventStatus.label)
                                 .font(.caption2.weight(.semibold))
-                                .foregroundStyle(eventStatus.color)
+                                .foregroundStyle(colorForStatus(eventStatus))
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
                                 .background(
                                     Capsule()
-                                        .fill(eventStatus.color.opacity(0.15))
+                                        .fill(colorForStatus(eventStatus).opacity(0.15))
                                 )
                         }
                     }
@@ -1480,6 +1594,12 @@ private struct SymptomMultiSelectButton: View {
     let symptom: SymptomType
     let isSelected: Bool
     let isDisabled: Bool
+    @EnvironmentObject private var appearanceManager: AppearanceManager
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var palette: ColorPalette {
+        appearanceManager.currentPalette(for: colorScheme)
+    }
     let action: () -> Void
 
     var body: some View {
@@ -1507,7 +1627,7 @@ private struct SymptomMultiSelectButton: View {
 
                 Text(symptom.name ?? "Unnamed")
                     .font(.caption2.weight(.medium))
-                    .foregroundStyle(isSelected ? .white : (isDisabled ? Color(.systemGray) : Color(.label)))
+                    .foregroundStyle(isSelected ? .white : (isDisabled ? palette.accentColor.opacity(0.3) : .primary))
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
                     .minimumScaleFactor(0.8)
@@ -1518,7 +1638,7 @@ private struct SymptomMultiSelectButton: View {
             .padding(.horizontal, 4)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? symptom.uiColor : Color(.systemBackground))
+                    .fill(isSelected ? symptom.uiColor : palette.surfaceColor)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 12)

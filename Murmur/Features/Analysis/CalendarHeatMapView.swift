@@ -19,7 +19,8 @@ struct CalendarHeatMapView: View {
 
     struct DayIntensity {
         let date: Date
-        let averageSeverity: Double
+        let averageSeverity: Double  // Normalised for calculations (higher = worse)
+        let rawAverageSeverity: Double  // Raw average for display (1-5 scale)
         let entryCount: Int
         let hasData: Bool
     }
@@ -279,12 +280,22 @@ struct CalendarHeatMapView: View {
             // Calculate intensity for each day
             var dayIntensities: [Date: DayIntensity] = [:]
             for (date, dayEntries) in groupedEntries {
-                let totalSeverity = dayEntries.reduce(0) { $0 + Double($1.severity) }
+                // Calculate raw average (for display)
+                let totalRawSeverity = dayEntries.reduce(0.0) { total, entry in
+                    return total + Double(entry.severity)
+                }
+                let rawAverageSeverity = totalRawSeverity / Double(dayEntries.count)
+
+                // Calculate normalized average (for color intensity)
+                let totalSeverity = dayEntries.reduce(0.0) { total, entry in
+                    return total + entry.normalisedSeverity
+                }
                 let averageSeverity = totalSeverity / Double(dayEntries.count)
 
                 dayIntensities[date] = DayIntensity(
                     date: date,
                     averageSeverity: averageSeverity,
+                    rawAverageSeverity: rawAverageSeverity,
                     entryCount: dayEntries.count,
                     hasData: true
                 )
@@ -350,6 +361,8 @@ private struct DayCell: View {
             .frame(height: 44)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(accessibilityDescription)
+        .accessibilityHint("Tap to view details for this day")
     }
 
     private var backgroundColor: Color {
@@ -384,6 +397,20 @@ private struct DayCell: View {
             return Color.red.opacity(0.8)
         default:
             return Color.gray.opacity(0.1)
+        }
+    }
+
+    private var accessibilityDescription: String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        let dateString = formatter.string(from: date)
+
+        if let intensity = intensity, intensity.hasData {
+            let intensityLevel = Int(round(intensity.rawAverageSeverity))
+            let descriptor = SeverityScale.descriptor(for: intensityLevel)
+            return "\(dateString). \(intensity.entryCount) \(intensity.entryCount == 1 ? "entry" : "entries"). Average intensity: \(descriptor)"
+        } else {
+            return "\(dateString). No entries"
         }
     }
 }

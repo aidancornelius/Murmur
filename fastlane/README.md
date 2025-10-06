@@ -37,7 +37,7 @@ Frame screenshots with device frames
 [bundle exec] fastlane ios prepare_screenshots
 ```
 
-Generate and frame screenshots
+Generate, resize, and frame screenshots for App Store
 
 ### ios resize_screenshots
 

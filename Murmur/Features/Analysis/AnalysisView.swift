@@ -166,7 +166,6 @@ struct AnalysisView: View {
 // MARK: - Trends analysis
 
 private struct TrendsAnalysisView: View {
-    @Environment(\.managedObjectContext) private var context
     let days: Int
     @State private var trends: [SymptomTrend] = []
     @State private var isLoading = true
@@ -201,8 +200,9 @@ private struct TrendsAnalysisView: View {
     private func loadTrends() async {
         isLoading = true
         let trends = await Task.detached {
-            await context.perform {
-                AnalysisEngine.analyseSymptomTrends(in: context, days: days)
+            let bgContext = CoreDataStack.shared.newBackgroundContext()
+            return await bgContext.perform {
+                AnalysisEngine.analyseSymptomTrends(in: bgContext, days: days)
             }
         }.value
         self.trends = trends
@@ -255,7 +255,7 @@ private struct TrendRow: View {
                     Text(trend.isPositive ? "Average level" : "Average severity")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Text(String(format: "%.1f", trend.averageSeverity))
+                    Text(String(format: "%.1f", trend.rawAverageSeverity))
                         .font(.title3.weight(.semibold))
                 }
 
@@ -309,7 +309,6 @@ private struct TrendRow: View {
 // MARK: - Correlations analysis
 
 private struct CorrelationsAnalysisView: View {
-    @Environment(\.managedObjectContext) private var context
     let days: Int
     @State private var correlations: [ActivityCorrelation] = []
     @State private var isLoading = true
@@ -356,16 +355,20 @@ private struct CorrelationsAnalysisView: View {
         isLoading = true
 
         // Check if we have any activities at all
-        let hasActivities = await context.perform {
-            let request = ActivityEvent.fetchRequest()
-            request.fetchLimit = 1
-            return (try? context.fetch(request).first) != nil
-        }
+        let hasActivities = await Task.detached {
+            let bgContext = CoreDataStack.shared.newBackgroundContext()
+            return await bgContext.perform {
+                let request = ActivityEvent.fetchRequest()
+                request.fetchLimit = 1
+                return (try? bgContext.fetch(request).first) != nil
+            }
+        }.value
         hasAnyActivities = hasActivities
 
         let correlations = await Task.detached {
-            await context.perform {
-                AnalysisEngine.analyseActivityCorrelations(in: context, days: days)
+            let bgContext = CoreDataStack.shared.newBackgroundContext()
+            return await bgContext.perform {
+                AnalysisEngine.analyseActivityCorrelations(in: bgContext, days: days)
             }
         }.value
         self.correlations = correlations
@@ -485,7 +488,6 @@ private struct CorrelationRow: View {
 // MARK: - Time patterns analysis
 
 private struct PatternsAnalysisView: View {
-    @Environment(\.managedObjectContext) private var context
     let days: Int
     @State private var patterns: [TimePattern] = []
     @State private var isLoading = true
@@ -520,8 +522,9 @@ private struct PatternsAnalysisView: View {
     private func loadPatterns() async {
         isLoading = true
         let patterns = await Task.detached {
-            await context.perform {
-                AnalysisEngine.analyseTimePatterns(in: context, days: days)
+            let bgContext = CoreDataStack.shared.newBackgroundContext()
+            return await bgContext.perform {
+                AnalysisEngine.analyseTimePatterns(in: bgContext, days: days)
             }
         }.value
         self.patterns = patterns
@@ -635,7 +638,6 @@ private struct HourDistributionChart: View {
 // MARK: - Health metrics analysis
 
 private struct HealthAnalysisView: View {
-    @Environment(\.managedObjectContext) private var context
     @EnvironmentObject private var healthKit: HealthKitAssistant
     let days: Int
     @State private var correlations: [PhysiologicalCorrelation] = []
@@ -689,19 +691,23 @@ private struct HealthAnalysisView: View {
         isLoading = true
 
         // Check if we have any health data at all
-        let hasHealthData = await context.perform {
-            let request = SymptomEntry.fetchRequest()
-            request.predicate = NSPredicate(
-                format: "hkHRV != nil OR hkRestingHR != nil OR hkSleepHours != nil"
-            )
-            request.fetchLimit = 1
-            return (try? context.fetch(request).first) != nil
-        }
+        let hasHealthData = await Task.detached {
+            let bgContext = CoreDataStack.shared.newBackgroundContext()
+            return await bgContext.perform {
+                let request = SymptomEntry.fetchRequest()
+                request.predicate = NSPredicate(
+                    format: "hkHRV != nil OR hkRestingHR != nil OR hkSleepHours != nil"
+                )
+                request.fetchLimit = 1
+                return (try? bgContext.fetch(request).first) != nil
+            }
+        }.value
         hasAnyHealthData = hasHealthData
 
         let correlations = await Task.detached {
-            await context.perform {
-                AnalysisEngine.analysePhysiologicalCorrelations(in: context, days: days)
+            let bgContext = CoreDataStack.shared.newBackgroundContext()
+            return await bgContext.perform {
+                AnalysisEngine.analysePhysiologicalCorrelations(in: bgContext, days: days)
             }
         }.value
         self.correlations = correlations

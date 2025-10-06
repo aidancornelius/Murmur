@@ -13,7 +13,8 @@ struct DaySummary: Hashable, Identifiable {
     let date: Date
     let entryCount: Int
     let uniqueSymptoms: Int
-    let averageSeverity: Double
+    let averageSeverity: Double  // Normalised for calculations (higher = worse)
+    let rawAverageSeverity: Double  // Raw average for display (1-5 scale)
     let severityLevel: Int
     let appleHealthMoodUUID: UUID?
     let loadScore: LoadScore?
@@ -26,7 +27,17 @@ struct DaySummary: Hashable, Identifiable {
         guard !entries.isEmpty || !activities.isEmpty else { return nil }
         let entryCount = entries.count
         let uniqueSymptoms = Set(entries.compactMap { $0.symptomType?.id }).count
-        let averageSeverity = entries.isEmpty ? 0.0 : entries.reduce(0.0) { $0 + Double($1.severity) } / Double(entryCount)
+
+        // Calculate raw average (for display)
+        let rawAverageSeverity = entries.isEmpty ? 0.0 : entries.reduce(0.0) { total, entry in
+            return total + Double(entry.severity)
+        } / Double(entryCount)
+
+        // Calculate normalized average (for calculations)
+        let averageSeverity = entries.isEmpty ? 0.0 : entries.reduce(0.0) { total, entry in
+            return total + entry.normalisedSeverity
+        } / Double(entryCount)
+
         let severityLevel = entries.isEmpty ? 0 : max(1, min(5, Int(round(averageSeverity))))
 
         let loadScore = LoadScore.calculate(
@@ -41,6 +52,7 @@ struct DaySummary: Hashable, Identifiable {
             entryCount: entryCount,
             uniqueSymptoms: uniqueSymptoms,
             averageSeverity: averageSeverity,
+            rawAverageSeverity: rawAverageSeverity,
             severityLevel: severityLevel,
             appleHealthMoodUUID: nil,
             loadScore: loadScore
@@ -51,7 +63,17 @@ struct DaySummary: Hashable, Identifiable {
         guard !entries.isEmpty || loadScore != nil else { return nil }
         let entryCount = entries.count
         let uniqueSymptoms = Set(entries.compactMap { $0.symptomType?.id }).count
-        let averageSeverity = entries.isEmpty ? 0.0 : entries.reduce(0.0) { $0 + Double($1.severity) } / Double(entryCount)
+
+        // Calculate raw average (for display)
+        let rawAverageSeverity = entries.isEmpty ? 0.0 : entries.reduce(0.0) { total, entry in
+            return total + Double(entry.severity)
+        } / Double(entryCount)
+
+        // Calculate normalized average (for calculations)
+        let averageSeverity = entries.isEmpty ? 0.0 : entries.reduce(0.0) { total, entry in
+            return total + entry.normalisedSeverity
+        } / Double(entryCount)
+
         let severityLevel = entries.isEmpty ? 0 : max(1, min(5, Int(round(averageSeverity))))
 
         return DaySummary(
@@ -59,6 +81,7 @@ struct DaySummary: Hashable, Identifiable {
             entryCount: entryCount,
             uniqueSymptoms: uniqueSymptoms,
             averageSeverity: averageSeverity,
+            rawAverageSeverity: rawAverageSeverity,
             severityLevel: severityLevel,
             appleHealthMoodUUID: nil,
             loadScore: loadScore

@@ -20,11 +20,12 @@ struct SymptomHistoryView: View {
     private let pageSize = 20
 
     struct SymptomCount: Identifiable {
-        let id = UUID()
+        var id: UUID { symptomType.safeId }
         let symptomType: SymptomType
         let count: Int
         let lastOccurrence: Date?
-        let averageSeverity: Double
+        let averageSeverity: Double  // Normalised (higher = worse)
+        let rawAverageSeverity: Double  // Raw average for display (1-5 scale)
     }
 
     var body: some View {
@@ -142,14 +143,24 @@ struct SymptomHistoryView: View {
                     return date1 > date2
                 }
 
-                let totalSeverity = entries.reduce(0) { $0 + Double($1.severity) }
+                // Calculate raw average (for display)
+                let rawTotalSeverity = entries.reduce(0.0) { total, entry in
+                    return total + Double(entry.severity)
+                }
+                let rawAverageSeverity = rawTotalSeverity / Double(entries.count)
+
+                // Calculate normalized average (for sorting/calculations)
+                let totalSeverity = entries.reduce(0.0) { total, entry in
+                    return total + entry.normalisedSeverity
+                }
                 let averageSeverity = totalSeverity / Double(entries.count)
 
                 return SymptomCount(
                     symptomType: symptomType,
                     count: entries.count,
                     lastOccurrence: sortedEntries.first?.backdatedAt ?? sortedEntries.first?.createdAt,
-                    averageSeverity: averageSeverity
+                    averageSeverity: averageSeverity,
+                    rawAverageSeverity: rawAverageSeverity
                 )
             }
             .sorted { $0.count > $1.count }
@@ -223,7 +234,7 @@ private struct SymptomCountRow: View {
                         Text("Avg \(symptomCount.symptomType.isPositive ? "level" : "severity")")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Text(String(format: "%.1f", symptomCount.averageSeverity))
+                        Text(String(format: "%.1f", symptomCount.rawAverageSeverity))
                             .font(.subheadline.weight(.medium))
                     }
 
@@ -278,7 +289,7 @@ private struct SymptomOccurrenceRow: View {
                         Text(timeLabel)
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Text("Severity: \(entry.severity)")
+                        Text("\(severityLabel): \(entry.severity)")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -320,5 +331,9 @@ private struct SymptomOccurrenceRow: View {
         formatter.dateStyle = .none
         formatter.timeStyle = .short
         return formatter.string(from: date)
+    }
+
+    private var severityLabel: String {
+        entry.symptomType?.isPositive == true ? "Level" : "Severity"
     }
 }

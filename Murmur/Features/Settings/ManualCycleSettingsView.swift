@@ -34,12 +34,16 @@ struct ManualCycleSettingsView: View {
     var body: some View {
         Form {
             Section {
+                Text("Track your cycle manually if you don't use the Health app or have irregular cycles you wish to track (e.g., PCOS). This will override Health data.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .listRowBackground(Color.clear)
+            }
+            Section {
                 Toggle("Enable manual tracking", isOn: Binding(
                     get: { manualCycleTracker.isEnabled },
                     set: { manualCycleTracker.setEnabled($0) }
                 ))
-            } footer: {
-                Text("Track your cycle manually if you don't use the Health app or have irregular cycles (e.g., PCOS). This will override Health data.")
             }
             .listRowBackground(palette.surfaceColor)
 

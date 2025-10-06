@@ -262,9 +262,9 @@ final class DataBackupService {
         }
 
         let manualCyclePreferences = BackupData.ManualCyclePreferences(
-            isEnabled: UserDefaults.standard.bool(forKey: "ManualCycleTrackingEnabled"),
-            cycleDay: UserDefaults.standard.object(forKey: "ManualCycleDay") as? Int,
-            cycleDaySetDate: UserDefaults.standard.object(forKey: "ManualCycleDaySetDate") as? Date
+            isEnabled: UserDefaults.standard.bool(forKey: UserDefaultsKeys.manualCycleTrackingEnabled),
+            cycleDay: UserDefaults.standard.object(forKey: UserDefaultsKeys.currentCycleDay) as? Int,
+            cycleDaySetDate: UserDefaults.standard.object(forKey: UserDefaultsKeys.cycleDaySetDate) as? Date
         )
 
         return BackupData(
@@ -399,16 +399,16 @@ final class DataBackupService {
             try context.save()
 
             // Restore manual cycle preferences
-            UserDefaults.standard.set(backupData.manualCyclePreferences.isEnabled, forKey: "ManualCycleTrackingEnabled")
+            UserDefaults.standard.set(backupData.manualCyclePreferences.isEnabled, forKey: UserDefaultsKeys.manualCycleTrackingEnabled)
             if let cycleDay = backupData.manualCyclePreferences.cycleDay {
-                UserDefaults.standard.set(cycleDay, forKey: "ManualCycleDay")
+                UserDefaults.standard.set(cycleDay, forKey: UserDefaultsKeys.currentCycleDay)
             } else {
-                UserDefaults.standard.removeObject(forKey: "ManualCycleDay")
+                UserDefaults.standard.removeObject(forKey: UserDefaultsKeys.currentCycleDay)
             }
             if let setDate = backupData.manualCyclePreferences.cycleDaySetDate {
-                UserDefaults.standard.set(setDate, forKey: "ManualCycleDaySetDate")
+                UserDefaults.standard.set(setDate, forKey: UserDefaultsKeys.cycleDaySetDate)
             } else {
-                UserDefaults.standard.removeObject(forKey: "ManualCycleDaySetDate")
+                UserDefaults.standard.removeObject(forKey: UserDefaultsKeys.cycleDaySetDate)
             }
         }
 

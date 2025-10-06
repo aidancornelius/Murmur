@@ -18,6 +18,11 @@ final class ManualCycleTrackerTests: XCTestCase {
     }
 
     override func tearDown() {
+        // Clean up UserDefaults to prevent state leakage across tests
+        UserDefaults.standard.removeObject(forKey: UserDefaultsKeys.manualCycleTrackingEnabled)
+        UserDefaults.standard.removeObject(forKey: UserDefaultsKeys.currentCycleDay)
+        UserDefaults.standard.removeObject(forKey: UserDefaultsKeys.cycleDaySetDate)
+
         testStack = nil
         super.tearDown()
     }

@@ -15,7 +15,8 @@ struct SymptomTrend: Identifiable {
     let symptomTypeName: String
     let symptomTypeColor: String
     let occurrences: Int
-    let averageSeverity: Double
+    let averageSeverity: Double  // Normalised for calculations (higher = worse)
+    let rawAverageSeverity: Double  // Raw average for display (1-5 scale)
     let trend: TrendDirection
     let periodComparison: String
     let isPositive: Bool  // True if higher values are better
@@ -115,6 +116,8 @@ class AnalysisEngine {
         return grouped.compactMap { (type, entries) -> SymptomTrend? in
             guard let type = type, let name = type.name else { return nil }
 
+            let isPositive = type.isPositive
+
             let firstHalf = entries.filter { entry in
                 let date = entry.backdatedAt ?? entry.createdAt ?? Date()
                 return date < midPoint
@@ -125,23 +128,56 @@ class AnalysisEngine {
                 return date >= midPoint
             }
 
-            let avgSeverity = entries.reduce(0.0) { $0 + Double($1.severity) } / Double(entries.count)
+            // Calculate raw average (for display)
+            let rawAvgSeverity = entries.reduce(0.0) { total, entry in
+                return total + Double(entry.severity)
+            } / Double(entries.count)
 
-            let firstAvg = firstHalf.isEmpty ? 0 : firstHalf.reduce(0.0) { $0 + Double($1.severity) } / Double(firstHalf.count)
-            let secondAvg = secondHalf.isEmpty ? 0 : secondHalf.reduce(0.0) { $0 + Double($1.severity) } / Double(secondHalf.count)
+            // Calculate normalized average (for trend calculations)
+            let avgSeverity = entries.reduce(0.0) { total, entry in
+                return total + entry.normalisedSeverity
+            } / Double(entries.count)
 
+            // Only calculate trend if both halves have data
             let trend: SymptomTrend.TrendDirection
-            let diff = secondAvg - firstAvg
-            // For positive symptoms, higher values = improving; for negative symptoms, lower values = improving
-            let isPositive = type.isPositive
-            if diff > 0.5 {
-                // Values went up: good for positive symptoms, bad for negative symptoms
-                trend = isPositive ? .increasing : .decreasing
-            } else if diff < -0.5 {
-                // Values went down: bad for positive symptoms, good for negative symptoms
-                trend = isPositive ? .decreasing : .increasing
-            } else {
+            let firstAvgNormalised: Double
+            let secondAvgNormalised: Double
+            let firstAvgRaw: Double
+            let secondAvgRaw: Double
+
+            if firstHalf.isEmpty || secondHalf.isEmpty {
+                // Insufficient data for trend comparison
                 trend = .stable
+                firstAvgNormalised = firstHalf.isEmpty ? 0 : firstHalf.reduce(0.0) { total, entry in
+                    return total + entry.normalisedSeverity
+                } / Double(firstHalf.count)
+                secondAvgNormalised = secondHalf.isEmpty ? 0 : secondHalf.reduce(0.0) { total, entry in
+                    return total + entry.normalisedSeverity
+                } / Double(secondHalf.count)
+                firstAvgRaw = firstHalf.isEmpty ? 0 : firstHalf.reduce(0.0) { $0 + Double($1.severity) } / Double(firstHalf.count)
+                secondAvgRaw = secondHalf.isEmpty ? 0 : secondHalf.reduce(0.0) { $0 + Double($1.severity) } / Double(secondHalf.count)
+            } else {
+                firstAvgNormalised = firstHalf.reduce(0.0) { total, entry in
+                    return total + entry.normalisedSeverity
+                } / Double(firstHalf.count)
+                secondAvgNormalised = secondHalf.reduce(0.0) { total, entry in
+                    return total + entry.normalisedSeverity
+                } / Double(secondHalf.count)
+                firstAvgRaw = firstHalf.reduce(0.0) { $0 + Double($1.severity) } / Double(firstHalf.count)
+                secondAvgRaw = secondHalf.reduce(0.0) { $0 + Double($1.severity) } / Double(secondHalf.count)
+
+                let diff = secondAvgNormalised - firstAvgNormalised
+                // Now both positive and negative symptoms use the same logic since we've normalized
+                // Higher normalized severity = worse (more burden)
+                if diff > 0.5 {
+                    // Normalized severity went up = worsening
+                    trend = .decreasing
+                } else if diff < -0.5 {
+                    // Normalized severity went down = improving
+                    trend = .increasing
+                } else {
+                    trend = .stable
+                }
             }
 
             return SymptomTrend(
@@ -149,8 +185,9 @@ class AnalysisEngine {
                 symptomTypeColor: type.color ?? "gray",
                 occurrences: entries.count,
                 averageSeverity: avgSeverity,
+                rawAverageSeverity: rawAvgSeverity,
                 trend: trend,
-                periodComparison: String(format: "%.1f → %.1f", firstAvg, secondAvg),
+                periodComparison: String(format: "%.1f → %.1f", firstAvgRaw, secondAvgRaw),
                 isPositive: isPositive
             )
         }
@@ -224,14 +261,12 @@ class AnalysisEngine {
                     }
                 }
 
-                // Calculate correlation
-                guard !symptomsAfterActivity.isEmpty || !symptomsWithoutActivity.isEmpty else { continue }
+                // Calculate correlation - require both groups to have data
+                guard !symptomsAfterActivity.isEmpty && !symptomsWithoutActivity.isEmpty else { continue }
 
-                let avgWithActivity = symptomsAfterActivity.isEmpty ? 0.0 :
-                    symptomsAfterActivity.reduce(0.0) { $0 + Double($1.severity) } / Double(symptomsAfterActivity.count)
+                let avgWithActivity = symptomsAfterActivity.reduce(0.0) { $0 + Double($1.severity) } / Double(symptomsAfterActivity.count)
 
-                let avgWithoutActivity = symptomsWithoutActivity.isEmpty ? 0.0 :
-                    symptomsWithoutActivity.reduce(0.0) { $0 + Double($1.severity) } / Double(symptomsWithoutActivity.count)
+                let avgWithoutActivity = symptomsWithoutActivity.reduce(0.0) { $0 + Double($1.severity) } / Double(symptomsWithoutActivity.count)
 
                 // Simple correlation: normalized difference
                 let maxSeverity = max(avgWithActivity, avgWithoutActivity, 1.0)

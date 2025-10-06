@@ -21,6 +21,7 @@ struct AppearanceSettingsView: View {
                 Text("Colour schemes follow your device's light/dark mode setting.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+                    .listRowBackground(Color.clear)
             }
             .listRowBackground(palette.surfaceColor)
 

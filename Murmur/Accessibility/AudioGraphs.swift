@@ -63,8 +63,13 @@ class AudioGraphController: NSObject, ObservableObject {
             return
         }
 
-        let averageSeverity = entries.map { Double($0.severity) }.reduce(0, +) / Double(entries.count)
-        let maxSeverity = entries.map { Int($0.severity) }.max() ?? 0
+        // Invert severity for positive symptoms (1-5 becomes 5-1)
+        let normalisedSeverities = entries.map { entry -> Double in
+            let severity = Double(entry.severity)
+            return entry.symptomType?.isPositive == true ? (6.0 - severity) : severity
+        }
+        let averageSeverity = normalisedSeverities.reduce(0, +) / Double(normalisedSeverities.count)
+        let maxSeverity = Int(normalisedSeverities.max() ?? 0)
 
         let formatter = DateFormatter()
         formatter.dateStyle = .full
