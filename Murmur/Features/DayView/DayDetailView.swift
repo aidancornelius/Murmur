@@ -197,6 +197,7 @@ struct DayDetailView: View {
         request.predicate = NSPredicate(format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))", date as NSDate, date as NSDate)
         request.sortDescriptors = [NSSortDescriptor(keyPath: \SymptomEntry.backdatedAt, ascending: true),
                                    NSSortDescriptor(keyPath: \SymptomEntry.createdAt, ascending: true)]
+        request.relationshipKeyPathsForPrefetching = ["symptomType"]
         return try context.fetch(request)
     }
 

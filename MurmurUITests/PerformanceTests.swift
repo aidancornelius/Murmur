@@ -6,6 +6,7 @@
 //
 
 import XCTest
+@testable import Murmur
 
 /// Performance and responsiveness tests
 /// Tests app performance with various data sizes and interaction patterns

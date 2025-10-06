@@ -6,28 +6,18 @@
 //
 
 import XCTest
+@testable import Murmur
 
 final class MurmurUITests: XCTestCase {
     var app: XCUIApplication!
     private var systemAlertMonitor: NSObjectProtocol?
-
-    /// Checks if running in CI environment
-    private var isRunningInCI: Bool {
-        return ProcessInfo.processInfo.environment["CI"] != nil ||
-               ProcessInfo.processInfo.environment["FASTLANE_SNAPSHOT"] != nil
-    }
-
-    /// Returns timeout adjusted for CI environment (2x longer in CI)
-    private func timeout(_ base: TimeInterval) -> TimeInterval {
-        return isRunningInCI ? base * 2 : base
-    }
 
     @MainActor
     override func setUpWithError() throws {
         continueAfterFailure = false
         app = XCUIApplication()
         setupSnapshot(app)
-        registerSystemAlertMonitor()
+        systemAlertMonitor = registerSystemAlertMonitor()
 
         // Launch with sample data flag
         app.launchArguments = ["-UITestMode", "-SeedSampleData"]
@@ -46,27 +36,8 @@ final class MurmurUITests: XCTestCase {
         app = nil
     }
 
-    @discardableResult
-    private func require(_ element: XCUIElement,
-                         timeout: TimeInterval = 5,
-                         file: StaticString = #filePath,
-                         line: UInt = #line) -> XCUIElement {
-        let exists = element.waitForExistence(timeout: timeout)
-        XCTAssertTrue(exists, "Expected element to exist", file: file, line: line)
-        return element
-    }
-
-    private func waitForDisappearance(_ element: XCUIElement,
-                                      timeout: TimeInterval = 5,
-                                      file: StaticString = #filePath,
-                                      line: UInt = #line) {
-        let expectation = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: element)
-        let result = XCTWaiter.wait(for: [expectation], timeout: timeout)
-        XCTAssertEqual(result, .completed, "Expected element to disappear", file: file, line: line)
-    }
-
-    private func registerSystemAlertMonitor() {
-        systemAlertMonitor = addUIInterruptionMonitor(withDescription: "System Alerts") { alert in
+    private func legacyRegisterSystemAlertMonitor() -> NSObjectProtocol {
+        return addUIInterruptionMonitor(withDescription: "System Alerts") { alert in
             let buttonTitles = [
                 "Allow",
                 "Allow While Using App",

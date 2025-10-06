@@ -6,6 +6,7 @@
 //
 
 import XCTest
+@testable import Murmur
 
 final class MurmurUITestsLaunchTests: XCTestCase {
 

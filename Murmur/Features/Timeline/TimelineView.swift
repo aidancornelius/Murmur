@@ -29,54 +29,55 @@ struct TimelineView: View {
         // Fetch additional 60 days for load score decay calculation
         let dataStartDate = calendar.date(byAdding: .day, value: -90, to: today) ?? today
 
-        _entries = FetchRequest<SymptomEntry>(
-            sortDescriptors: [
-                NSSortDescriptor(keyPath: \SymptomEntry.backdatedAt, ascending: false),
-                NSSortDescriptor(keyPath: \SymptomEntry.createdAt, ascending: false)
-            ],
-            predicate: NSPredicate(
-                format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
-                dataStartDate as NSDate, dataStartDate as NSDate
-            ),
-            animation: .default
+        let entriesRequest = SymptomEntry.fetchRequest()
+        entriesRequest.sortDescriptors = [
+            NSSortDescriptor(keyPath: \SymptomEntry.backdatedAt, ascending: false),
+            NSSortDescriptor(keyPath: \SymptomEntry.createdAt, ascending: false)
+        ]
+        entriesRequest.predicate = NSPredicate(
+            format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
+            dataStartDate as NSDate, dataStartDate as NSDate
         )
+        entriesRequest.relationshipKeyPathsForPrefetching = ["symptomType"]
+        entriesRequest.fetchBatchSize = 50
+        _entries = FetchRequest(fetchRequest: entriesRequest, animation: .default)
 
-        _activities = FetchRequest<ActivityEvent>(
-            sortDescriptors: [
-                NSSortDescriptor(keyPath: \ActivityEvent.backdatedAt, ascending: false),
-                NSSortDescriptor(keyPath: \ActivityEvent.createdAt, ascending: false)
-            ],
-            predicate: NSPredicate(
-                format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
-                dataStartDate as NSDate, dataStartDate as NSDate
-            ),
-            animation: .default
+        let activitiesRequest = ActivityEvent.fetchRequest()
+        activitiesRequest.sortDescriptors = [
+            NSSortDescriptor(keyPath: \ActivityEvent.backdatedAt, ascending: false),
+            NSSortDescriptor(keyPath: \ActivityEvent.createdAt, ascending: false)
+        ]
+        activitiesRequest.predicate = NSPredicate(
+            format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
+            dataStartDate as NSDate, dataStartDate as NSDate
         )
+        activitiesRequest.fetchBatchSize = 50
+        _activities = FetchRequest(fetchRequest: activitiesRequest, animation: .default)
 
         // Sleep and meal events only need display range (not used for load score calculation)
-        _sleepEvents = FetchRequest<SleepEvent>(
-            sortDescriptors: [
-                NSSortDescriptor(keyPath: \SleepEvent.backdatedAt, ascending: false),
-                NSSortDescriptor(keyPath: \SleepEvent.createdAt, ascending: false)
-            ],
-            predicate: NSPredicate(
-                format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
-                displayStartDate as NSDate, displayStartDate as NSDate
-            ),
-            animation: .default
+        let sleepRequest = SleepEvent.fetchRequest()
+        sleepRequest.sortDescriptors = [
+            NSSortDescriptor(keyPath: \SleepEvent.backdatedAt, ascending: false),
+            NSSortDescriptor(keyPath: \SleepEvent.createdAt, ascending: false)
+        ]
+        sleepRequest.predicate = NSPredicate(
+            format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
+            displayStartDate as NSDate, displayStartDate as NSDate
         )
+        sleepRequest.fetchBatchSize = 20
+        _sleepEvents = FetchRequest(fetchRequest: sleepRequest, animation: .default)
 
-        _mealEvents = FetchRequest<MealEvent>(
-            sortDescriptors: [
-                NSSortDescriptor(keyPath: \MealEvent.backdatedAt, ascending: false),
-                NSSortDescriptor(keyPath: \MealEvent.createdAt, ascending: false)
-            ],
-            predicate: NSPredicate(
-                format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
-                displayStartDate as NSDate, displayStartDate as NSDate
-            ),
-            animation: .default
+        let mealRequest = MealEvent.fetchRequest()
+        mealRequest.sortDescriptors = [
+            NSSortDescriptor(keyPath: \MealEvent.backdatedAt, ascending: false),
+            NSSortDescriptor(keyPath: \MealEvent.createdAt, ascending: false)
+        ]
+        mealRequest.predicate = NSPredicate(
+            format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
+            displayStartDate as NSDate, displayStartDate as NSDate
         )
+        mealRequest.fetchBatchSize = 20
+        _mealEvents = FetchRequest(fetchRequest: mealRequest, animation: .default)
     }
 
     private var daySections: [DaySection] {

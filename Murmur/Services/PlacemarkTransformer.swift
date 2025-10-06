@@ -65,16 +65,53 @@ final class PlacemarkTransformer: ValueTransformer {
                 return nil
             }
 
-            // Reconstruct CLPlacemark from stored properties
+            // Reconstruct location
             var location: CLLocation?
             if let lat = dict["latitude"] as? Double,
                let lon = dict["longitude"] as? Double {
                 location = CLLocation(latitude: lat, longitude: lon)
             }
 
-            // Create a CLPlacemark from the location
+            // Build postal address dictionary for full reconstruction
+            var addressDict: [String: Any] = [:]
+
+            if let name = dict["name"] as? String {
+                addressDict[CNPostalAddressStreetKey] = name
+            }
+            if let thoroughfare = dict["thoroughfare"] as? String {
+                addressDict[CNPostalAddressStreetKey] = thoroughfare
+            }
+            if let subThoroughfare = dict["subThoroughfare"] as? String {
+                // Combine with thoroughfare if present
+                if let street = addressDict[CNPostalAddressStreetKey] as? String {
+                    addressDict[CNPostalAddressStreetKey] = "\(subThoroughfare) \(street)"
+                }
+            }
+            if let locality = dict["locality"] as? String {
+                addressDict[CNPostalAddressCityKey] = locality
+            }
+            if let subLocality = dict["subLocality"] as? String {
+                addressDict["SubLocality"] = subLocality
+            }
+            if let administrativeArea = dict["administrativeArea"] as? String {
+                addressDict[CNPostalAddressStateKey] = administrativeArea
+            }
+            if let subAdministrativeArea = dict["subAdministrativeArea"] as? String {
+                addressDict["SubAdministrativeArea"] = subAdministrativeArea
+            }
+            if let postalCode = dict["postalCode"] as? String {
+                addressDict[CNPostalAddressPostalCodeKey] = postalCode
+            }
+            if let country = dict["country"] as? String {
+                addressDict[CNPostalAddressCountryKey] = country
+            }
+            if let isoCountryCode = dict["isoCountryCode"] as? String {
+                addressDict[CNPostalAddressISOCountryCodeKey] = isoCountryCode
+            }
+
+            // Create MKPlacemark with full address dictionary
             if let location = location {
-                return MKPlacemark(coordinate: location.coordinate)
+                return MKPlacemark(coordinate: location.coordinate, addressDictionary: addressDict)
             }
 
             return nil

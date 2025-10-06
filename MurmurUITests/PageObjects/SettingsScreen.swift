@@ -6,6 +6,7 @@
 //
 
 import XCTest
+@testable import Murmur
 
 /// Page Object representing the settings screen
 struct SettingsScreen {

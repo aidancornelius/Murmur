@@ -177,14 +177,13 @@ private struct RootContainer: View {
     }
 
     private func cleanOrphanedEntries(in context: NSManagedObjectContext) {
-        context.perform {
-            let fetchRequest: NSFetchRequest<SymptomEntry> = SymptomEntry.fetchRequest()
-            fetchRequest.predicate = NSPredicate(format: "symptomType == nil")
+        let fetchRequest: NSFetchRequest<SymptomEntry> = SymptomEntry.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "symptomType == nil")
 
-            if let orphanedEntries = try? context.fetch(fetchRequest), !orphanedEntries.isEmpty {
-                orphanedEntries.forEach(context.delete)
-                try? context.save()
-            }
+        if let orphanedEntries = try? context.fetch(fetchRequest), !orphanedEntries.isEmpty {
+            print("🧹 Cleaning \(orphanedEntries.count) orphaned symptom entries")
+            orphanedEntries.forEach(context.delete)
+            try? context.save()
         }
     }
 }

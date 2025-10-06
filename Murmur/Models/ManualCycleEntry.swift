@@ -55,3 +55,27 @@ extension ManualCycleEntry {
         return try context.fetch(request)
     }
 }
+
+// MARK: - Validation
+extension ManualCycleEntry {
+    public override func validateForInsert() throws {
+        try super.validateForInsert()
+        try validateFlowLevel()
+    }
+
+    public override func validateForUpdate() throws {
+        try super.validateForUpdate()
+        try validateFlowLevel()
+    }
+
+    private func validateFlowLevel() throws {
+        let validLevels = ["light", "medium", "heavy", "spotting"]
+        guard validLevels.contains(flowLevel) else {
+            throw NSError(
+                domain: "ManualCycleEntry",
+                code: 2001,
+                userInfo: [NSLocalizedDescriptionKey: "Invalid flow level. Must be one of: \(validLevels.joined(separator: ", "))"]
+            )
+        }
+    }
+}

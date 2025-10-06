@@ -75,3 +75,59 @@ extension SymptomEntry {
         return symptomType?.isPositive == true ? (6.0 - rawSeverity) : rawSeverity
     }
 }
+
+// MARK: - Validation
+extension SymptomEntry {
+    public override func validateForInsert() throws {
+        try super.validateForInsert()
+        try validateSeverity()
+        try validateDates()
+    }
+
+    public override func validateForUpdate() throws {
+        try super.validateForUpdate()
+        try validateSeverity()
+        try validateDates()
+    }
+
+    private func validateSeverity() throws {
+        guard severity >= 1 && severity <= 5 else {
+            throw NSError(
+                domain: "SymptomEntry",
+                code: 1001,
+                userInfo: [NSLocalizedDescriptionKey: "Severity must be between 1 and 5"]
+            )
+        }
+    }
+
+    private func validateDates() throws {
+        let now = Date()
+
+        // Validate createdAt is not in future
+        if let created = createdAt, created > now.addingTimeInterval(60) {
+            throw NSError(
+                domain: "SymptomEntry",
+                code: 1002,
+                userInfo: [NSLocalizedDescriptionKey: "Created date cannot be in the future"]
+            )
+        }
+
+        // Validate backdatedAt is not in future
+        if let backdated = backdatedAt, backdated > now.addingTimeInterval(60) {
+            throw NSError(
+                domain: "SymptomEntry",
+                code: 1003,
+                userInfo: [NSLocalizedDescriptionKey: "Entry date cannot be in the future"]
+            )
+        }
+
+        // Validate createdAt is before or equal to backdatedAt
+        if let created = createdAt, let backdated = backdatedAt, created > backdated {
+            throw NSError(
+                domain: "SymptomEntry",
+                code: 1004,
+                userInfo: [NSLocalizedDescriptionKey: "Entry cannot be backdated to before it was created"]
+            )
+        }
+    }
+}

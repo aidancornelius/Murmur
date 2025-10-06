@@ -113,4 +113,26 @@ platform :ios do
       result_bundle: true
     )
   end
+
+  desc "Run UI tests with step-by-step screenshots for visual verification"
+  lane :ui_tests_visual do
+    UI.important("📸 To capture step-by-step screenshots:")
+    UI.message("1. Edit MurmurUITests scheme in Xcode")
+    UI.message("2. Go to Run → Arguments")
+    UI.message("3. Enable the -CaptureTestScreenshots checkbox")
+    UI.message("4. Save and re-run this lane")
+    UI.message("")
+    UI.message("Running tests now...")
+
+    scan(
+      scheme: "MurmurUITests",
+      devices: ["iPhone 17 Pro (26.0)"],
+      result_bundle: true,
+      output_directory: "./fastlane-output/test-reports"
+    )
+
+    UI.success("Visual test run complete!")
+    UI.message("Open the .xcresult bundle to view screenshots:")
+    UI.message("→ fastlane-output/test-reports/MurmurUITests.xcresult")
+  end
 end

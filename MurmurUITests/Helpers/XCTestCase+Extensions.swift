@@ -6,6 +6,7 @@
 //
 
 import XCTest
+@testable import Murmur
 
 extension XCTestCase {
 
@@ -193,9 +194,16 @@ extension XCTestCase {
 
     /// Conditionally capture a screenshot at a test step (only when flag is set)
     /// Use this to document test flow visually without slowing down regular test runs
+    @MainActor
     func captureStep(_ name: String) {
         guard shouldCaptureScreenshots else { return }
-        snapshot(name)
+
+        // Use XCTest's native screenshot capture
+        let screenshot = XCUIScreen.main.screenshot()
+        let attachment = XCTAttachment(screenshot: screenshot)
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
     }
 
     /// Take a screenshot with a name
@@ -208,6 +216,7 @@ extension XCTestCase {
     }
 
     /// Assert screenshot matches reference (placeholder for future integration)
+    @MainActor
     func assertScreenshot(_ name: String,
                          matches reference: Bool = true,
                          file: StaticString = #filePath,

@@ -175,9 +175,13 @@ struct SymptomTypeFormView: View {
                 onSave?(target)
             }
             dismiss()
-        } catch {
+        } catch let error as NSError {
             HapticFeedback.error.trigger()
-            errorMessage = error.localizedDescription
+            if error.code == NSManagedObjectConstraintMergeError {
+                errorMessage = "A symptom with this name already exists. Please choose a different name."
+            } else {
+                errorMessage = error.localizedDescription
+            }
             context.rollback()
         }
     }

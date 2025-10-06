@@ -6,6 +6,7 @@
 //
 
 import XCTest
+@testable import Murmur
 
 /// Accessibility tests covering VoiceOver, Dynamic Type, voice commands, and accessibility identifiers
 final class AccessibilityTests: XCTestCase {
@@ -43,7 +44,8 @@ final class AccessibilityTests: XCTestCase {
         XCTAssertFalse(settingsTab.label.isEmpty, "Settings tab should have VoiceOver label")
 
         // Check entries have labels (if any exist)
-        if let firstEntry = timeline.getFirstEntry() {
+        if app.cells.count > 0 {
+            let firstEntry = app.cells.firstMatch
             XCTAssertFalse(firstEntry.label.isEmpty,
                           "Timeline entries should have descriptive VoiceOver labels")
         }
@@ -117,7 +119,7 @@ final class AccessibilityTests: XCTestCase {
 
         // Check if log symptom button has hint
         let logButton = timeline.logSymptomButton
-        if !logButton.value.isNil {
+        if !logButton.value == nil {
             // Hints appear in the value property for some elements
             let hasHintOrValue = logButton.value != nil
             XCTAssertTrue(hasHintOrValue,
@@ -125,7 +127,8 @@ final class AccessibilityTests: XCTestCase {
         }
 
         // Check entries have actionable hints
-        if let firstEntry = timeline.getFirstEntry() {
+        if app.cells.count > 0 {
+            let firstEntry = app.cells.firstMatch
             // Entry should be tappable and have a clear label
             XCTAssertTrue(firstEntry.isHittable,
                          "Timeline entries should be hittable for VoiceOver interaction")
@@ -139,7 +142,8 @@ final class AccessibilityTests: XCTestCase {
         let timeline = TimelineScreen(app: app)
 
         // Check that timeline entries can be interacted with
-        if let firstEntry = timeline.getFirstEntry() {
+        if app.cells.count > 0 {
+            let firstEntry = app.cells.firstMatch
             XCTAssertTrue(firstEntry.exists, "Entry should exist")
             XCTAssertTrue(firstEntry.isEnabled, "Entry should be enabled for interaction")
 

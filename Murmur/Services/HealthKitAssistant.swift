@@ -202,8 +202,8 @@ final class HealthKitAssistant: HealthKitAssistantProtocol, ObservableObject {
                     }
                     continuation.resume(returning: (samples as? [HKCategorySample]) ?? [])
                 }
-                activeQueries.append(query)
-                store.execute(query)
+                self.activeQueries.append(query)
+                self.store.execute(query)
             }
 
             guard !samples.isEmpty else { return nil }
@@ -375,8 +375,8 @@ final class HealthKitAssistant: HealthKitAssistantProtocol, ObservableObject {
                         }
                         continuation.resume(returning: (samples as? [HKCategorySample]) ?? [])
                     }
-                    activeQueries.append(query)
-                    store.execute(query)
+                    self.activeQueries.append(query)
+                    self.store.execute(query)
                 }
             }
 
@@ -403,7 +403,7 @@ final class HealthKitAssistant: HealthKitAssistantProtocol, ObservableObject {
             let samples = try await withTimeout {
                 try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[HKWorkout], Error>) in
                     var query: HKSampleQuery!
-                    query = HKSampleQuery(sampleType: workoutType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { [weak self] _, samples, error in
+                    query = HKSampleQuery(sampleType: self.workoutType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { [weak self] _, samples, error in
                         Task { @MainActor in
                             if let index = self?.activeQueries.firstIndex(where: { $0 === query }) {
                                 self?.activeQueries.remove(at: index)
@@ -415,8 +415,8 @@ final class HealthKitAssistant: HealthKitAssistantProtocol, ObservableObject {
                         }
                         continuation.resume(returning: (samples as? [HKWorkout]) ?? [])
                     }
-                    activeQueries.append(query)
-                    store.execute(query)
+                    self.activeQueries.append(query)
+                    self.store.execute(query)
                 }
             }
 
@@ -460,8 +460,8 @@ final class HealthKitAssistant: HealthKitAssistantProtocol, ObservableObject {
                         }
                         continuation.resume(returning: (samples as? [HKCategorySample]) ?? [])
                     }
-                    activeQueries.append(query)
-                    store.execute(query)
+                    self.activeQueries.append(query)
+                    self.store.execute(query)
                 }
             }
 
@@ -525,8 +525,8 @@ final class HealthKitAssistant: HealthKitAssistantProtocol, ObservableObject {
                     let quantitySamples = (samples as? [HKQuantitySample]) ?? []
                     continuation.resume(returning: quantitySamples)
                 }
-                activeQueries.append(query)
-                store.execute(query)
+                self.activeQueries.append(query)
+                self.store.execute(query)
             }
         }
     }
@@ -568,8 +568,8 @@ final class HealthKitAssistant: HealthKitAssistantProtocol, ObservableObject {
                         }
                         continuation.resume(returning: (samples as? [HKQuantitySample]) ?? [])
                     }
-                    activeQueries.append(query)
-                    store.execute(query)
+                    self.activeQueries.append(query)
+                    self.store.execute(query)
                 }
             }
 
@@ -612,8 +612,8 @@ final class HealthKitAssistant: HealthKitAssistantProtocol, ObservableObject {
                         }
                         continuation.resume(returning: (samples as? [HKQuantitySample]) ?? [])
                     }
-                    activeQueries.append(query)
-                    store.execute(query)
+                    self.activeQueries.append(query)
+                    self.store.execute(query)
                 }
             }
 

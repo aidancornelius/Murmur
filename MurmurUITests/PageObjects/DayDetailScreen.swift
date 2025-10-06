@@ -6,6 +6,7 @@
 //
 
 import XCTest
+@testable import Murmur
 
 /// Page Object representing the day detail screen
 struct DayDetailScreen {

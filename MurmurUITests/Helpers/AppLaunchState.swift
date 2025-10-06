@@ -6,6 +6,7 @@
 //
 
 import XCTest
+@testable import Murmur
 
 /// Extension to XCUIApplication for launching with specific states
 extension XCUIApplication {

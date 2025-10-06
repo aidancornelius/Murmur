@@ -6,6 +6,7 @@
 //
 
 import XCTest
+@testable import Murmur
 
 /// Cross-device and orientation testing
 /// Note: Run these tests on different simulators to verify device-specific layouts

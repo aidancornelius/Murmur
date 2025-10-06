@@ -6,6 +6,7 @@
 //
 
 import XCTest
+@testable import Murmur
 
 /// Visual regression tests capturing screenshots of app screens
 /// Run these tests with Fastlane snapshot for consistent locale and device configuration
@@ -24,6 +25,7 @@ final class SnapshotTests: XCTestCase {
     // MARK: - Main Screens - Light Mode (7 snapshots)
 
     /// Captures timeline with populated data
+    @MainActor
     func testTimelineSnapshot_Populated() throws {
         app.launchForSnapshots()
 
@@ -37,6 +39,7 @@ final class SnapshotTests: XCTestCase {
     }
 
     /// Captures timeline in empty state
+    @MainActor
     func testTimelineSnapshot_Empty() throws {
         app.launchEmpty()
         setupSnapshot(app)
@@ -48,6 +51,7 @@ final class SnapshotTests: XCTestCase {
     }
 
     /// Captures add entry screen
+    @MainActor
     func testAddEntrySnapshot() throws {
         app.launchForSnapshots()
 
@@ -63,13 +67,14 @@ final class SnapshotTests: XCTestCase {
     }
 
     /// Captures day detail view
+    @MainActor
     func testDayDetailSnapshot() throws {
         app.launchForSnapshots()
 
         let timeline = TimelineScreen(app: app)
 
         // Find and tap first entry to open day detail
-        if let firstEntry = timeline.getFirstEntry() {
+        if let firstEntry = app.cells.firstMatch {
             firstEntry.tap()
 
             let dayDetail = DayDetailScreen(app: app)
@@ -82,6 +87,7 @@ final class SnapshotTests: XCTestCase {
     }
 
     /// Captures analysis view with trends chart
+    @MainActor
     func testAnalysisTrendsSnapshot() throws {
         app.launchForSnapshots()
 
@@ -103,6 +109,7 @@ final class SnapshotTests: XCTestCase {
     }
 
     /// Captures analysis view with calendar heat map
+    @MainActor
     func testAnalysisCalendarSnapshot() throws {
         app.launchForSnapshots()
 
@@ -124,6 +131,7 @@ final class SnapshotTests: XCTestCase {
     }
 
     /// Captures settings screen
+    @MainActor
     func testSettingsSnapshot() throws {
         app.launchForSnapshots()
 
@@ -139,6 +147,7 @@ final class SnapshotTests: XCTestCase {
     // MARK: - Main Screens - Dark Mode (7 snapshots)
 
     /// Captures timeline in dark mode
+    @MainActor
     func testTimelineSnapshot_DarkMode() throws {
         app.launchDarkMode()
         setupSnapshot(app)
@@ -152,6 +161,7 @@ final class SnapshotTests: XCTestCase {
     }
 
     /// Captures add entry in dark mode
+    @MainActor
     func testAddEntrySnapshot_DarkMode() throws {
         app.launchDarkMode()
         setupSnapshot(app)
@@ -166,13 +176,14 @@ final class SnapshotTests: XCTestCase {
     }
 
     /// Captures day detail in dark mode
+    @MainActor
     func testDayDetailSnapshot_DarkMode() throws {
         app.launchDarkMode()
         setupSnapshot(app)
 
         let timeline = TimelineScreen(app: app)
 
-        if let firstEntry = timeline.getFirstEntry() {
+        if let firstEntry = app.cells.firstMatch {
             firstEntry.tap()
 
             let dayDetail = DayDetailScreen(app: app)
@@ -183,6 +194,7 @@ final class SnapshotTests: XCTestCase {
     }
 
     /// Captures analysis trends in dark mode
+    @MainActor
     func testAnalysisTrendsSnapshot_DarkMode() throws {
         app.launchDarkMode()
         setupSnapshot(app)
@@ -202,6 +214,7 @@ final class SnapshotTests: XCTestCase {
     }
 
     /// Captures analysis calendar in dark mode
+    @MainActor
     func testAnalysisCalendarSnapshot_DarkMode() throws {
         app.launchDarkMode()
         setupSnapshot(app)
@@ -221,6 +234,7 @@ final class SnapshotTests: XCTestCase {
     }
 
     /// Captures settings in dark mode
+    @MainActor
     func testSettingsSnapshot_DarkMode() throws {
         app.launchDarkMode()
         setupSnapshot(app)
@@ -234,6 +248,7 @@ final class SnapshotTests: XCTestCase {
     }
 
     /// Captures empty state in dark mode
+    @MainActor
     func testEmptyStateSnapshot_DarkMode() throws {
         app.launch(
             scenario: .emptyState,
@@ -250,6 +265,7 @@ final class SnapshotTests: XCTestCase {
     // MARK: - iPad Layouts (4 snapshots)
 
     /// Captures timeline on iPad
+    @MainActor
     func testTimelineSnapshot_iPad() throws {
         // Only run on iPad
         guard UIDevice.current.userInterfaceIdiom == .pad else {
@@ -267,6 +283,7 @@ final class SnapshotTests: XCTestCase {
     }
 
     /// Captures analysis on iPad
+    @MainActor
     func testAnalysisSnapshot_iPad() throws {
         guard UIDevice.current.userInterfaceIdiom == .pad else {
             throw XCTSkip("iPad-only test")
@@ -285,6 +302,7 @@ final class SnapshotTests: XCTestCase {
     }
 
     /// Captures add entry on iPad
+    @MainActor
     func testAddEntrySnapshot_iPad() throws {
         guard UIDevice.current.userInterfaceIdiom == .pad else {
             throw XCTSkip("iPad-only test")
@@ -302,6 +320,7 @@ final class SnapshotTests: XCTestCase {
     }
 
     /// Captures settings on iPad
+    @MainActor
     func testSettingsSnapshot_iPad() throws {
         guard UIDevice.current.userInterfaceIdiom == .pad else {
             throw XCTSkip("iPad-only test")
@@ -320,10 +339,10 @@ final class SnapshotTests: XCTestCase {
     // MARK: - Different States (6 snapshots)
 
     /// Captures loading state (if applicable)
+    @MainActor
     func testLoadingStateSnapshot() throws {
         app.launch(
-            scenario: .activeUser,
-            featureFlags: [.enablePerformanceMonitoring]
+            scenario: .activeUser
         )
         setupSnapshot(app)
 
@@ -335,6 +354,7 @@ final class SnapshotTests: XCTestCase {
     }
 
     /// Captures error states
+    @MainActor
     func testErrorStateSnapshot() throws {
         app.launch(
             scenario: .activeUser,
@@ -358,6 +378,7 @@ final class SnapshotTests: XCTestCase {
     }
 
     /// Captures various empty states
+    @MainActor
     func testEmptyStatesSnapshot() throws {
         app.launchEmpty()
         setupSnapshot(app)
@@ -369,6 +390,7 @@ final class SnapshotTests: XCTestCase {
     }
 
     /// Captures symptom entry with selections made
+    @MainActor
     func testSymptomEntryWithSelectionsSnapshot() throws {
         app.launchForSnapshots()
 
@@ -392,6 +414,7 @@ final class SnapshotTests: XCTestCase {
     }
 
     /// Captures calendar view with full year of data
+    @MainActor
     func testCalendarWithYearSnapshot() throws {
         app.launch(
             scenario: .heavyUser
@@ -415,6 +438,7 @@ final class SnapshotTests: XCTestCase {
     }
 
     /// Captures load capacity tracking view
+    @MainActor
     func testLoadCapacityViewSnapshot() throws {
         app.launchForSnapshots()
 

@@ -107,6 +107,7 @@ class AnalysisEngine {
             format: "((backdatedAt >= %@) OR (backdatedAt == nil AND createdAt >= %@))",
             startDate as NSDate, startDate as NSDate
         )
+        request.relationshipKeyPathsForPrefetching = ["symptomType"]
 
         guard let entries = try? context.fetch(request) else { return [] }
 
@@ -220,6 +221,7 @@ class AnalysisEngine {
             format: "((backdatedAt >= %@) OR (backdatedAt == nil AND createdAt >= %@))",
             startDate as NSDate, startDate as NSDate
         )
+        symptomsRequest.relationshipKeyPathsForPrefetching = ["symptomType"]
 
         guard let activities = try? context.fetch(activitiesRequest),
               let symptoms = try? context.fetch(symptomsRequest) else {
@@ -315,6 +317,7 @@ class AnalysisEngine {
             format: "((backdatedAt >= %@) OR (backdatedAt == nil AND createdAt >= %@))",
             startDate as NSDate, startDate as NSDate
         )
+        request.relationshipKeyPathsForPrefetching = ["symptomType"]
 
         guard let entries = try? context.fetch(request) else { return [] }
 
@@ -368,6 +371,7 @@ class AnalysisEngine {
             format: "((backdatedAt >= %@) OR (backdatedAt == nil AND createdAt >= %@))",
             startDate as NSDate, startDate as NSDate
         )
+        request.relationshipKeyPathsForPrefetching = ["symptomType"]
 
         guard let entries = try? context.fetch(request) else { return [] }
 

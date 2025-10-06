@@ -6,6 +6,7 @@
 //
 
 import XCTest
+@testable import Murmur
 
 /// Edge case and error handling tests
 final class EdgeCaseTests: XCTestCase {

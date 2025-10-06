@@ -47,6 +47,38 @@ Generate, resize, and frame screenshots for App Store
 
 Resize iPhone screenshots for App Store Connect
 
+### ios ui_tests
+
+```sh
+[bundle exec] fastlane ios ui_tests
+```
+
+Run full UI test suite on multiple devices and iOS versions
+
+### ios ui_tests_iphone
+
+```sh
+[bundle exec] fastlane ios ui_tests_iphone
+```
+
+Run UI tests on iPhone only (faster)
+
+### ios ui_smoke
+
+```sh
+[bundle exec] fastlane ios ui_smoke
+```
+
+Quick smoke test of critical user journeys
+
+### ios ui_tests_visual
+
+```sh
+[bundle exec] fastlane ios ui_tests_visual
+```
+
+Run UI tests with step-by-step screenshots for visual verification
+
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.

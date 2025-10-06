@@ -33,3 +33,42 @@ extension ActivityEvent {
 extension ActivityEvent: Identifiable {
 
 }
+
+// MARK: - Validation
+extension ActivityEvent {
+    public override func validateForInsert() throws {
+        try super.validateForInsert()
+        try validateExertionLevels()
+    }
+
+    public override func validateForUpdate() throws {
+        try super.validateForUpdate()
+        try validateExertionLevels()
+    }
+
+    private func validateExertionLevels() throws {
+        guard physicalExertion >= 1 && physicalExertion <= 5 else {
+            throw NSError(
+                domain: "ActivityEvent",
+                code: 3001,
+                userInfo: [NSLocalizedDescriptionKey: "Physical exertion must be between 1 and 5"]
+            )
+        }
+
+        guard cognitiveExertion >= 1 && cognitiveExertion <= 5 else {
+            throw NSError(
+                domain: "ActivityEvent",
+                code: 3002,
+                userInfo: [NSLocalizedDescriptionKey: "Cognitive exertion must be between 1 and 5"]
+            )
+        }
+
+        guard emotionalLoad >= 1 && emotionalLoad <= 5 else {
+            throw NSError(
+                domain: "ActivityEvent",
+                code: 3003,
+                userInfo: [NSLocalizedDescriptionKey: "Emotional load must be between 1 and 5"]
+            )
+        }
+    }
+}

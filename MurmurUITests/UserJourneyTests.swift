@@ -6,6 +6,7 @@
 //
 
 import XCTest
+@testable import Murmur
 
 /// Comprehensive user journey tests covering critical workflows
 final class UserJourneyTests: XCTestCase {
@@ -28,32 +29,40 @@ final class UserJourneyTests: XCTestCase {
     // MARK: - Symptom Entry Flows (8 tests)
 
     /// Tests complete symptom entry workflow including search, severity, note, and save
+    @MainActor
     func testCompleteSymptomEntry() throws {
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
         assertExists(timeline.logSymptomButton, message: "Timeline should be visible")
+        captureStep("01-Timeline")
 
         // Navigate to add entry
         timeline.navigateToAddEntry()
 
         let addEntry = AddEntryScreen(app: app)
         XCTAssertTrue(addEntry.waitForLoad(), "Add entry screen should load")
+        captureStep("02-AddEntry")
 
         // Search and select symptom
         addEntry.openSymptomSearch()
+        captureStep("03-SymptomSearch")
         addEntry.searchForSymptom("Headache")
+        captureStep("04-SearchResults")
         XCTAssertTrue(addEntry.selectSymptom(named: "Headache"), "Should be able to select Headache")
+        captureStep("05-SymptomSelected")
 
         // Set severity and note
         addEntry.setSeverity(3)
         addEntry.enterNote("Mild headache after work")
+        captureStep("06-SeverityAndNote")
 
         // Save entry
         addEntry.save()
 
         // Verify entry appears in timeline
         XCTAssertTrue(timeline.waitForLoad(), "Timeline should reload")
+        captureStep("07-TimelineWithEntry")
         XCTAssertTrue(timeline.hasEntry(containing: "Headache"), "Timeline should show new Headache entry")
     }
 

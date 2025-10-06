@@ -6,6 +6,7 @@
 //
 
 import XCTest
+@testable import Murmur
 
 /// Page Object representing the main timeline screen
 struct TimelineScreen {
