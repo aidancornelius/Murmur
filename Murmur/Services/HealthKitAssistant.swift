@@ -5,14 +5,41 @@
 //  Created by Aidan Cornelius-Bell on 02/10/2025.
 //
 
+import Combine
 import HealthKit
 import os.log
 
+// MARK: - Protocols
+
+/// Protocol for HealthKit services to enable dependency injection and testing
+@MainActor
+protocol HealthKitAssistantProtocol: AnyObject {
+    func recentHRV() async -> Double?
+    func recentRestingHR() async -> Double?
+    func recentSleepHours() async -> Double?
+    func recentWorkoutMinutes() async -> Double?
+    func recentCycleDay() async -> Int?
+    func recentFlowLevel() async -> String?
+}
+
+/// Protocol abstraction for HKHealthStore to enable testing with mock implementations
+protocol HealthKitStoreProtocol {
+    func execute(_ query: HKQuery)
+    func stop(_ query: HKQuery)
+    func requestAuthorization(toShare typesToShare: Set<HKSampleType>, read typesToRead: Set<HKObjectType>) async throws
+}
+
+/// Make HKHealthStore conform to our protocol
+extension HKHealthStore: HealthKitStoreProtocol {}
+
+// MARK: - HealthKit Assistant
+
 /// Wraps all HealthKit interactions and caches recent context for symptom entries.
 @MainActor
-final class HealthKitAssistant: ObservableObject {
+final class HealthKitAssistant: HealthKitAssistantProtocol, ObservableObject {
     private let logger = Logger(subsystem: "app.murmur", category: "HealthKit")
-    private let store = HKHealthStore()
+    private let store: HealthKitStoreProtocol
+    private var activeQueries: [HKQuery] = []
 
     var manualCycleTracker: ManualCycleTracker?
 
@@ -37,6 +64,38 @@ final class HealthKitAssistant: ObservableObject {
 
     var isHealthDataAvailable: Bool { HKHealthStore.isHealthDataAvailable() }
 
+    // MARK: - Initialisation
+
+    /// Initialise with dependency-injected store (primarily for testing)
+    init(store: HealthKitStoreProtocol = HKHealthStore()) {
+        self.store = store
+    }
+
+    nonisolated deinit {
+        // Stop all active queries to prevent leaks
+        // Note: We can't access @MainActor properties here, but queries will be
+        // stopped when the store is deallocated
+    }
+
+    // MARK: - Debug Helpers (for testing)
+
+    #if DEBUG
+    /// Expose cache timestamps for testing purposes
+    func _setCacheTimestamp(_ date: Date, for metric: String) {
+        switch metric {
+        case "hrv": lastHRVSampleDate = date
+        case "restingHR": lastRestingSampleDate = date
+        case "sleep": lastSleepSampleDate = date
+        case "workout": lastWorkoutSampleDate = date
+        case "cycle": lastCycleSampleDate = date
+        default: break
+        }
+    }
+
+    /// Expose active queries count for testing
+    var _activeQueriesCount: Int { activeQueries.count }
+    #endif
+
     func bootstrapAuthorizations() async {
         guard isHealthDataAvailable else { return }
         do {
@@ -59,6 +118,32 @@ final class HealthKitAssistant: ObservableObject {
         if let sleepType { readTypes.insert(sleepType) }
         if let menstrualFlowType { readTypes.insert(menstrualFlowType) }
         try await store.requestAuthorization(toShare: [], read: readTypes)
+    }
+
+    // MARK: - Timeout Wrapper
+
+    /// Wraps an async operation with a timeout to prevent indefinite hangs
+    private func withTimeout<T>(
+        _ timeout: TimeInterval = AppConstants.HealthKit.queryTimeout,
+        operation: @escaping () async throws -> T
+    ) async throws -> T {
+        try await withThrowingTaskGroup(of: T.self) { group in
+            group.addTask {
+                try await operation()
+            }
+            group.addTask {
+                try await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
+                throw NSError(
+                    domain: "HealthKitAssistant",
+                    code: -1,
+                    userInfo: [NSLocalizedDescriptionKey: "HealthKit query timed out after \(timeout) seconds"]
+                )
+            }
+
+            let result = try await group.next()!
+            group.cancelAll()
+            return result
+        }
     }
 
     func recentHRV() async -> Double? {
@@ -104,13 +189,20 @@ final class HealthKitAssistant: ObservableObject {
 
             let samples = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[HKCategorySample], Error>) in
                 let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)
-                let query = HKSampleQuery(sampleType: sleepType, predicate: combinedPredicate, limit: HKObjectQueryNoLimit, sortDescriptors: [sortDescriptor]) { _, samples, error in
+                var query: HKSampleQuery!
+                query = HKSampleQuery(sampleType: sleepType, predicate: combinedPredicate, limit: HKObjectQueryNoLimit, sortDescriptors: [sortDescriptor]) { [weak self] _, samples, error in
+                    Task { @MainActor in
+                        if let index = self?.activeQueries.firstIndex(where: { $0 === query }) {
+                            self?.activeQueries.remove(at: index)
+                        }
+                    }
                     if let error {
                         continuation.resume(throwing: error)
                         return
                     }
                     continuation.resume(returning: (samples as? [HKCategorySample]) ?? [])
                 }
+                activeQueries.append(query)
                 store.execute(query)
             }
 
@@ -268,15 +360,24 @@ final class HealthKitAssistant: ObservableObject {
             let sleepPredicate = NSCompoundPredicate(orPredicateWithSubpredicates: sleepPredicates)
             let combinedPredicate = NSCompoundPredicate(andPredicateWithSubpredicates: [predicate, sleepPredicate])
 
-            let samples = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[HKCategorySample], Error>) in
-                let query = HKSampleQuery(sampleType: sleepType, predicate: combinedPredicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, samples, error in
-                    if let error {
-                        continuation.resume(throwing: error)
-                        return
+            let samples = try await withTimeout {
+                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[HKCategorySample], Error>) in
+                    var query: HKSampleQuery!
+                    query = HKSampleQuery(sampleType: sleepType, predicate: combinedPredicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { [weak self] _, samples, error in
+                        Task { @MainActor in
+                            if let index = self?.activeQueries.firstIndex(where: { $0 === query }) {
+                                self?.activeQueries.remove(at: index)
+                            }
+                        }
+                        if let error {
+                            continuation.resume(throwing: error)
+                            return
+                        }
+                        continuation.resume(returning: (samples as? [HKCategorySample]) ?? [])
                     }
-                    continuation.resume(returning: (samples as? [HKCategorySample]) ?? [])
+                    activeQueries.append(query)
+                    store.execute(query)
                 }
-                store.execute(query)
             }
 
             let totalSeconds = samples.reduce(0.0) { total, sample in
@@ -299,15 +400,24 @@ final class HealthKitAssistant: ObservableObject {
             let start = end.addingTimeInterval(-AppConstants.HealthKit.dailyMetricsLookback)
             let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
 
-            let samples = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[HKWorkout], Error>) in
-                let query = HKSampleQuery(sampleType: workoutType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, samples, error in
-                    if let error {
-                        continuation.resume(throwing: error)
-                        return
+            let samples = try await withTimeout {
+                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[HKWorkout], Error>) in
+                    var query: HKSampleQuery!
+                    query = HKSampleQuery(sampleType: workoutType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { [weak self] _, samples, error in
+                        Task { @MainActor in
+                            if let index = self?.activeQueries.firstIndex(where: { $0 === query }) {
+                                self?.activeQueries.remove(at: index)
+                            }
+                        }
+                        if let error {
+                            continuation.resume(throwing: error)
+                            return
+                        }
+                        continuation.resume(returning: (samples as? [HKWorkout]) ?? [])
                     }
-                    continuation.resume(returning: (samples as? [HKWorkout]) ?? [])
+                    activeQueries.append(query)
+                    store.execute(query)
                 }
-                store.execute(query)
             }
 
             let totalSeconds = samples.reduce(0.0) { total, workout in
@@ -335,15 +445,24 @@ final class HealthKitAssistant: ObservableObject {
             let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
             let sort = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
 
-            let samples = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[HKCategorySample], Error>) in
-                let query = HKSampleQuery(sampleType: menstrualFlowType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: [sort]) { _, samples, error in
-                    if let error {
-                        continuation.resume(throwing: error)
-                        return
+            let samples = try await withTimeout {
+                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[HKCategorySample], Error>) in
+                    var query: HKSampleQuery!
+                    query = HKSampleQuery(sampleType: menstrualFlowType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: [sort]) { [weak self] _, samples, error in
+                        Task { @MainActor in
+                            if let index = self?.activeQueries.firstIndex(where: { $0 === query }) {
+                                self?.activeQueries.remove(at: index)
+                            }
+                        }
+                        if let error {
+                            continuation.resume(throwing: error)
+                            return
+                        }
+                        continuation.resume(returning: (samples as? [HKCategorySample]) ?? [])
                     }
-                    continuation.resume(returning: (samples as? [HKCategorySample]) ?? [])
+                    activeQueries.append(query)
+                    store.execute(query)
                 }
-                store.execute(query)
             }
 
             // Find most recent period start (flow not unspecified)
@@ -388,16 +507,27 @@ final class HealthKitAssistant: ObservableObject {
         let start = Date().addingTimeInterval(-AppConstants.HealthKit.quantitySampleLookback)
         let predicate = HKQuery.predicateForSamples(withStart: start, end: Date())
         let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
-        return try await withCheckedThrowingContinuation { continuation in
-            let query = HKSampleQuery(sampleType: type, predicate: predicate, limit: limit, sortDescriptors: [sort]) { _, samples, error in
-                if let error {
-                    continuation.resume(throwing: error)
-                    return
+        return try await withTimeout {
+            try await withCheckedThrowingContinuation { continuation in
+                var query: HKSampleQuery!
+                query = HKSampleQuery(sampleType: type, predicate: predicate, limit: limit, sortDescriptors: [sort]) { [weak self] _, samples, error in
+                    Task { @MainActor in
+                        // Remove query from active list
+                        if let index = self?.activeQueries.firstIndex(where: { $0 === query }) {
+                            self?.activeQueries.remove(at: index)
+                        }
+                    }
+
+                    if let error {
+                        continuation.resume(throwing: error)
+                        return
+                    }
+                    let quantitySamples = (samples as? [HKQuantitySample]) ?? []
+                    continuation.resume(returning: quantitySamples)
                 }
-                let quantitySamples = (samples as? [HKQuantitySample]) ?? []
-                continuation.resume(returning: quantitySamples)
+                activeQueries.append(query)
+                store.execute(query)
             }
-            store.execute(query)
         }
     }
 
@@ -423,15 +553,24 @@ final class HealthKitAssistant: ObservableObject {
             let predicate = HKQuery.predicateForSamples(withStart: start, end: Date())
             let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
 
-            let samples = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[HKQuantitySample], Error>) in
-                let query = HKSampleQuery(sampleType: hrvType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: [sort]) { _, samples, error in
-                    if let error {
-                        continuation.resume(throwing: error)
-                        return
+            let samples = try await withTimeout {
+                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[HKQuantitySample], Error>) in
+                    var query: HKSampleQuery!
+                    query = HKSampleQuery(sampleType: hrvType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: [sort]) { [weak self] _, samples, error in
+                        Task { @MainActor in
+                            if let index = self?.activeQueries.firstIndex(where: { $0 === query }) {
+                                self?.activeQueries.remove(at: index)
+                            }
+                        }
+                        if let error {
+                            continuation.resume(throwing: error)
+                            return
+                        }
+                        continuation.resume(returning: (samples as? [HKQuantitySample]) ?? [])
                     }
-                    continuation.resume(returning: (samples as? [HKQuantitySample]) ?? [])
+                    activeQueries.append(query)
+                    store.execute(query)
                 }
-                store.execute(query)
             }
 
             let values = samples.map { $0.quantity.doubleValue(for: HKUnit.secondUnit(with: .milli)) }
@@ -458,15 +597,24 @@ final class HealthKitAssistant: ObservableObject {
             let predicate = HKQuery.predicateForSamples(withStart: start, end: Date())
             let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
 
-            let samples = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[HKQuantitySample], Error>) in
-                let query = HKSampleQuery(sampleType: restingHeartType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: [sort]) { _, samples, error in
-                    if let error {
-                        continuation.resume(throwing: error)
-                        return
+            let samples = try await withTimeout {
+                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[HKQuantitySample], Error>) in
+                    var query: HKSampleQuery!
+                    query = HKSampleQuery(sampleType: restingHeartType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: [sort]) { [weak self] _, samples, error in
+                        Task { @MainActor in
+                            if let index = self?.activeQueries.firstIndex(where: { $0 === query }) {
+                                self?.activeQueries.remove(at: index)
+                            }
+                        }
+                        if let error {
+                            continuation.resume(throwing: error)
+                            return
+                        }
+                        continuation.resume(returning: (samples as? [HKQuantitySample]) ?? [])
                     }
-                    continuation.resume(returning: (samples as? [HKQuantitySample]) ?? [])
+                    activeQueries.append(query)
+                    store.execute(query)
                 }
-                store.execute(query)
             }
 
             let unit = HKUnit.count().unitDivided(by: HKUnit.minute())

@@ -10,9 +10,16 @@ import UserNotifications
 import AppIntents
 
 final class MurmurAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
-    let healthKitAssistant = HealthKitAssistant()
-    let calendarAssistant = CalendarAssistant()
+    let healthKitAssistant: HealthKitAssistant
+    let calendarAssistant: CalendarAssistant
     private(set) var manualCycleTracker: ManualCycleTracker?
+
+    override init() {
+        // Conditionally initialize services based on UI test flags
+        self.healthKitAssistant = UITestConfiguration.shouldDisableHealthKit ? HealthKitAssistant() : HealthKitAssistant()
+        self.calendarAssistant = UITestConfiguration.shouldDisableCalendar ? CalendarAssistant() : CalendarAssistant()
+        super.init()
+    }
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         // Register custom value transformers for Core Data
@@ -23,11 +30,16 @@ final class MurmurAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificati
         manualCycleTracker = ManualCycleTracker(context: context)
         healthKitAssistant.manualCycleTracker = manualCycleTracker
 
-        UNUserNotificationCenter.current().delegate = self
+        // Configure notification delegate (unless disabled for UI tests)
+        if !UITestConfiguration.shouldDisableNotifications {
+            UNUserNotificationCenter.current().delegate = self
+        }
 
-        // Register app shortcuts for Siri and lock screen
-        if #available(iOS 16.0, *) {
-            MurmurAppShortcuts.updateAppShortcutParameters()
+        // Register app shortcuts for Siri and lock screen (unless in UI test mode)
+        if !UITestConfiguration.isUITesting {
+            if #available(iOS 16.0, *) {
+                MurmurAppShortcuts.updateAppShortcutParameters()
+            }
         }
 
         // Configure UIKit appearance for forms

@@ -1,0 +1,152 @@
+name: Murmur
+
+options:
+  bundleIdPrefix: com.cornelius-bell
+  deploymentTarget:
+    iOS: "18.6"
+  developmentLanguage: en
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.3"
+    CURRENT_PROJECT_VERSION: "1"
+    ENABLE_HARDENED_RUNTIME: NO
+    DEVELOPMENT_TEAM: HK6R36PLNR
+  configs:
+    Debug:
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
+    Release:
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: ""
+
+targets:
+  Murmur:
+    type: application
+    platform: iOS
+    sources:
+      - path: Murmur
+        excludes:
+          - "**/*.md"
+          - "**/Info.plist"
+          - "MurmurTests"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.cornelius-bell.Murmur
+        INFOPLIST_FILE: Murmur/Resources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Murmur/Murmur.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        SWIFT_EMIT_LOC_STRINGS: YES
+        ENABLE_PREVIEWS: YES
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks"
+    dependencies:
+      - target: MurmurWidgetsExtension
+    preBuildScripts:
+      - script: |
+          # Run SwiftLint if installed
+          if which swiftlint >/dev/null; then
+            swiftlint
+          fi
+        name: SwiftLint
+        basedOnDependencyAnalysis: false
+        showEnvVars: false
+
+  MurmurWidgetsExtension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: MurmurWidgets
+        excludes:
+          - "**/*.md"
+          - "**/Info.plist"
+    info:
+      path: MurmurWidgets/Info.plist
+      properties:
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.cornelius-bell.Murmur.MurmurWidgets
+        SKIP_INSTALL: YES
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks"
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME: WidgetBackground
+        GENERATE_INFOPLIST_FILE: YES
+
+  MurmurTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: MurmurTests
+        excludes:
+          - "**/*.md"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.cornelius-bell.MurmurTests
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Murmur.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Murmur"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks @loader_path/Frameworks"
+        ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES: YES
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: Murmur
+
+  MurmurUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: MurmurUITests
+        excludes:
+          - "**/*.md"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.cornelius-bell.MurmurUITests
+        TEST_TARGET_NAME: Murmur
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks @loader_path/Frameworks"
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: Murmur
+
+schemes:
+  Murmur:
+    build:
+      targets:
+        Murmur: all
+        MurmurWidgetsExtension: all
+        MurmurTests: [test]
+        MurmurUITests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      gatherCoverageData: true
+      coverageTargets:
+        - Murmur
+      targets:
+        - name: MurmurTests
+        - name: MurmurUITests
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
+
+  MurmurWidgetsExtension:
+    build:
+      targets:
+        MurmurWidgetsExtension: all
+    run:
+      config: Debug
+
+  MurmurUITests:
+    build:
+      targets:
+        Murmur: all
+        MurmurUITests: [test]
+    test:
+      config: Debug
+      targets:
+        - name: MurmurUITests

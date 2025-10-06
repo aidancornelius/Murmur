@@ -9,20 +9,141 @@ import XCTest
 
 final class MurmurUITests: XCTestCase {
     var app: XCUIApplication!
+    private var systemAlertMonitor: NSObjectProtocol?
+
+    /// Checks if running in CI environment
+    private var isRunningInCI: Bool {
+        return ProcessInfo.processInfo.environment["CI"] != nil ||
+               ProcessInfo.processInfo.environment["FASTLANE_SNAPSHOT"] != nil
+    }
+
+    /// Returns timeout adjusted for CI environment (2x longer in CI)
+    private func timeout(_ base: TimeInterval) -> TimeInterval {
+        return isRunningInCI ? base * 2 : base
+    }
 
     @MainActor
     override func setUpWithError() throws {
         continueAfterFailure = false
         app = XCUIApplication()
         setupSnapshot(app)
+        registerSystemAlertMonitor()
 
         // Launch with sample data flag
         app.launchArguments = ["-UITestMode", "-SeedSampleData"]
         app.launch()
+
+        // Skip HealthKit authorization in UI test mode (app skips it via -UITestMode flag)
+        // allowHealthKitIfNeeded() is not needed since app won't show HealthKit dialog
+
+        handleSpringboardAlertsIfNeeded()
     }
 
     override func tearDownWithError() throws {
+        if let monitor = systemAlertMonitor {
+            removeUIInterruptionMonitor(monitor)
+        }
         app = nil
+    }
+
+    @discardableResult
+    private func require(_ element: XCUIElement,
+                         timeout: TimeInterval = 5,
+                         file: StaticString = #filePath,
+                         line: UInt = #line) -> XCUIElement {
+        let exists = element.waitForExistence(timeout: timeout)
+        XCTAssertTrue(exists, "Expected element to exist", file: file, line: line)
+        return element
+    }
+
+    private func waitForDisappearance(_ element: XCUIElement,
+                                      timeout: TimeInterval = 5,
+                                      file: StaticString = #filePath,
+                                      line: UInt = #line) {
+        let expectation = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: element)
+        let result = XCTWaiter.wait(for: [expectation], timeout: timeout)
+        XCTAssertEqual(result, .completed, "Expected element to disappear", file: file, line: line)
+    }
+
+    private func registerSystemAlertMonitor() {
+        systemAlertMonitor = addUIInterruptionMonitor(withDescription: "System Alerts") { alert in
+            let buttonTitles = [
+                "Allow",
+                "Allow While Using App",
+                "Allow Once",
+                "Always Allow",
+                "OK"
+            ]
+
+            for title in buttonTitles {
+                if alert.buttons[title].exists {
+                    alert.buttons[title].tap()
+                    return true
+                }
+            }
+
+            return false
+        }
+    }
+
+    private func allowHealthKitIfNeeded(timeout: TimeInterval = 12) {
+        let healthApp = XCUIApplication(bundleIdentifier: "com.apple.Health")
+
+        guard healthApp.wait(for: .runningForeground, timeout: timeout) else {
+            return
+        }
+
+        XCTContext.runActivity(named: "Health App Buttons") { _ in
+            let buttons = healthApp.buttons.allElementsBoundByIndex
+            for button in buttons {
+                NSLog("Health button -> label: %@, identifier: %@", button.label, button.identifier)
+            }
+            let navButtons = healthApp.navigationBars.buttons.allElementsBoundByIndex
+            for button in navButtons {
+                NSLog("Health nav button -> label: %@, identifier: %@", button.label, button.identifier)
+            }
+        }
+
+        let turnOnAllCandidates: [XCUIElement] = [
+            healthApp.navigationBars.buttons["Turn On All"],
+            healthApp.buttons["Turn On All"],
+            healthApp.buttons["Allow All"],
+            healthApp.buttons["Allow All Data"]
+        ]
+
+        for candidate in turnOnAllCandidates where candidate.waitForExistence(timeout: 1.5) {
+            candidate.tap()
+        }
+
+        let allowCandidates: [XCUIElement] = [
+            healthApp.navigationBars.buttons["Allow"],
+            healthApp.buttons["Allow"],
+            healthApp.navigationBars.buttons["Allow All"],
+            healthApp.buttons["Allow All"],
+            healthApp.buttons["Allow With Current Data"],
+            healthApp.buttons["Done"]
+        ]
+
+        for candidate in allowCandidates where candidate.waitForExistence(timeout: 1.5) {
+            candidate.tap()
+        }
+
+        let doneButton = healthApp.buttons["Done"]
+        if doneButton.waitForExistence(timeout: 1.5) {
+            doneButton.tap()
+        }
+
+        // Return focus to the app under test
+        app.activate()
+    }
+
+    private func handleSpringboardAlertsIfNeeded(timeout: TimeInterval = 5) {
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let allowButton = springboard.buttons["Allow"]
+        if allowButton.waitForExistence(timeout: timeout) {
+            allowButton.tap()
+            app.activate()
+        }
     }
 
     // MARK: - Positive symptom tests
@@ -44,8 +165,8 @@ final class MurmurUITests: XCTestCase {
         XCTAssertTrue(logButton.waitForExistence(timeout: 5), "Log button should exist")
         logButton.tap()
 
-        // Wait for sheet to appear by checking for search field
-        let searchButton = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Search all symptoms'")).firstMatch
+        // Wait for sheet to appear by checking for search button
+        let searchButton = app.buttons["search-all-symptoms-button"]
         XCTAssertTrue(searchButton.waitForExistence(timeout: 3), "Search button should appear")
         searchButton.tap()
 
@@ -84,27 +205,22 @@ final class MurmurUITests: XCTestCase {
     @MainActor
     func testMixedSymptomEntry() throws {
         // Test entering multiple symptoms with mixed positive/negative
-        sleep(2)
-
-        let logButton = app.buttons["Log symptom"]
-        XCTAssertTrue(logButton.waitForExistence(timeout: 5), "Log button should exist")
+        let logButton = require(app.buttons["Log symptom"], timeout: 5)
         logButton.tap()
-        sleep(1)
 
         // Try to select Energy (positive)
         let searchField = app.searchFields.firstMatch
-        if searchField.exists {
+        if searchField.waitForExistence(timeout: 3) {
             searchField.tap()
             searchField.typeText("Energy")
-            sleep(1)
 
             let energyCell = app.staticTexts["Energy"]
             if energyCell.waitForExistence(timeout: 3) {
                 energyCell.tap()
-                sleep(1)
 
                 // Verify we can proceed with the entry
                 let saveButton = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'save' OR label CONTAINS[c] 'done' OR label CONTAINS[c] 'log'")).firstMatch
+                _ = saveButton.waitForExistence(timeout: 3)
 
                 // The key test: app shouldn't crash with positive symptoms
                 XCTAssertTrue(app.exists, "App should remain stable with positive symptom selected")
@@ -113,7 +229,7 @@ final class MurmurUITests: XCTestCase {
 
         // Cancel
         let cancelButton = app.navigationBars.buttons["Cancel"]
-        if cancelButton.exists {
+        if cancelButton.waitForExistence(timeout: 3) {
             cancelButton.tap()
         }
     }
@@ -126,7 +242,7 @@ final class MurmurUITests: XCTestCase {
         logButton.tap()
 
         // Wait for and tap search button
-        let searchButton = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Search all symptoms'")).firstMatch
+        let searchButton = app.buttons["search-all-symptoms-button"]
         XCTAssertTrue(searchButton.waitForExistence(timeout: 3), "Search button should appear")
         searchButton.tap()
 
@@ -167,103 +283,80 @@ final class MurmurUITests: XCTestCase {
     @MainActor
     func testAddAndRemoveCustomSymptom() throws {
         // Wait for app to load
-        sleep(2)
-
         // Navigate to settings
-        let settingsButton = app.navigationBars.buttons.matching(NSPredicate(format: "identifier CONTAINS[c] 'gear' OR label CONTAINS[c] 'settings'")).firstMatch
-        XCTAssertTrue(settingsButton.waitForExistence(timeout: 10), "Settings button should exist")
+        let settingsButton = require(app.navigationBars.buttons.matching(NSPredicate(format: "identifier CONTAINS[c] 'gear' OR label CONTAINS[c] 'settings'")).firstMatch,
+                                     timeout: 10)
         settingsButton.tap()
-        sleep(2)
 
-        // Navigate to tracked symptoms
-        let trackedSymptomsButton = app.buttons["Tracked symptoms"]
-        XCTAssertTrue(trackedSymptomsButton.waitForExistence(timeout: 10), "Tracked symptoms button should exist")
+        let trackedSymptomsButton = require(app.buttons["tracked-symptoms-button"], timeout: 10)
         trackedSymptomsButton.tap()
-        sleep(2)
 
         // Tap add button (+ button in navigation)
-        let addButton = app.navigationBars.buttons.matching(NSPredicate(format: "identifier == 'plus' OR label == 'Add'")).firstMatch
-        XCTAssertTrue(addButton.waitForExistence(timeout: 5), "Add button should exist")
+        let addButton = require(app.navigationBars.buttons.matching(NSPredicate(format: "identifier == 'plus' OR label == 'Add'")).firstMatch, timeout: 5)
         addButton.tap()
-        sleep(1)
 
         // Enter custom symptom name
-        let textField = app.textFields.firstMatch
-        XCTAssertTrue(textField.waitForExistence(timeout: 5), "Text field should appear")
+        let textField = require(app.textFields.firstMatch, timeout: 5)
         textField.tap()
         textField.typeText("Test Custom Symptom")
-        sleep(1)
 
         // Save the custom symptom
         let saveButton = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'save' OR label CONTAINS[c] 'add' OR label CONTAINS[c] 'done'")).firstMatch
-        if saveButton.exists {
+        if saveButton.waitForExistence(timeout: 3) {
             saveButton.tap()
-            sleep(2)
         }
 
         // Verify the custom symptom appears in the list
-        let customSymptom = app.staticTexts["Test Custom Symptom"]
-        XCTAssertTrue(customSymptom.exists, "Custom symptom should appear in list")
+        let customSymptom = require(app.staticTexts["Test Custom Symptom"], timeout: 5)
 
         // Now delete it - swipe to delete or tap edit mode
         if customSymptom.exists {
-            // Try swipe to delete
             customSymptom.swipeLeft()
-            sleep(1)
 
             let deleteButton = app.buttons["Delete"]
-            if deleteButton.exists {
+            if deleteButton.waitForExistence(timeout: 2) {
                 deleteButton.tap()
-                sleep(1)
-
-                // Verify it's gone
+                waitForDisappearance(customSymptom, timeout: 3)
                 XCTAssertFalse(customSymptom.exists, "Custom symptom should be deleted")
             }
         }
 
         // Go back to main screen
         let backButton = app.navigationBars.buttons.element(boundBy: 0)
-        if backButton.exists {
+        if backButton.waitForExistence(timeout: 3) {
             backButton.tap()
-            sleep(1)
         }
 
         // Go back again if needed
-        if app.navigationBars.buttons.element(boundBy: 0).exists {
-            app.navigationBars.buttons.element(boundBy: 0).tap()
-            sleep(1)
+        let secondBackButton = app.navigationBars.buttons.element(boundBy: 0)
+        if secondBackButton.waitForExistence(timeout: 3) {
+            secondBackButton.tap()
         }
     }
 
     @MainActor
     func testNotificationPermission() throws {
         // Wait for app to load
-        sleep(2)
-
         // Navigate to settings
-        let settingsButton = app.navigationBars.buttons.matching(NSPredicate(format: "identifier CONTAINS[c] 'gear' OR label CONTAINS[c] 'settings'")).firstMatch
-        XCTAssertTrue(settingsButton.waitForExistence(timeout: 10), "Settings button should exist")
+        let settingsButton = require(app.navigationBars.buttons.matching(NSPredicate(format: "identifier CONTAINS[c] 'gear' OR label CONTAINS[c] 'settings'")).firstMatch,
+                                     timeout: 10)
         settingsButton.tap()
-        sleep(2)
 
         // Look for notification/reminder settings
         let notificationButton = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'notification' OR label CONTAINS[c] 'reminder'")).firstMatch
-        if notificationButton.exists {
+        if notificationButton.waitForExistence(timeout: 5) {
             notificationButton.tap()
-            sleep(2)
 
             // Look for a toggle or button to enable notifications
             let enableToggle = app.switches.firstMatch
-            if enableToggle.exists && enableToggle.value as? String == "0" {
+            if enableToggle.waitForExistence(timeout: 3), enableToggle.value as? String == "0" {
                 enableToggle.tap()
-                sleep(1)
 
                 // Handle system notification permission alert
                 let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
                 let allowButton = springboard.buttons["Allow"]
                 if allowButton.waitForExistence(timeout: 5) {
                     allowButton.tap()
-                    sleep(1)
                 }
             }
 
@@ -276,9 +369,8 @@ final class MurmurUITests: XCTestCase {
 
         // Go back to main screen
         let backButton = app.navigationBars.buttons.element(boundBy: 0)
-        if backButton.exists {
+        if backButton.waitForExistence(timeout: 3) {
             backButton.tap()
-            sleep(1)
         }
     }
 
@@ -290,7 +382,7 @@ final class MurmurUITests: XCTestCase {
         logSymptomButton.tap()
 
         // Wait for and tap search button
-        let searchButton = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Search all symptoms'")).firstMatch
+        let searchButton = app.buttons["search-all-symptoms-button"]
         XCTAssertTrue(searchButton.waitForExistence(timeout: 3), "Search button should appear")
         searchButton.tap()
 
@@ -329,17 +421,12 @@ final class MurmurUITests: XCTestCase {
     @MainActor
     func testPositiveSymptomAnalysis() throws {
         // This test verifies analysis views handle positive symptoms correctly
-        sleep(2)
-
         // Navigate to analysis
-        let analysisButton = app.navigationBars.buttons["Analysis"]
-        XCTAssertTrue(analysisButton.waitForExistence(timeout: 5), "Analysis button should exist")
+        let analysisButton = require(app.navigationBars.buttons["Analysis"], timeout: 5)
         analysisButton.tap()
-        sleep(2)
 
         // Check that trends view loads (it should handle positive symptoms)
-        let trendsSegment = app.buttons["Trends"]
-        XCTAssertTrue(trendsSegment.exists, "Trends tab should exist")
+        let trendsSegment = require(app.buttons["Trends"], timeout: 5)
 
         // If there's data, verify it shows "Improving" or "Worsening" not "Increasing/Decreasing"
         let improvingLabel = app.staticTexts.containing(NSPredicate(format: "label CONTAINS 'Improving'")).firstMatch
@@ -352,96 +439,125 @@ final class MurmurUITests: XCTestCase {
         }
 
         // Go back
-        app.navigationBars.buttons.element(boundBy: 0).tap()
-        sleep(1)
+        let backButton = app.navigationBars.buttons.element(boundBy: 0)
+        if backButton.waitForExistence(timeout: 3) {
+            backButton.tap()
+        }
     }
 
     // MARK: - Screenshot tests
 
     @MainActor
     func testGenerateScreenshots() throws {
+        // Track expected screenshots
+        var capturedScreenshots: Set<String> = []
+        let expectedScreenshots: Set<String> = [
+            "01Timeline",
+            "02DayDetail",
+            "03AddSymptom",
+            "04Analysis",
+            "05CalendarHeatMap",
+            "06Settings",
+            "07LoadCapacitySettings"
+        ]
+
         // Wait for app to fully launch and load data
-        sleep(3)
+        _ = require(app.buttons.matching(identifier: "log-symptom-button").firstMatch, timeout: timeout(10))
 
         // Screenshot 1: Main timeline view
         snapshot("01Timeline")
+        capturedScreenshots.insert("01Timeline")
 
         // Screenshot 2: Day detail view
-        // Find and tap on the first day section header or timeline entry
-        let firstCell = app.tables.cells.firstMatch
-        if firstCell.waitForExistence(timeout: 5) {
+        let firstCell = app.cells.firstMatch
+        if firstCell.waitForExistence(timeout: timeout(10)) {
             firstCell.tap()
-            sleep(2)
-            snapshot("02DayDetail")
-
-            // Go back
-            let backButton = app.navigationBars.buttons.element(boundBy: 0)
-            if backButton.exists {
-                backButton.tap()
-                sleep(1)
+            let detailBackButton = app.navigationBars.buttons.element(boundBy: 0)
+            if detailBackButton.waitForExistence(timeout: timeout(5)) {
+                snapshot("02DayDetail")
+                capturedScreenshots.insert("02DayDetail")
+                detailBackButton.tap()
             }
         }
 
         // Screenshot 3: Add symptom entry
         let logSymptomButton = app.buttons["Log symptom"]
-        if logSymptomButton.waitForExistence(timeout: 5) {
+        if logSymptomButton.waitForExistence(timeout: timeout(5)) {
             logSymptomButton.tap()
-            sleep(1)
-            snapshot("03AddSymptom")
 
-            // Cancel
             let cancelButton = app.navigationBars.buttons["Cancel"]
-            if cancelButton.exists {
+            if cancelButton.waitForExistence(timeout: timeout(5)) {
+                snapshot("03AddSymptom")
+                capturedScreenshots.insert("03AddSymptom")
                 cancelButton.tap()
-                sleep(1)
             }
         }
 
         // Screenshot 4: Analysis view
         let analysisButton = app.navigationBars.buttons["Analysis"]
-        if analysisButton.waitForExistence(timeout: 5) {
+        if analysisButton.waitForExistence(timeout: timeout(5)) {
             analysisButton.tap()
-            sleep(2)
+
+            // Wait for trends view to load
+            let trendsButton = app.buttons["Trends"]
+            _ = trendsButton.waitForExistence(timeout: timeout(5))
             snapshot("04Analysis")
+            capturedScreenshots.insert("04Analysis")
 
             // Screenshot 5: Calendar heat map in analysis
-            // Look for calendar or heat map button/element
-            let calendarButton = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'calendar' OR label CONTAINS[c] 'heat map'")).firstMatch
-            if calendarButton.waitForExistence(timeout: 3) {
-                calendarButton.tap()
-                sleep(2)
-                snapshot("05CalendarHeatMap")
+            // Open the analysis view selector menu
+            let viewSelectorMenu = app.buttons["analysis-view-selector"]
+            if viewSelectorMenu.waitForExistence(timeout: timeout(3)) {
+                viewSelectorMenu.tap()
 
-                // Go back from calendar
-                let backButton = app.navigationBars.buttons.element(boundBy: 0)
-                if backButton.exists {
-                    backButton.tap()
-                    sleep(1)
+                // Tap the Calendar option in the menu
+                let calendarMenuItem = app.buttons["analysis-calendar-button"]
+                if calendarMenuItem.waitForExistence(timeout: timeout(2)) {
+                    calendarMenuItem.tap()
+
+                    // Wait for calendar grid to appear (look for month navigation)
+                    let monthLabel = app.staticTexts.matching(NSPredicate(format: "label CONTAINS '2025' OR label CONTAINS '2024'")).firstMatch
+                    if monthLabel.waitForExistence(timeout: timeout(5)) {
+                        snapshot("05CalendarHeatMap")
+                        capturedScreenshots.insert("05CalendarHeatMap")
+                    }
                 }
             }
 
-            // Go back from analysis
-            let backButton = app.navigationBars.buttons.element(boundBy: 0)
-            if backButton.exists {
-                backButton.tap()
-                sleep(1)
+            let analysisBackButton = app.navigationBars.buttons.element(boundBy: 0)
+            if analysisBackButton.waitForExistence(timeout: timeout(3)) {
+                analysisBackButton.tap()
             }
         }
 
         // Screenshot 6: Settings
         let settingsButton = app.navigationBars.buttons.matching(identifier: "gearshape").firstMatch
-        if settingsButton.waitForExistence(timeout: 5) {
+        if settingsButton.waitForExistence(timeout: timeout(5)) {
             settingsButton.tap()
-            sleep(2)
-            snapshot("06Settings")
 
-            // Screenshot 7: Load capacity settings
-            let loadCapacityButton = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'load capacity'")).firstMatch
-            if loadCapacityButton.waitForExistence(timeout: 3) {
+            let loadCapacityButton = app.buttons["load-capacity-button"]
+            if loadCapacityButton.waitForExistence(timeout: timeout(5)) {
+                snapshot("06Settings")
+                capturedScreenshots.insert("06Settings")
+
+                // Screenshot 7: Load capacity settings
                 loadCapacityButton.tap()
-                sleep(2)
-                snapshot("07LoadCapacitySettings")
+                if app.tables.firstMatch.waitForExistence(timeout: timeout(3)) {
+                    snapshot("07LoadCapacitySettings")
+                    capturedScreenshots.insert("07LoadCapacitySettings")
+                }
+
+                let loadBackButton = app.navigationBars.buttons.element(boundBy: 0)
+                if loadBackButton.waitForExistence(timeout: timeout(3)) {
+                    loadBackButton.tap()
+                }
             }
         }
+
+        // Verify all expected screenshots were captured
+        let missingScreenshots = expectedScreenshots.subtracting(capturedScreenshots)
+        XCTAssertTrue(missingScreenshots.isEmpty, "Missing screenshots: \(missingScreenshots.sorted().joined(separator: ", "))")
+
+        NSLog("✓ Successfully captured all \(capturedScreenshots.count) screenshots: \(capturedScreenshots.sorted().joined(separator: ", "))")
     }
 }

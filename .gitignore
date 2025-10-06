@@ -85,7 +85,10 @@ fastlane/metadata/
 fastlane/Fastfile.swift
 fastlane/Snapfile
 
-# Screenshots
+# Fastlane outputs (screenshots and test reports)
+fastlane-output/
+
+# Legacy screenshot locations (keeping for safety)
 screenshots/
 Screenshots/
 *.png
@@ -109,3 +112,12 @@ iOSInjectionProject/
 *~.nib
 
 build.log
+
+# xcodegen
+*.xcodeproj/*
+!*.xcodeproj/project.xcworkspace
+!*.xcodeproj/project.xcworkspace/xcshareddata
+!*.xcodeproj/xcshareddata
+
+# Keep the backup temporarily
+!Murmur.xcodeproj.backup

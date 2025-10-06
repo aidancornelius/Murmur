@@ -49,6 +49,7 @@ struct AddEntryView: View {
     @State private var includeLocation = false
     @State private var isSaving = false
     @State private var errorMessage: String?
+    @State private var saveTask: Task<Void, Never>?
 
     @StateObject private var locationAssistant = LocationAssistant()
 
@@ -94,6 +95,7 @@ struct AddEntryView: View {
                         .accessibilityLabel("Same severity for all symptoms")
                         .accessibilityHint("When enabled, all selected symptoms will use the same severity rating. When disabled, you can rate each symptom individually.")
                         .accessibilityValue(useSameSeverity ? "On, using shared severity" : "Off, individual severity ratings")
+                        .accessibilityIdentifier(AccessibilityIdentifiers.sameSeverityToggle)
                         .onChange(of: useSameSeverity) { _, _ in
                             HapticFeedback.selection.trigger()
                         }
@@ -138,6 +140,7 @@ struct AddEntryView: View {
                                 }
                                 .accessibilityLabel("Severity for \(symptom.symptomType.name ?? "symptom")")
                                 .accessibilityValue(SeverityScale.accessibilityValue(for: symptom.severity, isPositive: symptom.symptomType.isPositive))
+                                .accessibilityIdentifier(AccessibilityIdentifiers.individualSeveritySlider(symptom.symptomType.name ?? "symptom"))
                                 .onChange(of: symptom.severity) { _, _ in
                                     HapticFeedback.light.trigger()
                                 }
@@ -162,6 +165,7 @@ struct AddEntryView: View {
 
                 Section {
                     DatePicker("Time", selection: $timestamp)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.timestampPicker)
                 }
                 .themedFormSection()
             }
@@ -170,8 +174,10 @@ struct AddEntryView: View {
                 TextField("Notes (optional)", text: $note, axis: .vertical)
                     .lineLimit(1...4)
                     .accessibilityHint("Add any additional details about this symptom")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.noteTextField)
 
                 Toggle("Save location", isOn: $includeLocation)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.locationToggle)
                     .onChange(of: includeLocation) { _, enabled in
                         HapticFeedback.selection.trigger()
                         if enabled { locationAssistant.requestLocation() }
@@ -196,6 +202,7 @@ struct AddEntryView: View {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel", role: .cancel) { dismiss() }
                     .accessibilityIdentifier(AccessibilityIdentifiers.cancelButton)
+                    .accessibilityInputLabels(["Cancel", "Dismiss", "Close", "Go back"])
             }
             ToolbarItem(placement: .confirmationAction) {
                 Button("Save") {
@@ -203,7 +210,11 @@ struct AddEntryView: View {
                 }
                 .disabled(isSaving || selectedSymptoms.isEmpty)
                 .accessibilityIdentifier(AccessibilityIdentifiers.saveButton)
+                .accessibilityInputLabels(["Save", "Submit", "Log entry", "Record", "Save entry"])
             }
+        }
+        .onDisappear {
+            saveTask?.cancel()
         }
     }
 
@@ -251,62 +262,35 @@ struct AddEntryView: View {
     }
 
     private func saveEntries(addAnother: Bool) {
-        guard !selectedSymptoms.isEmpty else {
-            errorMessage = "Select at least one symptom."
-            return
-        }
         isSaving = true
         errorMessage = nil
 
-        Task { @MainActor in
-            // Fetch HealthKit data once for all entries
-            let placemark = includeLocation ? await locationAssistant.currentPlacemark() : nil
-            let hrv = await healthKit.recentHRV()
-            let rhr = await healthKit.recentRestingHR()
-            let sleep = await healthKit.recentSleepHours()
-            let workout = await healthKit.recentWorkoutMinutes()
-            let cycleDay = await healthKit.recentCycleDay()
-            let flowLevel = await healthKit.recentFlowLevel()
+        // Cancel any existing save task
+        saveTask?.cancel()
 
-            // Create an entry for each selected symptom
-            for selectedSymptom in selectedSymptoms {
-                let entry = SymptomEntry(context: context)
-                entry.id = UUID()
-                entry.createdAt = Date()
-                entry.backdatedAt = timestamp
-                entry.severity = Int16(selectedSymptom.severity)
-                entry.note = note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : note
-                entry.symptomType = selectedSymptom.symptomType
-
-                // Apply shared HealthKit data
-                if let placemark { entry.locationPlacemark = placemark }
-                if let hrv { entry.hkHRV = NSNumber(value: hrv) }
-                if let rhr { entry.hkRestingHR = NSNumber(value: rhr) }
-                if let sleep { entry.hkSleepHours = NSNumber(value: sleep) }
-                if let workout { entry.hkWorkoutMinutes = NSNumber(value: workout) }
-                if let cycleDay { entry.hkCycleDay = NSNumber(value: cycleDay) }
-                if let flowLevel { entry.hkFlowLevel = flowLevel }
-            }
-
+        saveTask = Task { @MainActor in
             do {
-                // Ensure all changes are registered
-                context.processPendingChanges()
-
-                // Save to persistent store
-                if context.hasChanges {
-                    try context.save()
-                    print("✅ AddEntryView: Successfully saved \(selectedSymptoms.count) entries to persistent store")
-                } else {
-                    print("⚠️ AddEntryView: No changes to save")
-                }
+                // Use the service to create and save entries
+                _ = try await SymptomEntryService.createEntries(
+                    selectedSymptoms: selectedSymptoms,
+                    note: note,
+                    timestamp: timestamp,
+                    includeLocation: includeLocation,
+                    healthKit: healthKit,
+                    location: locationAssistant,
+                    context: context
+                )
 
                 HapticFeedback.success.trigger()
                 dismiss()
+            } catch is CancellationError {
+                // Task was cancelled - service already rolled back changes
+                print("⚠️ AddEntryView: Save cancelled")
+                isSaving = false
             } catch {
                 print("❌ AddEntryView: Failed to save - \(error.localizedDescription)")
                 HapticFeedback.error.trigger()
                 errorMessage = error.localizedDescription
-                context.rollback()
                 isSaving = false
             }
         }
@@ -348,6 +332,7 @@ private struct SymptomMultiPicker: View {
     @Binding var sharedSeverity: Double
 
     @State private var showAllSymptoms = false
+    @State private var recentSymptoms: [SymptomType] = []
     @Environment(\.managedObjectContext) private var context
 
     private let maxSelection = AppConstants.UI.maxSymptomSelection
@@ -356,12 +341,12 @@ private struct SymptomMultiPicker: View {
         symptomTypes.filter { $0.isStarred }.sorted { ($0.name ?? "") < ($1.name ?? "") }
     }
 
-    private var recentSymptoms: [SymptomType] {
+    private func loadRecentSymptoms() {
         let fetchRequest: NSFetchRequest<SymptomEntry> = SymptomEntry.fetchRequest()
         fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \SymptomEntry.createdAt, ascending: false)]
         fetchRequest.fetchLimit = 20
 
-        guard let entries = try? context.fetch(fetchRequest) else { return [] }
+        guard let entries = try? context.fetch(fetchRequest) else { return }
 
         var seen = Set<UUID>()
         var recent: [SymptomType] = []
@@ -374,7 +359,7 @@ private struct SymptomMultiPicker: View {
             }
         }
 
-        return recent
+        recentSymptoms = recent
     }
 
     private func isSelected(_ symptom: SymptomType) -> Bool {
@@ -489,16 +474,24 @@ private struct SymptomMultiPicker: View {
             .buttonStyle(.plain)
             .foregroundStyle(Color.accentColor)
             .accessibilityLabel("Search all symptoms")
+            .accessibilityIdentifier(AccessibilityIdentifiers.searchAllSymptomsButton)
             .accessibilityHint("Opens a searchable list of all available symptoms")
+            .accessibilityInputLabels(["Search all symptoms", "Browse symptoms", "Find symptom", "Search symptoms", "All symptoms"])
         }
         .padding(.vertical, 8)
+        .onAppear {
+            if recentSymptoms.isEmpty {
+                loadRecentSymptoms()
+            }
+        }
         .sheet(isPresented: $showAllSymptoms) {
             NavigationStack {
                 AllSymptomsSheet(
                     symptomTypes: symptomTypes,
                     selectedSymptoms: $selectedSymptoms,
                     isPresented: $showAllSymptoms,
-                    maxSelection: maxSelection
+                    maxSelection: maxSelection,
+                    onSymptomCreated: loadRecentSymptoms
                 )
             }
             .themedSurface()
@@ -511,6 +504,7 @@ private struct AllSymptomsSheet: View {
     @Binding var selectedSymptoms: [SelectedSymptom]
     @Binding var isPresented: Bool
     let maxSelection: Int
+    var onSymptomCreated: (() -> Void)?
 
     @State private var searchText: String = ""
     @State private var showCreateSheet = false
@@ -658,6 +652,8 @@ private struct AllSymptomsSheet: View {
                         HapticFeedback.success.trigger()
                     }
                     searchText = ""
+                    // Refresh recent symptoms list
+                    onSymptomCreated?()
                 }
                 .environment(\.managedObjectContext, context)
             }
@@ -722,5 +718,6 @@ private struct SymptomMultiSelectButton: View {
         .accessibilityLabel("\(symptom.name ?? "Unnamed")")
         .accessibilityHint(isSelected ? "Tap to deselect" : (isDisabled ? "Maximum symptoms selected" : "Tap to select"))
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+        .accessibilityIdentifier(AccessibilityIdentifiers.quickSymptomButton(symptom.name ?? "Unnamed"))
     }
 }

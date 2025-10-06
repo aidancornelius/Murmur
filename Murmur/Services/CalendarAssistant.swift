@@ -5,20 +5,71 @@
 //  Created by Aidan Cornelius-Bell on 02/10/2025.
 //
 
+import Combine
 import EventKit
 import Foundation
 import os.log
 
+// MARK: - Protocols
+
+/// Protocol for calendar services to enable dependency injection and testing
 @MainActor
-final class CalendarAssistant: ObservableObject {
+protocol CalendarAssistantProtocol: AnyObject {
+    var authorizationStatus: EKAuthorizationStatus { get }
+    var upcomingEvents: [EKEvent] { get }
+    var recentEvents: [EKEvent] { get }
+    func requestAccess() async -> Bool
+    func fetchRecentEvents(daysBack: Int) async
+    func fetchUpcomingEvents(daysAhead: Int) async
+    func fetchTodaysEvents() async
+}
+
+/// Protocol abstraction for EKEventStore to enable testing with mock implementations
+protocol CalendarStoreProtocol {
+    func requestAccess() async throws -> Bool
+    func events(matching predicate: NSPredicate) -> [EKEvent]
+    func predicateForEvents(withStart startDate: Date, end endDate: Date, calendars: [EKCalendar]?) -> NSPredicate
+}
+
+/// Wrapper for EKEventStore that conforms to CalendarStoreProtocol
+@MainActor
+final class EventStoreWrapper: CalendarStoreProtocol {
+    private let store = EKEventStore()
+
+    func requestAccess() async throws -> Bool {
+        if #available(iOS 17.0, *) {
+            return try await store.requestFullAccessToEvents()
+        } else {
+            return try await store.requestAccess(to: .event)
+        }
+    }
+
+    func events(matching predicate: NSPredicate) -> [EKEvent] {
+        store.events(matching: predicate)
+    }
+
+    func predicateForEvents(withStart startDate: Date, end endDate: Date, calendars: [EKCalendar]?) -> NSPredicate {
+        store.predicateForEvents(withStart: startDate, end: endDate, calendars: calendars)
+    }
+
+    static var authorizationStatus: EKAuthorizationStatus {
+        EKEventStore.authorizationStatus(for: .event)
+    }
+}
+
+// MARK: - Implementation
+
+@MainActor
+final class CalendarAssistant: CalendarAssistantProtocol, ObservableObject {
     private let logger = Logger(subsystem: "app.murmur", category: "Calendar")
-    private let eventStore = EKEventStore()
+    private let eventStore: CalendarStoreProtocol
 
     @Published private(set) var authorizationStatus: EKAuthorizationStatus = .notDetermined
     @Published private(set) var upcomingEvents: [EKEvent] = []
     @Published private(set) var recentEvents: [EKEvent] = []
 
-    init() {
+    init(eventStore: CalendarStoreProtocol? = nil) {
+        self.eventStore = eventStore ?? EventStoreWrapper()
         updateAuthorizationStatus()
     }
 
@@ -36,15 +87,9 @@ final class CalendarAssistant: ObservableObject {
 
     func requestAccess() async -> Bool {
         do {
-            if #available(iOS 17.0, *) {
-                let granted = try await eventStore.requestFullAccessToEvents()
-                updateAuthorizationStatus()
-                return granted
-            } else {
-                let granted = try await eventStore.requestAccess(to: .event)
-                updateAuthorizationStatus()
-                return granted
-            }
+            let granted = try await eventStore.requestAccess()
+            updateAuthorizationStatus()
+            return granted
         } catch {
             logger.error("Calendar access request failed: \(error.localizedDescription)")
             return false

@@ -13,7 +13,7 @@ languages([
 ])
 
 # Where to put the screenshots
-output_directory "./screenshots"
+output_directory "./fastlane-output/screenshots"
 
 # Clear previous screenshots
 clear_previous_screenshots true
@@ -26,6 +26,11 @@ override_status_bar true
 
 # Scheme that drives the UI tests for snapshot capture
 scheme "MurmurUITests"
+
+# Restrict snapshot runs to the screenshot test to avoid executing the full UI suite
+only_testing([
+  "MurmurUITests/MurmurUITests/testGenerateScreenshots"
+])
 
 # For apps that support dark mode, enable this to capture dark mode screenshots
 # dark_mode true

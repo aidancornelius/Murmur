@@ -35,16 +35,8 @@ struct MurmurApp: App {
                     .environmentObject(appearanceManager)
                     .environmentObject(appLock)
                     .onAppear {
-                        // Handle UI test mode
-                        if CommandLine.arguments.contains("-UITestMode") {
-                            // Skip onboarding for UI tests
-                            UserDefaults.standard.set(true, forKey: UserDefaultsKeys.hasCompletedOnboarding)
-
-                            // Seed sample data if requested
-                            if CommandLine.arguments.contains("-SeedSampleData") {
-                                UserDefaults.standard.set(false, forKey: UserDefaultsKeys.hasGeneratedSampleData)
-                            }
-                        }
+                        // Configure app for UI testing if needed
+                        UITestConfiguration.configure(context: stack.context)
                     }
             } else {
                 ProgressView()
@@ -85,6 +77,9 @@ private struct RootContainer: View {
                                 NavigationLink(value: Route.settings) {
                                     Image(systemName: "gearshape")
                                 }
+                                .accessibilityLabel("Settings")
+                                .accessibilityHint("Manage app preferences, symptoms, and integrations")
+                                .accessibilityInputLabels(["Settings", "Preferences", "Options", "Configure"])
                             }
                             ToolbarItem(placement: .navigationBarTrailing) {
                                 NavigationLink(value: Route.analysis) {
@@ -92,26 +87,30 @@ private struct RootContainer: View {
                                 }
                                 .accessibilityLabel("Analysis")
                                 .accessibilityHint("View trends and correlations")
+                                .accessibilityInputLabels(["Analysis", "Charts", "Trends", "View analysis", "Show charts"])
                             }
                         }
                 }
                 .task {
-                    // Skip HealthKit authorization dialog in UI test mode
-                    if !CommandLine.arguments.contains("-UITestMode") {
+                    // Skip HealthKit authorization dialog if disabled for UI testing
+                    if !UITestConfiguration.shouldDisableHealthKit {
                         await healthKit.bootstrapAuthorizations()
                     }
                 }
                 .onAppear {
-                    SampleDataSeeder.seedIfNeeded(in: context)
-                    cleanOrphanedEntries(in: context)
-                    #if targetEnvironment(simulator)
-                    // Check if we should generate sample data
-                    let hasGeneratedSampleData = UserDefaults.standard.bool(forKey: UserDefaultsKeys.hasGeneratedSampleData)
-                    if !hasGeneratedSampleData {
-                        SampleDataSeeder.generateSampleEntries(in: context)
-                        UserDefaults.standard.set(true, forKey: UserDefaultsKeys.hasGeneratedSampleData)
+                    // Only seed/generate if not in UI test mode (handled by UITestConfiguration)
+                    if !UITestConfiguration.isUITesting {
+                        SampleDataSeeder.seedIfNeeded(in: context)
+                        cleanOrphanedEntries(in: context)
+                        #if targetEnvironment(simulator)
+                        // Check if we should generate sample data
+                        let hasGeneratedSampleData = UserDefaults.standard.bool(forKey: UserDefaultsKeys.hasGeneratedSampleData)
+                        if !hasGeneratedSampleData {
+                            SampleDataSeeder.generateSampleEntries(in: context)
+                            UserDefaults.standard.set(true, forKey: UserDefaultsKeys.hasGeneratedSampleData)
+                        }
+                        #endif
                     }
-                    #endif
                 }
                 .safeAreaInset(edge: .bottom) {
                     FloatingActionButtons(
@@ -147,7 +146,10 @@ private struct RootContainer: View {
                     OnboardingView {
                         UserDefaults.standard.set(true, forKey: UserDefaultsKeys.hasCompletedOnboarding)
                         hasCompletedOnboarding = true
-                        SampleDataSeeder.seedIfNeeded(in: context)
+                        // Only seed default symptom types if not in UI test mode
+                        if !UITestConfiguration.isUITesting {
+                            SampleDataSeeder.seedIfNeeded(in: context)
+                        }
                     }
                     .environmentObject(healthKit)
                     .environmentObject(appLock)
@@ -220,6 +222,7 @@ private struct FloatingActionButtons: View {
                         .accessibilityLabel("Log symptom")
                         .accessibilityIdentifier(AccessibilityIdentifiers.logSymptomButton)
                         .accessibilityHint("Opens form to record a symptom")
+                        .accessibilityInputLabels(["Log symptom", "Add symptom", "Record symptom", "New symptom", "Log entry"])
 
                         Button(action: onActivity) {
                             Image(systemName: "calendar.badge.clock")
@@ -231,6 +234,7 @@ private struct FloatingActionButtons: View {
                         .accessibilityLabel("Log activity")
                         .accessibilityIdentifier(AccessibilityIdentifiers.logEventButton)
                         .accessibilityHint("Opens form to record an activity or event")
+                        .accessibilityInputLabels(["Log activity", "Add activity", "Record activity", "New activity", "Log event"])
                     }
                 }
                 .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
@@ -248,6 +252,7 @@ private struct FloatingActionButtons: View {
                     .accessibilityLabel("Log activity")
                     .accessibilityIdentifier(AccessibilityIdentifiers.logEventButton)
                     .accessibilityHint("Opens form to record an activity or event")
+                    .accessibilityInputLabels(["Log activity", "Add activity", "Record activity", "New activity", "Log event"])
 
                     Button(action: onSymptom) {
                         Image(systemName: "heart.text.square")
@@ -260,6 +265,7 @@ private struct FloatingActionButtons: View {
                     .accessibilityLabel("Log symptom")
                     .accessibilityIdentifier(AccessibilityIdentifiers.logSymptomButton)
                     .accessibilityHint("Opens form to record a symptom")
+                    .accessibilityInputLabels(["Log symptom", "Add symptom", "Record symptom", "New symptom", "Log entry"])
                 }
             }
         }

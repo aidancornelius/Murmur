@@ -41,10 +41,14 @@ struct AnalysisView: View {
             if selectedTab != .calendar && selectedTab != .history {
                 Picker("Period", selection: $selectedPeriod) {
                     Text("7 days").tag(7)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.timePeriod7Days)
                     Text("30 days").tag(30)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.timePeriod30Days)
                     Text("90 days").tag(90)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.timePeriod90Days)
                 }
                 .pickerStyle(.segmented)
+                .accessibilityIdentifier(AccessibilityIdentifiers.timePeriodPicker)
                 .padding(.horizontal)
                 .padding(.bottom)
             }
@@ -74,34 +78,44 @@ struct AnalysisView: View {
                     } label: {
                         Label("Trends", systemImage: "chart.line.uptrend.xyaxis")
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.analysisTrendsButton)
+
                     Button {
                         selectedTab = .calendar
                     } label: {
                         Label("Calendar", systemImage: "calendar")
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.analysisCalendarButton)
+
                     Button {
                         selectedTab = .history
                     } label: {
                         Label("History", systemImage: "list.bullet")
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.analysisHistoryButton)
+
                     if hasActivityData {
                         Button {
                             selectedTab = .correlations
                         } label: {
                             Label("Activities", systemImage: "figure.walk")
                         }
+                        .accessibilityIdentifier(AccessibilityIdentifiers.analysisActivitiesButton)
                     }
                     Button {
                         selectedTab = .patterns
                     } label: {
                         Label("Patterns", systemImage: "clock")
                     }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.analysisPatternsButton)
+
                     if hasHealthData {
                         Button {
                             selectedTab = .health
                         } label: {
                             Label("Health", systemImage: "heart")
                         }
+                        .accessibilityIdentifier(AccessibilityIdentifiers.analysisHealthButton)
                     }
                 } label: {
                     HStack(spacing: 4) {
@@ -111,6 +125,7 @@ struct AnalysisView: View {
                             .font(.caption2)
                     }
                 }
+                .accessibilityIdentifier(AccessibilityIdentifiers.analysisViewSelector)
             }
         }
         .task {

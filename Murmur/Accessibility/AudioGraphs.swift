@@ -18,9 +18,22 @@ class AudioGraphController: NSObject, ObservableObject {
     private let synthesizer = AVSpeechSynthesizer()
     private let logger = Logger(subsystem: "app.murmur", category: "AudioGraphs")
 
+    // Reusable audio engine components to prevent memory leaks
+    private var audioEngine: AVAudioEngine?
+    private var playerNode: AVAudioPlayerNode?
+    private var currentFormat: AVAudioFormat?
+    private var scheduledTones: [DispatchWorkItem] = []
+
+    deinit {
+        stopPlayback()
+    }
+
     /// Play audio tones representing severity levels over time
     func sonifySymptomPattern(entries: [SymptomEntry], duration: TimeInterval = 3.0) {
         guard !entries.isEmpty else { return }
+
+        // Cancel any existing playback
+        stopPlayback()
 
         // Sort entries by date
         let sorted = entries.sorted { (lhs, rhs) in
@@ -34,9 +47,11 @@ class AudioGraphController: NSObject, ObservableObject {
         speak(announcement)
 
         // Generate audio tones
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            self.playTones(for: sorted, duration: duration)
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.playTones(for: sorted, duration: duration)
         }
+        scheduledTones.append(workItem)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5, execute: workItem)
     }
 
     /// Play a single data point with speech
@@ -83,18 +98,38 @@ class AudioGraphController: NSObject, ObservableObject {
         speak(summary)
     }
 
+    /// Stop all audio playback and clean up resources
+    func stopPlayback() {
+        // Cancel all scheduled tones
+        scheduledTones.forEach { $0.cancel() }
+        scheduledTones.removeAll()
+
+        // Stop audio playback
+        playerNode?.stop()
+        audioEngine?.stop()
+        audioEngine = nil
+        playerNode = nil
+        currentFormat = nil
+    }
+
     // MARK: - Private Methods
 
     private func playTones(for entries: [SymptomEntry], duration: TimeInterval) {
+        // Cancel any previously scheduled tones
+        scheduledTones.forEach { $0.cancel() }
+        scheduledTones.removeAll()
+
         let timePerEntry = duration / Double(entries.count)
 
         for (index, entry) in entries.enumerated() {
             let delay = Double(index) * timePerEntry
             let frequency = frequencyForSeverity(Int(entry.severity))
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                self.playTone(frequency: frequency, duration: timePerEntry * 0.8)
+            let workItem = DispatchWorkItem { [weak self] in
+                self?.playTone(frequency: frequency, duration: timePerEntry * 0.8)
             }
+            scheduledTones.append(workItem)
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
         }
     }
 
@@ -111,7 +146,37 @@ class AudioGraphController: NSObject, ObservableObject {
         }
     }
 
+    private func setupAudioEngineIfNeeded() {
+        guard audioEngine == nil else { return }
+
+        let engine = AVAudioEngine()
+        let player = AVAudioPlayerNode()
+        let format = AVAudioFormat(standardFormatWithSampleRate: 44100.0, channels: 1)
+
+        engine.attach(player)
+        if let format = format {
+            engine.connect(player, to: engine.mainMixerNode, format: format)
+        }
+
+        do {
+            try engine.start()
+            self.audioEngine = engine
+            self.playerNode = player
+            self.currentFormat = format
+        } catch {
+            logger.error("Failed to start audio engine: \(error.localizedDescription)")
+        }
+    }
+
     private func playTone(frequency: Double, duration: TimeInterval) {
+        setupAudioEngineIfNeeded()
+
+        guard let playerNode = playerNode,
+              let format = currentFormat else {
+            logger.error("Audio engine not available")
+            return
+        }
+
         let sampleRate = 44100.0
         let amplitude = 0.3
         let samples = Int(sampleRate * duration)
@@ -123,8 +188,7 @@ class AudioGraphController: NSObject, ObservableObject {
         }
 
         // Create audio buffer
-        guard let audioFormat = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1) else { return }
-        guard let buffer = AVAudioPCMBuffer(pcmFormat: audioFormat, frameCapacity: AVAudioFrameCount(samples)) else { return }
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(samples)) else { return }
 
         buffer.frameLength = buffer.frameCapacity
         guard let floatData = buffer.floatChannelData?[0] else { return }
@@ -133,25 +197,10 @@ class AudioGraphController: NSObject, ObservableObject {
             floatData[i] = audioData[i]
         }
 
-        // Play the buffer
-        let audioEngine = AVAudioEngine()
-        let playerNode = AVAudioPlayerNode()
-
-        audioEngine.attach(playerNode)
-        audioEngine.connect(playerNode, to: audioEngine.mainMixerNode, format: audioFormat)
-
-        do {
-            try audioEngine.start()
-            playerNode.scheduleBuffer(buffer, at: nil, options: [])
+        // Schedule and play the buffer
+        playerNode.scheduleBuffer(buffer, at: nil, options: [])
+        if !playerNode.isPlaying {
             playerNode.play()
-
-            // Stop after duration
-            DispatchQueue.main.asyncAfter(deadline: .now() + duration + 0.1) {
-                playerNode.stop()
-                audioEngine.stop()
-            }
-        } catch {
-            logger.error("Audio playback error: \(error.localizedDescription)")
         }
     }
 
@@ -194,6 +243,7 @@ struct AudioGraphButton: View {
         }
         .accessibilityLabel("Play audio representation of symptom pattern")
         .accessibilityHint("Plays tones representing severity levels over time")
+        .accessibilityInputLabels(["Play audio graph", "Play sound", "Audio graph", "Hear pattern", "Sonify data"])
     }
 }
 
@@ -210,5 +260,6 @@ struct DayAudioSummaryButton: View {
             Label("Hear summary", systemImage: "speaker.wave.2")
         }
         .accessibilityLabel("Hear audio summary of this day")
+        .accessibilityInputLabels(["Hear summary", "Audio summary", "Read summary", "Play summary", "Speak summary"])
     }
 }

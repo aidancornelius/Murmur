@@ -1,0 +1,438 @@
+//
+//  SnapshotTests.swift
+//  MurmurUITests
+//
+//  Created by Aidan Cornelius-Bell on 06/10/2025.
+//
+
+import XCTest
+
+/// Visual regression tests capturing screenshots of app screens
+/// Run these tests with Fastlane snapshot for consistent locale and device configuration
+final class SnapshotTests: XCTestCase {
+    var app: XCUIApplication!
+
+    override func setUpWithError() throws {
+        continueAfterFailure = false
+        app = XCUIApplication()
+    }
+
+    override func tearDownWithError() throws {
+        app = nil
+    }
+
+    // MARK: - Main Screens - Light Mode (7 snapshots)
+
+    /// Captures timeline with populated data
+    func testTimelineSnapshot_Populated() throws {
+        app.launchForSnapshots()
+
+        let timeline = TimelineScreen(app: app)
+        assertExists(timeline.logSymptomButton, timeout: 10, message: "Timeline should be visible")
+
+        // Wait for entries to load
+        Thread.sleep(forTimeInterval: 1.0)
+
+        snapshot("01Timeline")
+    }
+
+    /// Captures timeline in empty state
+    func testTimelineSnapshot_Empty() throws {
+        app.launchEmpty()
+        setupSnapshot(app)
+
+        let timeline = TimelineScreen(app: app)
+        assertExists(timeline.logSymptomButton, timeout: 10, message: "Timeline should be visible")
+
+        snapshot("02TimelineEmpty")
+    }
+
+    /// Captures add entry screen
+    func testAddEntrySnapshot() throws {
+        app.launchForSnapshots()
+
+        let timeline = TimelineScreen(app: app)
+        assertExists(timeline.logSymptomButton, message: "Timeline should be visible")
+
+        timeline.navigateToAddEntry()
+
+        let addEntry = AddEntryScreen(app: app)
+        XCTAssertTrue(addEntry.waitForLoad(), "Add entry screen should load")
+
+        snapshot("03AddSymptom")
+    }
+
+    /// Captures day detail view
+    func testDayDetailSnapshot() throws {
+        app.launchForSnapshots()
+
+        let timeline = TimelineScreen(app: app)
+
+        // Find and tap first entry to open day detail
+        if let firstEntry = timeline.getFirstEntry() {
+            firstEntry.tap()
+
+            let dayDetail = DayDetailScreen(app: app)
+            XCTAssertTrue(dayDetail.waitForLoad(), "Day detail screen should load")
+
+            snapshot("04DayDetail")
+        } else {
+            XCTFail("No entries found in timeline")
+        }
+    }
+
+    /// Captures analysis view with trends chart
+    func testAnalysisTrendsSnapshot() throws {
+        app.launchForSnapshots()
+
+        // Navigate to analysis
+        app.tabBars.buttons["Analysis"].tap()
+
+        let analysis = AnalysisScreen(app: app)
+        XCTAssertTrue(analysis.waitForLoad(), "Analysis screen should load")
+
+        // Ensure trends view is selected
+        if app.buttons["Trends"].exists {
+            app.buttons["Trends"].tap()
+        }
+
+        // Wait for chart to render
+        Thread.sleep(forTimeInterval: 1.5)
+
+        snapshot("04Analysis")
+    }
+
+    /// Captures analysis view with calendar heat map
+    func testAnalysisCalendarSnapshot() throws {
+        app.launchForSnapshots()
+
+        // Navigate to analysis
+        app.tabBars.buttons["Analysis"].tap()
+
+        let analysis = AnalysisScreen(app: app)
+        XCTAssertTrue(analysis.waitForLoad(), "Analysis screen should load")
+
+        // Switch to calendar view
+        if app.buttons["Calendar"].exists {
+            app.buttons["Calendar"].tap()
+        }
+
+        // Wait for calendar to render
+        Thread.sleep(forTimeInterval: 1.5)
+
+        snapshot("05AnalysisCalendar")
+    }
+
+    /// Captures settings screen
+    func testSettingsSnapshot() throws {
+        app.launchForSnapshots()
+
+        // Navigate to settings
+        app.tabBars.buttons["Settings"].tap()
+
+        let settings = SettingsScreen(app: app)
+        XCTAssertTrue(settings.waitForLoad(), "Settings screen should load")
+
+        snapshot("06Settings")
+    }
+
+    // MARK: - Main Screens - Dark Mode (7 snapshots)
+
+    /// Captures timeline in dark mode
+    func testTimelineSnapshot_DarkMode() throws {
+        app.launchDarkMode()
+        setupSnapshot(app)
+
+        let timeline = TimelineScreen(app: app)
+        assertExists(timeline.logSymptomButton, timeout: 10, message: "Timeline should be visible")
+
+        Thread.sleep(forTimeInterval: 1.0)
+
+        snapshot("07TimelineDark")
+    }
+
+    /// Captures add entry in dark mode
+    func testAddEntrySnapshot_DarkMode() throws {
+        app.launchDarkMode()
+        setupSnapshot(app)
+
+        let timeline = TimelineScreen(app: app)
+        timeline.navigateToAddEntry()
+
+        let addEntry = AddEntryScreen(app: app)
+        XCTAssertTrue(addEntry.waitForLoad(), "Add entry screen should load")
+
+        snapshot("08AddSymptomDark")
+    }
+
+    /// Captures day detail in dark mode
+    func testDayDetailSnapshot_DarkMode() throws {
+        app.launchDarkMode()
+        setupSnapshot(app)
+
+        let timeline = TimelineScreen(app: app)
+
+        if let firstEntry = timeline.getFirstEntry() {
+            firstEntry.tap()
+
+            let dayDetail = DayDetailScreen(app: app)
+            XCTAssertTrue(dayDetail.waitForLoad(), "Day detail screen should load")
+
+            snapshot("09DayDetailDark")
+        }
+    }
+
+    /// Captures analysis trends in dark mode
+    func testAnalysisTrendsSnapshot_DarkMode() throws {
+        app.launchDarkMode()
+        setupSnapshot(app)
+
+        app.tabBars.buttons["Analysis"].tap()
+
+        let analysis = AnalysisScreen(app: app)
+        XCTAssertTrue(analysis.waitForLoad(), "Analysis screen should load")
+
+        if app.buttons["Trends"].exists {
+            app.buttons["Trends"].tap()
+        }
+
+        Thread.sleep(forTimeInterval: 1.5)
+
+        snapshot("10AnalysisDark")
+    }
+
+    /// Captures analysis calendar in dark mode
+    func testAnalysisCalendarSnapshot_DarkMode() throws {
+        app.launchDarkMode()
+        setupSnapshot(app)
+
+        app.tabBars.buttons["Analysis"].tap()
+
+        let analysis = AnalysisScreen(app: app)
+        XCTAssertTrue(analysis.waitForLoad(), "Analysis screen should load")
+
+        if app.buttons["Calendar"].exists {
+            app.buttons["Calendar"].tap()
+        }
+
+        Thread.sleep(forTimeInterval: 1.5)
+
+        snapshot("11AnalysisCalendarDark")
+    }
+
+    /// Captures settings in dark mode
+    func testSettingsSnapshot_DarkMode() throws {
+        app.launchDarkMode()
+        setupSnapshot(app)
+
+        app.tabBars.buttons["Settings"].tap()
+
+        let settings = SettingsScreen(app: app)
+        XCTAssertTrue(settings.waitForLoad(), "Settings screen should load")
+
+        snapshot("12SettingsDark")
+    }
+
+    /// Captures empty state in dark mode
+    func testEmptyStateSnapshot_DarkMode() throws {
+        app.launch(
+            scenario: .emptyState,
+            appearance: .dark
+        )
+        setupSnapshot(app)
+
+        let timeline = TimelineScreen(app: app)
+        assertExists(timeline.logSymptomButton, timeout: 10, message: "Timeline should be visible")
+
+        snapshot("13EmptyStateDark")
+    }
+
+    // MARK: - iPad Layouts (4 snapshots)
+
+    /// Captures timeline on iPad
+    func testTimelineSnapshot_iPad() throws {
+        // Only run on iPad
+        guard UIDevice.current.userInterfaceIdiom == .pad else {
+            throw XCTSkip("iPad-only test")
+        }
+
+        app.launchForSnapshots()
+
+        let timeline = TimelineScreen(app: app)
+        assertExists(timeline.logSymptomButton, timeout: 10, message: "Timeline should be visible")
+
+        Thread.sleep(forTimeInterval: 1.0)
+
+        snapshot("14TimelineIPad")
+    }
+
+    /// Captures analysis on iPad
+    func testAnalysisSnapshot_iPad() throws {
+        guard UIDevice.current.userInterfaceIdiom == .pad else {
+            throw XCTSkip("iPad-only test")
+        }
+
+        app.launchForSnapshots()
+
+        app.tabBars.buttons["Analysis"].tap()
+
+        let analysis = AnalysisScreen(app: app)
+        XCTAssertTrue(analysis.waitForLoad(), "Analysis screen should load")
+
+        Thread.sleep(forTimeInterval: 1.5)
+
+        snapshot("15AnalysisIPad")
+    }
+
+    /// Captures add entry on iPad
+    func testAddEntrySnapshot_iPad() throws {
+        guard UIDevice.current.userInterfaceIdiom == .pad else {
+            throw XCTSkip("iPad-only test")
+        }
+
+        app.launchForSnapshots()
+
+        let timeline = TimelineScreen(app: app)
+        timeline.navigateToAddEntry()
+
+        let addEntry = AddEntryScreen(app: app)
+        XCTAssertTrue(addEntry.waitForLoad(), "Add entry screen should load")
+
+        snapshot("16AddSymptomIPad")
+    }
+
+    /// Captures settings on iPad
+    func testSettingsSnapshot_iPad() throws {
+        guard UIDevice.current.userInterfaceIdiom == .pad else {
+            throw XCTSkip("iPad-only test")
+        }
+
+        app.launchForSnapshots()
+
+        app.tabBars.buttons["Settings"].tap()
+
+        let settings = SettingsScreen(app: app)
+        XCTAssertTrue(settings.waitForLoad(), "Settings screen should load")
+
+        snapshot("17SettingsIPad")
+    }
+
+    // MARK: - Different States (6 snapshots)
+
+    /// Captures loading state (if applicable)
+    func testLoadingStateSnapshot() throws {
+        app.launch(
+            scenario: .activeUser,
+            featureFlags: [.enablePerformanceMonitoring]
+        )
+        setupSnapshot(app)
+
+        // Trigger a view that shows loading
+        app.tabBars.buttons["Analysis"].tap()
+
+        // Capture immediately to catch loading state
+        snapshot("18LoadingState", timeWaitingForIdle: 0)
+    }
+
+    /// Captures error states
+    func testErrorStateSnapshot() throws {
+        app.launch(
+            scenario: .activeUser,
+            featureFlags: [.disableHealthKit]
+        )
+        setupSnapshot(app)
+
+        // Navigate to settings and try to enable HealthKit to trigger error
+        app.tabBars.buttons["Settings"].tap()
+
+        let settings = SettingsScreen(app: app)
+        settings.waitForLoad()
+
+        // Look for integrations section
+        if app.buttons["Integrations"].exists {
+            app.buttons["Integrations"].tap()
+            Thread.sleep(forTimeInterval: 0.5)
+        }
+
+        snapshot("19ErrorState")
+    }
+
+    /// Captures various empty states
+    func testEmptyStatesSnapshot() throws {
+        app.launchEmpty()
+        setupSnapshot(app)
+
+        let timeline = TimelineScreen(app: app)
+        assertExists(timeline.logSymptomButton, timeout: 10, message: "Timeline should be visible")
+
+        snapshot("20EmptyStates")
+    }
+
+    /// Captures symptom entry with selections made
+    func testSymptomEntryWithSelectionsSnapshot() throws {
+        app.launchForSnapshots()
+
+        let timeline = TimelineScreen(app: app)
+        timeline.navigateToAddEntry()
+
+        let addEntry = AddEntryScreen(app: app)
+        addEntry.waitForLoad()
+
+        // Make some selections
+        addEntry.openSymptomSearch()
+        addEntry.searchForSymptom("Headache")
+        addEntry.selectSymptom(named: "Headache")
+        addEntry.setSeverity(3)
+        addEntry.enterNote("Example note for screenshot")
+
+        // Wait for UI to stabilise
+        Thread.sleep(forTimeInterval: 0.5)
+
+        snapshot("21SymptomEntryFilled")
+    }
+
+    /// Captures calendar view with full year of data
+    func testCalendarWithYearSnapshot() throws {
+        app.launch(
+            scenario: .heavyUser
+        )
+        setupSnapshot(app)
+
+        app.tabBars.buttons["Analysis"].tap()
+
+        let analysis = AnalysisScreen(app: app)
+        XCTAssertTrue(analysis.waitForLoad(), "Analysis screen should load")
+
+        // Switch to calendar view
+        if app.buttons["Calendar"].exists {
+            app.buttons["Calendar"].tap()
+        }
+
+        // Wait for full calendar to render
+        Thread.sleep(forTimeInterval: 2.0)
+
+        snapshot("22CalendarFullYear")
+    }
+
+    /// Captures load capacity tracking view
+    func testLoadCapacityViewSnapshot() throws {
+        app.launchForSnapshots()
+
+        app.tabBars.buttons["Analysis"].tap()
+
+        let analysis = AnalysisScreen(app: app)
+        XCTAssertTrue(analysis.waitForLoad(), "Analysis screen should load")
+
+        // Navigate to load capacity if available
+        if app.buttons["Load Capacity"].exists {
+            app.buttons["Load Capacity"].tap()
+            Thread.sleep(forTimeInterval: 1.0)
+        } else if app.staticTexts["Load Capacity"].exists {
+            // Try scrolling to find it
+            app.staticTexts["Load Capacity"].tap()
+            Thread.sleep(forTimeInterval: 1.0)
+        }
+
+        snapshot("23LoadCapacity")
+    }
+}

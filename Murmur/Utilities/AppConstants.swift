@@ -76,5 +76,8 @@ enum AppConstants {
 
         /// Maximum number of resting heart rate samples to fetch.
         static let restingHeartRateSampleLimit = 10
+
+        /// Query timeout in seconds to prevent indefinite hangs (10 seconds).
+        static let queryTimeout: TimeInterval = 10.0
     }
 }

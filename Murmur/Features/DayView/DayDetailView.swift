@@ -131,6 +131,7 @@ struct DayDetailView: View {
         .listStyle(.insetGrouped)
         .themedScrollBackground()
         .navigationTitle(formatted(date: date))
+        .accessibilityIdentifier(AccessibilityIdentifiers.dayDetailList)
         .onAppear(perform: bootstrap)
     }
 
@@ -161,9 +162,12 @@ struct DayDetailView: View {
     }
 
     private func calculateLoadScore(for targetDate: Date) throws -> LoadScore? {
-        // Fetch all entries and activities from the beginning to build decay chain
-        let allEntries = try fetchAllEntries()
-        let allActivities = try fetchAllActivities()
+        // Load scores decay over time, so we only need recent data (60 days before target date)
+        let dayStart = calendar.startOfDay(for: targetDate)
+        guard let lookbackStart = calendar.date(byAdding: .day, value: -60, to: dayStart) else { return nil }
+
+        let allEntries = try fetchRecentEntries(since: lookbackStart)
+        let allActivities = try fetchRecentActivities(since: lookbackStart)
 
         guard !allEntries.isEmpty || !allActivities.isEmpty else { return nil }
 
@@ -178,8 +182,6 @@ struct DayDetailView: View {
         let allDates = Set(groupedEntries.keys).union(Set(groupedActivities.keys)).sorted()
         guard let firstDate = allDates.first else { return nil }
 
-        let dayStart = calendar.startOfDay(for: targetDate)
-
         let loadScores = LoadScore.calculateRange(
             from: firstDate,
             to: dayStart,
@@ -190,15 +192,17 @@ struct DayDetailView: View {
         return loadScores.first { $0.date == dayStart }
     }
 
-    private func fetchAllEntries() throws -> [SymptomEntry] {
+    private func fetchRecentEntries(since date: Date) throws -> [SymptomEntry] {
         let request = SymptomEntry.fetchRequest()
+        request.predicate = NSPredicate(format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))", date as NSDate, date as NSDate)
         request.sortDescriptors = [NSSortDescriptor(keyPath: \SymptomEntry.backdatedAt, ascending: true),
                                    NSSortDescriptor(keyPath: \SymptomEntry.createdAt, ascending: true)]
         return try context.fetch(request)
     }
 
-    private func fetchAllActivities() throws -> [ActivityEvent] {
+    private func fetchRecentActivities(since date: Date) throws -> [ActivityEvent] {
         let request = ActivityEvent.fetchRequest()
+        request.predicate = NSPredicate(format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))", date as NSDate, date as NSDate)
         request.sortDescriptors = [NSSortDescriptor(keyPath: \ActivityEvent.backdatedAt, ascending: true),
                                    NSSortDescriptor(keyPath: \ActivityEvent.createdAt, ascending: true)]
         return try context.fetch(request)

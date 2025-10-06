@@ -8,6 +8,7 @@
 import AVFoundation
 import Combine
 import CoreData
+import os.log
 import Speech
 import SwiftUI
 
@@ -24,6 +25,7 @@ class VoiceCommandController: NSObject, ObservableObject {
     private var recognitionTask: SFSpeechRecognitionTask?
     private let audioEngine = AVAudioEngine()
     private let synthesizer = AVSpeechSynthesizer()
+    private let logger = Logger(subsystem: "app.murmur", category: "VoiceCommand")
 
     private var context: NSManagedObjectContext?
 
@@ -61,10 +63,25 @@ class VoiceCommandController: NSObject, ObservableObject {
     }
 
     func stopListening() {
+        guard isListening else { return }
+        audioEngine.inputNode.removeTap(onBus: 0)
         audioEngine.stop()
-        recognitionRequest?.endAudio()
+        audioEngine.reset()
+        recognitionTask?.cancel()
+        recognitionTask = nil
+        recognitionRequest = nil
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         isListening = false
         speak("Stopped listening")
+    }
+
+    deinit {
+        if audioEngine.isRunning {
+            audioEngine.inputNode.removeTap(onBus: 0)
+            audioEngine.stop()
+        }
+        recognitionTask?.cancel()
+        try? AVAudioSession.sharedInstance().setActive(false)
     }
 
     private func startRecognition() throws {
@@ -72,8 +89,30 @@ class VoiceCommandController: NSObject, ObservableObject {
         recognitionTask?.cancel()
         recognitionTask = nil
 
+        // Remove any existing tap before installing a new one
+        if audioEngine.inputNode.numberOfInputs > 0 {
+            audioEngine.inputNode.removeTap(onBus: 0)
+        }
+
         // Configure audio session
         let audioSession = AVAudioSession.sharedInstance()
+
+        // Check if microphone input is available
+        guard audioSession.isInputAvailable else {
+            logger.error("No microphone input available")
+            throw NSError(
+                domain: "VoiceCommand",
+                code: 2,
+                userInfo: [NSLocalizedDescriptionKey: "No microphone available. Please check your device settings."]
+            )
+        }
+
+        // Check current category before changing to detect potential conflicts
+        let currentCategory = audioSession.category
+        if currentCategory == .playback || currentCategory == .playAndRecord {
+            logger.warning("Audio session already in use (category: \(currentCategory.rawValue)). Attempting to configure for recording.")
+        }
+
         try audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
         try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
 
@@ -304,6 +343,9 @@ struct VoiceCommandButton: View {
         .disabled(voiceController.authorizationStatus != .authorized)
         .accessibilityLabel(voiceController.isListening ? "Stop voice command" : "Start voice command")
         .accessibilityHint("Use voice to log symptoms hands-free")
+        .accessibilityInputLabels(voiceController.isListening ?
+            ["Stop", "Stop listening", "Cancel voice", "Stop voice command"] :
+            ["Voice command", "Start voice command", "Voice logging", "Use voice", "Start listening"])
     }
 }
 
@@ -356,6 +398,9 @@ struct VoiceCommandView: View {
             }
             .padding(.horizontal)
             .disabled(voiceController.authorizationStatus != .authorized)
+            .accessibilityInputLabels(voiceController.isListening ?
+                ["Stop", "Stop listening", "Cancel", "Stop voice command"] :
+                ["Start", "Start listening", "Listen", "Begin voice command"])
 
             VStack(alignment: .leading, spacing: 8) {
                 Text("Examples:")

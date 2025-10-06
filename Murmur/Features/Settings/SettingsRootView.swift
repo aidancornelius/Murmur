@@ -37,33 +37,43 @@ struct SettingsRootView: View {
             Section("What you track") {
                 NavigationLink("Tracked symptoms", value: SettingsRoute.symptomTypes)
                     .accessibilityHint("Manage which symptoms you track in the app")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.trackedSymptomsButton)
+                    .accessibilityInputLabels(["Tracked symptoms", "Symptoms", "Manage symptoms", "Edit symptoms"])
                     .listRowBackground(palette.surfaceColor)
                 NavigationLink("Reminders", value: SettingsRoute.reminders)
                     .accessibilityHint("Set up reminders to log symptoms regularly")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.remindersButton)
+                    .accessibilityInputLabels(["Reminders", "Notifications", "Reminder settings", "Set reminders"])
                     .listRowBackground(palette.surfaceColor)
                 NavigationLink("Load capacity", value: SettingsRoute.loadCapacity)
                     .accessibilityHint("Adjust thresholds based on your condition and recovery patterns")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.loadCapacityButton)
+                    .accessibilityInputLabels(["Load capacity", "Capacity", "Thresholds", "Load settings"])
                     .listRowBackground(palette.surfaceColor)
             }
             
             Section("Personalisation") {
                 NavigationLink("Appearance", value: SettingsRoute.appearance)
                     .accessibilityHint("Customise colour schemes for light and dark mode")
+                    .accessibilityInputLabels(["Appearance", "Theme", "Colours", "Color scheme", "Appearance settings"])
                     .listRowBackground(palette.surfaceColor)
             }
 
             Section("Your health data") {
                 NavigationLink("Connect to Health", value: SettingsRoute.healthKit)
                     .accessibilityHint("Manage Apple Health integration for enriched symptom tracking")
+                    .accessibilityInputLabels(["Connect to Health", "Health app", "HealthKit", "Health integration"])
                     .listRowBackground(palette.surfaceColor)
                 NavigationLink("Manual cycle tracking", value: SettingsRoute.manualCycle)
                     .accessibilityHint("Track menstrual cycle manually if not using HealthKit")
+                    .accessibilityInputLabels(["Manual cycle tracking", "Cycle tracking", "Period tracking", "Menstrual tracking"])
                     .listRowBackground(palette.surfaceColor)
             }
 
             Section("Privacy & data") {
                 NavigationLink("Data management", value: SettingsRoute.dataManagement)
                     .accessibilityHint("Backup, restore, or reset your data")
+                    .accessibilityInputLabels(["Data management", "Backup", "Restore data", "Manage data"])
                     .listRowBackground(palette.surfaceColor)
 //                NavigationLink("Export entries", value: SettingsRoute.export)
 //                    .accessibilityHint("Generate a PDF export of your symptom history")
@@ -76,6 +86,7 @@ struct SettingsRootView: View {
             Section("Accessibility") {
                 NavigationLink("Accessibility options", value: SettingsRoute.accessibility)
                     .accessibilityHint("Voice logging, audio summaries, and switch control tips")
+                    .accessibilityInputLabels(["Accessibility options", "Accessibility", "Voice control", "Audio features"])
                     .listRowBackground(palette.surfaceColor)
             }
 

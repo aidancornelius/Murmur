@@ -428,6 +428,165 @@ struct SampleDataSeeder {
             logger.info("Generated sample timeline entries (symptoms, activities, sleep, and meals) for simulator")
         }
     }
+    /// Generates a large data set (1000+ entries) across 12 months for performance testing
+    static func generateLargeDataSet(in context: NSManagedObjectContext) {
+        context.perform {
+            let typeRequest: NSFetchRequest<SymptomType> = SymptomType.fetchRequest()
+            guard let types = try? context.fetch(typeRequest), !types.isEmpty else {
+                logger.warning("No symptom types found - seed default types first")
+                return
+            }
+
+            let now = Date()
+            let calendar = Calendar.current
+
+            // Generate 1200 entries across 365 days
+            for dayOffset in 0..<365 {
+                guard let date = calendar.date(byAdding: .day, value: -dayOffset, to: now) else { continue }
+
+                // 3-4 entries per day = ~1200-1460 entries
+                let entriesPerDay = Int.random(in: 3...4)
+
+                for entryIndex in 0..<entriesPerDay {
+                    let entry = SymptomEntry(context: context)
+                    entry.id = UUID()
+
+                    let hourOffset = entryIndex * (24 / max(entriesPerDay, 1))
+                    let minuteOffset = Int.random(in: 0..<60)
+                    guard let entryDate = calendar.date(byAdding: .hour, value: hourOffset, to: date),
+                          let finalDate = calendar.date(byAdding: .minute, value: minuteOffset, to: entryDate) else { continue }
+
+                    entry.createdAt = finalDate
+                    entry.backdatedAt = finalDate
+                    entry.symptomType = types.randomElement()
+                    entry.severity = Int16.random(in: 1...5)
+
+                    // Add notes to 20% of entries
+                    if Double.random(in: 0...1) < 0.2 {
+                        entry.note = "Sample note for testing"
+                    }
+                }
+            }
+
+            try? context.save()
+            logger.info("Generated large data set (1000+ entries)")
+        }
+    }
+
+    /// Generates entries spanning 12+ months with moderate density
+    static func generateLongHistory(in context: NSManagedObjectContext) {
+        context.perform {
+            let typeRequest: NSFetchRequest<SymptomType> = SymptomType.fetchRequest()
+            guard let types = try? context.fetch(typeRequest), !types.isEmpty else {
+                logger.warning("No symptom types found - seed default types first")
+                return
+            }
+
+            let now = Date()
+            let calendar = Calendar.current
+
+            // Generate entries across 15 months (450 days)
+            for dayOffset in 0..<450 {
+                guard let date = calendar.date(byAdding: .day, value: -dayOffset, to: now) else { continue }
+
+                // 1-3 entries per day for moderate density
+                let entriesPerDay = Int.random(in: 1...3)
+
+                for entryIndex in 0..<entriesPerDay {
+                    let entry = SymptomEntry(context: context)
+                    entry.id = UUID()
+
+                    let hourOffset = entryIndex * (24 / max(entriesPerDay, 1))
+                    let minuteOffset = Int.random(in: 0..<60)
+                    guard let entryDate = calendar.date(byAdding: .hour, value: hourOffset, to: date),
+                          let finalDate = calendar.date(byAdding: .minute, value: minuteOffset, to: entryDate) else { continue }
+
+                    entry.createdAt = finalDate
+                    entry.backdatedAt = finalDate
+                    entry.symptomType = types.randomElement()
+                    entry.severity = Int16.random(in: 1...5)
+                }
+            }
+
+            try? context.save()
+            logger.info("Generated long history (15 months)")
+        }
+    }
+
+    /// Generates minimal data (10-20 entries) in the last 7 days
+    static func generateMinimumData(in context: NSManagedObjectContext) {
+        context.perform {
+            let typeRequest: NSFetchRequest<SymptomType> = SymptomType.fetchRequest()
+            guard let types = try? context.fetch(typeRequest), !types.isEmpty else {
+                logger.warning("No symptom types found - seed default types first")
+                return
+            }
+
+            let now = Date()
+            let calendar = Calendar.current
+            let entryCount = Int.random(in: 10...20)
+
+            for index in 0..<entryCount {
+                let entry = SymptomEntry(context: context)
+                entry.id = UUID()
+
+                // Distribute across 7 days
+                let dayOffset = Int.random(in: 0...6)
+                let hourOffset = Int.random(in: 0...23)
+                let minuteOffset = Int.random(in: 0...59)
+
+                guard let date = calendar.date(byAdding: .day, value: -dayOffset, to: now),
+                      let entryDate = calendar.date(bySettingHour: hourOffset, minute: minuteOffset, second: 0, of: date) else { continue }
+
+                entry.createdAt = entryDate
+                entry.backdatedAt = entryDate
+                entry.symptomType = types.randomElement()
+                entry.severity = Int16.random(in: 1...5)
+            }
+
+            try? context.save()
+            logger.info("Generated minimum data (10-20 entries)")
+        }
+    }
+
+    /// Generates recent data only (15-30 entries) in the last 7 days
+    static func generateRecentData(in context: NSManagedObjectContext) {
+        context.perform {
+            let typeRequest: NSFetchRequest<SymptomType> = SymptomType.fetchRequest()
+            guard let types = try? context.fetch(typeRequest), !types.isEmpty else {
+                logger.warning("No symptom types found - seed default types first")
+                return
+            }
+
+            let now = Date()
+            let calendar = Calendar.current
+
+            // 2-4 entries per day for 7 days = 14-28 entries
+            for dayOffset in 0..<7 {
+                guard let date = calendar.date(byAdding: .day, value: -dayOffset, to: now) else { continue }
+
+                let entriesPerDay = Int.random(in: 2...4)
+
+                for entryIndex in 0..<entriesPerDay {
+                    let entry = SymptomEntry(context: context)
+                    entry.id = UUID()
+
+                    let hourOffset = entryIndex * (24 / max(entriesPerDay, 1))
+                    let minuteOffset = Int.random(in: 0..<60)
+                    guard let entryDate = calendar.date(byAdding: .hour, value: hourOffset, to: date),
+                          let finalDate = calendar.date(byAdding: .minute, value: minuteOffset, to: entryDate) else { continue }
+
+                    entry.createdAt = finalDate
+                    entry.backdatedAt = finalDate
+                    entry.symptomType = types.randomElement()
+                    entry.severity = Int16.random(in: 1...5)
+                }
+            }
+
+            try? context.save()
+            logger.info("Generated recent data (15-30 entries)")
+        }
+    }
     #endif
 
     static func seedIfNeeded(in context: NSManagedObjectContext, forceSeed: Bool = false) {

@@ -30,16 +30,17 @@ final class CoreDataStack {
     /// Error state if Core Data stack failed to initialise.
     private(set) var initializationError: CoreDataError?
 
-    private init() {}
+    let container: NSPersistentContainer
 
-    lazy var container: NSPersistentContainer = {
+    private init() {
         guard let modelURL = Bundle.main.url(forResource: "Murmur", withExtension: "momd"),
               let model = NSManagedObjectModel(contentsOf: modelURL) else {
             let error = CoreDataError.modelNotFound
             self.initializationError = error
             logger.critical("Core Data model not found in bundle")
             // Return empty container as fallback - app will handle error state
-            return NSPersistentContainer(name: "Murmur")
+            self.container = NSPersistentContainer(name: "Murmur")
+            return
         }
         let container = NSPersistentContainer(name: "Murmur", managedObjectModel: model)
         if let description = container.persistentStoreDescriptions.first {
@@ -47,17 +48,27 @@ final class CoreDataStack {
             description.shouldMigrateStoreAutomatically = true
             description.shouldInferMappingModelAutomatically = true
         }
-        container.loadPersistentStores { _, error in
+
+        // Initialize container before using self in closures
+        self.container = container
+
+        container.loadPersistentStores { [weak self] _, error in
             if let error = error as NSError? {
                 let coreDataError = CoreDataError.storeLoadFailed(error)
-                self.initializationError = coreDataError
-                self.logger.critical("Failed to load persistent store: \(error.localizedDescription)")
+                self?.initializationError = coreDataError
+                self?.logger.critical("Failed to load persistent store: \(error.localizedDescription)")
             }
         }
         container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
         container.viewContext.automaticallyMergesChangesFromParent = true
-        return container
-    }()
+    }
+
+    /// Internal initializer for testing purposes
+    internal init(container: NSPersistentContainer) {
+        self.container = container
+        container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        container.viewContext.automaticallyMergesChangesFromParent = true
+    }
 
     var context: NSManagedObjectContext { container.viewContext }
 

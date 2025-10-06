@@ -25,7 +25,9 @@ struct TimelineView: View {
     init() {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
-        let startDate = calendar.date(byAdding: .day, value: -30, to: today) ?? today
+        let displayStartDate = calendar.date(byAdding: .day, value: -30, to: today) ?? today
+        // Fetch additional 60 days for load score decay calculation
+        let dataStartDate = calendar.date(byAdding: .day, value: -90, to: today) ?? today
 
         _entries = FetchRequest<SymptomEntry>(
             sortDescriptors: [
@@ -34,7 +36,7 @@ struct TimelineView: View {
             ],
             predicate: NSPredicate(
                 format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
-                startDate as NSDate, startDate as NSDate
+                dataStartDate as NSDate, dataStartDate as NSDate
             ),
             animation: .default
         )
@@ -46,11 +48,12 @@ struct TimelineView: View {
             ],
             predicate: NSPredicate(
                 format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
-                startDate as NSDate, startDate as NSDate
+                dataStartDate as NSDate, dataStartDate as NSDate
             ),
             animation: .default
         )
 
+        // Sleep and meal events only need display range (not used for load score calculation)
         _sleepEvents = FetchRequest<SleepEvent>(
             sortDescriptors: [
                 NSSortDescriptor(keyPath: \SleepEvent.backdatedAt, ascending: false),
@@ -58,7 +61,7 @@ struct TimelineView: View {
             ],
             predicate: NSPredicate(
                 format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
-                startDate as NSDate, startDate as NSDate
+                displayStartDate as NSDate, displayStartDate as NSDate
             ),
             animation: .default
         )
@@ -70,7 +73,7 @@ struct TimelineView: View {
             ],
             predicate: NSPredicate(
                 format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
-                startDate as NSDate, startDate as NSDate
+                displayStartDate as NSDate, displayStartDate as NSDate
             ),
             animation: .default
         )
@@ -115,6 +118,7 @@ struct TimelineView: View {
         .listStyle(.insetGrouped)
         .themedScrollBackground()
         .navigationTitle("Murmur")
+        .accessibilityIdentifier(AccessibilityIdentifiers.timelineList)
     }
 
     private func sectionHeader(for section: DaySection) -> some View {
@@ -192,14 +196,9 @@ private struct TimelineEntryRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(entry.symptomType?.name ?? "Unnamed")
                     .font(.headline)
-                HStack(spacing: 8) {
-                    Text(timeLabel)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    if let state = physiologicalState {
-                        PhysiologicalStateBadge(state: state)
-                    }
-                }
+                Text(timeLabel)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 Text(SeverityScale.descriptor(for: Int(entry.severity), isPositive: entry.symptomType?.isPositive ?? false))
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -216,22 +215,12 @@ private struct TimelineEntryRow: View {
         .padding(.vertical, 6)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityDescription)
+        .accessibilityIdentifier(AccessibilityIdentifiers.entryCell(entry.id?.uuidString ?? "unknown"))
     }
 
     private var timeLabel: String {
         let reference = entry.backdatedAt ?? entry.createdAt ?? Date()
         return DateFormatters.shortTime.string(from: reference)
-    }
-
-    private var physiologicalState: PhysiologicalState? {
-        PhysiologicalState.compute(
-            hrv: entry.hkHRV?.doubleValue,
-            restingHR: entry.hkRestingHR?.doubleValue,
-            sleepHours: entry.hkSleepHours?.doubleValue,
-            workoutMinutes: entry.hkWorkoutMinutes?.doubleValue,
-            cycleDay: entry.hkCycleDay?.intValue,
-            flowLevel: entry.hkFlowLevel
-        )
     }
 
     private var accessibilityDescription: String {
@@ -241,10 +230,6 @@ private struct TimelineEntryRow: View {
 
         let severityDesc = SeverityScale.descriptor(for: Int(entry.severity), isPositive: entry.symptomType?.isPositive ?? false)
         parts.append("Level \(entry.severity): \(severityDesc)")
-
-        if let state = physiologicalState {
-            parts.append(state.displayText)
-        }
 
         if let note = entry.note, !note.isEmpty {
             parts.append("Note: \(note)")
@@ -624,19 +609,26 @@ private struct DaySection: Identifiable, Equatable {
             calendar.startOfDay(for: meal.backdatedAt ?? meal.createdAt ?? Date())
         }
 
-        // Get all unique dates and sort chronologically (oldest first for decay calculation)
-        let allDates = Set(groupedEntries.keys)
+        // Display dates are dates with UI data (entries, activities, sleep, or meals)
+        let displayDates = Set(groupedEntries.keys)
             .union(Set(groupedActivities.keys))
             .union(Set(groupedSleepEvents.keys))
             .union(Set(groupedMealEvents.keys))
-            .sorted()
 
-        guard !allDates.isEmpty else { return [] }
+        guard !displayDates.isEmpty else { return [] }
 
-        // Calculate load scores progressively with decay chain
+        // For load score calculation, we need the full date range including lookback data
+        // This includes dates with only entries/activities (used for decay chain)
+        let loadScoreDateRange = Set(groupedEntries.keys).union(Set(groupedActivities.keys)).sorted()
+
+        guard let firstDate = loadScoreDateRange.first, let lastDate = loadScoreDateRange.last else {
+            return []
+        }
+
+        // Calculate load scores for full range (builds proper decay chain)
         let loadScores = LoadScore.calculateRange(
-            from: allDates.first!,
-            to: allDates.last!,
+            from: firstDate,
+            to: lastDate,
             activitiesByDate: groupedActivities,
             symptomsByDate: groupedEntries
         )
@@ -644,7 +636,8 @@ private struct DaySection: Identifiable, Equatable {
         // Create a lookup dictionary for load scores
         let loadScoresByDate = Dictionary(uniqueKeysWithValues: loadScores.map { ($0.date, $0) })
 
-        return allDates
+        // Only return sections for dates with display data (not just lookback data)
+        return displayDates.sorted()
             .map { day in
                 let dayEntries = groupedEntries[day] ?? []
                 let dayActivities = groupedActivities[day] ?? []

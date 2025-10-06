@@ -5,10 +5,23 @@
 //  Created by Aidan Cornelius-Bell on 02/10/2025.
 //
 
+import Combine
 import CoreLocation
 
+// MARK: - Protocol
+
+/// Protocol for location services to enable dependency injection and testing
 @MainActor
-final class LocationAssistant: NSObject, ObservableObject {
+protocol LocationAssistantProtocol: AnyObject {
+    var state: LocationAssistant.State { get }
+    func requestLocation()
+    func currentPlacemark() async -> CLPlacemark?
+}
+
+// MARK: - Implementation
+
+@MainActor
+final class LocationAssistant: NSObject, LocationAssistantProtocol, ObservableObject {
     enum State {
         case idle
         case requesting
@@ -28,7 +41,19 @@ final class LocationAssistant: NSObject, ObservableObject {
         manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
     }
 
+    deinit {
+        manager.stopUpdatingLocation()
+        manager.delegate = nil
+        geocoder.cancelGeocode()
+    }
+
     func requestLocation() {
+        // Skip location request if disabled for UI testing
+        if UITestConfiguration.shouldDisableLocation {
+            state = .idle
+            return
+        }
+
         switch manager.authorizationStatus {
         case .notDetermined:
             manager.requestWhenInUseAuthorization()
