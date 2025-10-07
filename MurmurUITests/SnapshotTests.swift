@@ -102,8 +102,8 @@ final class SnapshotTests: XCTestCase {
             app.buttons["Trends"].tap()
         }
 
-        // Wait for chart to render
-        Thread.sleep(forTimeInterval: 1.5)
+        // Wait for chart to render and data to load
+        Thread.sleep(forTimeInterval: 3.5)
 
         snapshot("04Analysis")
     }
@@ -124,8 +124,8 @@ final class SnapshotTests: XCTestCase {
             app.buttons["Calendar"].tap()
         }
 
-        // Wait for calendar to render
-        Thread.sleep(forTimeInterval: 1.5)
+        // Wait for calendar to render and data to load
+        Thread.sleep(forTimeInterval: 3.5)
 
         snapshot("05AnalysisCalendar")
     }
@@ -209,7 +209,7 @@ final class SnapshotTests: XCTestCase {
             app.buttons["Trends"].tap()
         }
 
-        Thread.sleep(forTimeInterval: 1.5)
+        Thread.sleep(forTimeInterval: 3.5)
 
         snapshot("10AnalysisDark")
     }
@@ -229,7 +229,7 @@ final class SnapshotTests: XCTestCase {
             app.buttons["Calendar"].tap()
         }
 
-        Thread.sleep(forTimeInterval: 1.5)
+        Thread.sleep(forTimeInterval: 3.5)
 
         snapshot("11AnalysisCalendarDark")
     }
@@ -297,7 +297,7 @@ final class SnapshotTests: XCTestCase {
         let analysis = AnalysisScreen(app: app)
         XCTAssertTrue(analysis.waitForLoad(), "Analysis screen should load")
 
-        Thread.sleep(forTimeInterval: 1.5)
+        Thread.sleep(forTimeInterval: 3.5)
 
         snapshot("15AnalysisIPad")
     }
@@ -432,8 +432,8 @@ final class SnapshotTests: XCTestCase {
             app.buttons["Calendar"].tap()
         }
 
-        // Wait for full calendar to render
-        Thread.sleep(forTimeInterval: 2.0)
+        // Wait for full calendar to render and data to load
+        Thread.sleep(forTimeInterval: 3.5)
 
         snapshot("22CalendarFullYear")
     }
@@ -451,11 +451,11 @@ final class SnapshotTests: XCTestCase {
         // Navigate to load capacity if available
         if app.buttons["Load Capacity"].exists {
             app.buttons["Load Capacity"].tap()
-            Thread.sleep(forTimeInterval: 1.0)
+            Thread.sleep(forTimeInterval: 2.5)
         } else if app.staticTexts["Load Capacity"].exists {
             // Try scrolling to find it
             app.staticTexts["Load Capacity"].tap()
-            Thread.sleep(forTimeInterval: 1.0)
+            Thread.sleep(forTimeInterval: 2.5)
         }
 
         snapshot("23LoadCapacity")

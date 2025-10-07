@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 63;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -204,11 +204,11 @@
 		09CE3E0C91A84FFCC398FB61 /* AutoBackupService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoBackupService.swift; sourceTree = "<group>"; };
 		0B91536E966900F7BDD44D9E /* StoreManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreManager.swift; sourceTree = "<group>"; };
 		0B9792355DDEA111D55D657F /* LoadCapacityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadCapacityManager.swift; sourceTree = "<group>"; };
-		0BC30904E771BD4690CB76E9 /* ExampleUserJourneyTest.swift.tmp */ = {isa = PBXFileReference; path = ExampleUserJourneyTest.swift.tmp; sourceTree = "<group>"; };
+		0BC30904E771BD4690CB76E9 /* ExampleUserJourneyTest.swift.tmp */ = {isa = PBXFileReference; lastKnownFileType = text; path = ExampleUserJourneyTest.swift.tmp; sourceTree = "<group>"; };
 		0E4F0A1A242D7CA66EFDE869 /* VersionInfo.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = VersionInfo.plist; sourceTree = "<group>"; };
 		0F8954E2E066F4BD46723E4F /* LocationAssistantTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationAssistantTests.swift; sourceTree = "<group>"; };
 		16349752422FDC5C3F2894F2 /* SymptomTypeListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymptomTypeListView.swift; sourceTree = "<group>"; };
-		17ECC8FC7B2BFC82233BEDB2 /* XCTestCase+Extensions.swift.tmp */ = {isa = PBXFileReference; path = "XCTestCase+Extensions.swift.tmp"; sourceTree = "<group>"; };
+		17ECC8FC7B2BFC82233BEDB2 /* XCTestCase+Extensions.swift.tmp */ = {isa = PBXFileReference; lastKnownFileType = text; path = "XCTestCase+Extensions.swift.tmp"; sourceTree = "<group>"; };
 		1812FFF65B82836550368AD9 /* PDFExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFExporter.swift; sourceTree = "<group>"; };
 		1A678F7D7B1EE20E267D4FFB /* DataExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataExporter.swift; sourceTree = "<group>"; };
 		1A7E174EF980947AD020B652 /* UserJourneyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserJourneyTests.swift; sourceTree = "<group>"; };
@@ -234,20 +234,20 @@
 		38F9F394C094F031B6E027EA /* HealthKitAssistantTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitAssistantTests.swift; sourceTree = "<group>"; };
 		39EFDF482CBB21544CF11C4F /* SnapshotHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotHelper.swift; sourceTree = "<group>"; };
 		3A66D20A77EAEFA920E71127 /* SecuritySettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecuritySettingsView.swift; sourceTree = "<group>"; };
-		3AA22CCB0589BD6116F25DC6 /* Configuration.storekit */ = {isa = PBXFileReference; path = Configuration.storekit; sourceTree = "<group>"; };
+		3AA22CCB0589BD6116F25DC6 /* Configuration.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Configuration.storekit; sourceTree = "<group>"; };
 		47FB126102B438223DF7CED1 /* Color+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Hex.swift"; sourceTree = "<group>"; };
-		4862B5B80467C0291A468B08 /* MurmurUITestsLaunchTests.swift.tmp */ = {isa = PBXFileReference; path = MurmurUITestsLaunchTests.swift.tmp; sourceTree = "<group>"; };
+		4862B5B80467C0291A468B08 /* MurmurUITestsLaunchTests.swift.tmp */ = {isa = PBXFileReference; lastKnownFileType = text; path = MurmurUITestsLaunchTests.swift.tmp; sourceTree = "<group>"; };
 		48AC1B118B5C221F57B3D2AC /* UITestConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITestConfiguration.swift; sourceTree = "<group>"; };
 		49D26BA784C08CBEB012420A /* HealthMetricBaselines.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthMetricBaselines.swift; sourceTree = "<group>"; };
-		56375E6D20D1F073A85AD691 /* EdgeCaseTests.swift.tmp */ = {isa = PBXFileReference; path = EdgeCaseTests.swift.tmp; sourceTree = "<group>"; };
+		56375E6D20D1F073A85AD691 /* EdgeCaseTests.swift.tmp */ = {isa = PBXFileReference; lastKnownFileType = text; path = EdgeCaseTests.swift.tmp; sourceTree = "<group>"; };
 		5857C9F87F35BC1CDE1492BA /* DataQueryIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataQueryIntents.swift; sourceTree = "<group>"; };
-		598108A710422CAF9B3329DB /* PerformanceTests.swift.tmp */ = {isa = PBXFileReference; path = PerformanceTests.swift.tmp; sourceTree = "<group>"; };
+		598108A710422CAF9B3329DB /* PerformanceTests.swift.tmp */ = {isa = PBXFileReference; lastKnownFileType = text; path = PerformanceTests.swift.tmp; sourceTree = "<group>"; };
 		59CDA7EF0863AE082E75A1ED /* CalendarAssistant.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarAssistant.swift; sourceTree = "<group>"; };
 		5D962779CAEAB6C0BC00F53E /* SymptomHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymptomHistoryView.swift; sourceTree = "<group>"; };
 		5FE3F088E28CB02BC8F124AF /* AppEntities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEntities.swift; sourceTree = "<group>"; };
 		601FB2A9ECFD96A63E712CA1 /* CoreDataStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDataStack.swift; sourceTree = "<group>"; };
 		603E48EC0C5C1A8490B48F03 /* MurmurWidgetsControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MurmurWidgetsControl.swift; sourceTree = "<group>"; };
-		6231D46D7B0B900918DEBD51 /* SnapshotTests.swift.tmp */ = {isa = PBXFileReference; path = SnapshotTests.swift.tmp; sourceTree = "<group>"; };
+		6231D46D7B0B900918DEBD51 /* SnapshotTests.swift.tmp */ = {isa = PBXFileReference; lastKnownFileType = text; path = SnapshotTests.swift.tmp; sourceTree = "<group>"; };
 		63E65AB2387BF1F49126F4FF /* AppLaunchState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLaunchState.swift; sourceTree = "<group>"; };
 		649B078297BF933A34BA0BFF /* TimelineViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineViewTests.swift; sourceTree = "<group>"; };
 		6542CD999EA5BFB46228004B /* ColorPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorPalette.swift; sourceTree = "<group>"; };
@@ -260,10 +260,10 @@
 		6B9657015EFBC47A5A3F8DE8 /* DayDetailScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayDetailScreen.swift; sourceTree = "<group>"; };
 		6C162644A8AA5ED396D0ED3C /* MurmurAppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MurmurAppDelegate.swift; sourceTree = "<group>"; };
 		6C69082E12116DB6877C829C /* LogSymptomIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogSymptomIntent.swift; sourceTree = "<group>"; };
-		704439765F49A669131A39BF /* MurmurWidgetsExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = MurmurWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		704439765F49A669131A39BF /* MurmurWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MurmurWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		705220A3846AC6270FEBBC24 /* Murmur.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Murmur.entitlements; sourceTree = "<group>"; };
 		73C08AD079C991446B7FFB87 /* HealthKitAssistant.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitAssistant.swift; sourceTree = "<group>"; };
-		7608213A307D7592D5D59D66 /* DeviceTests.swift.tmp */ = {isa = PBXFileReference; path = DeviceTests.swift.tmp; sourceTree = "<group>"; };
+		7608213A307D7592D5D59D66 /* DeviceTests.swift.tmp */ = {isa = PBXFileReference; lastKnownFileType = text; path = DeviceTests.swift.tmp; sourceTree = "<group>"; };
 		7AEB5224E4A3344BB2DD60A2 /* SleepEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepEvent.swift; sourceTree = "<group>"; };
 		7CF118A23AD3C5D39E955CB7 /* Murmur.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = Murmur.xcdatamodel; sourceTree = "<group>"; };
 		7DE0EB5300C852A7CBC67EFB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -285,12 +285,12 @@
 		99BB65AA245A11BEF6082D89 /* ManualCycleTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualCycleTracker.swift; sourceTree = "<group>"; };
 		99FB7753AED586805E68243A /* XCTestCase+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "XCTestCase+Extensions.swift"; sourceTree = "<group>"; };
 		9A2B95C76723AD8911D2CB29 /* LoadScore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadScore.swift; sourceTree = "<group>"; };
-		9B31CADE84578C14B7188A7B /* TestDataBuilder.swift.tmp */ = {isa = PBXFileReference; path = TestDataBuilder.swift.tmp; sourceTree = "<group>"; };
+		9B31CADE84578C14B7188A7B /* TestDataBuilder.swift.tmp */ = {isa = PBXFileReference; lastKnownFileType = text; path = TestDataBuilder.swift.tmp; sourceTree = "<group>"; };
 		9C50F1B0E42B29338066CF69 /* AudioGraphs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioGraphs.swift; sourceTree = "<group>"; };
 		9D4DDE75DE8293203047402C /* NaturalLanguageParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NaturalLanguageParser.swift; sourceTree = "<group>"; };
 		9DD846A95E2EEEE958CBDF2E /* AppConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConstants.swift; sourceTree = "<group>"; };
 		9DF0E681210D818230BD2AAF /* VoiceCommandController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceCommandController.swift; sourceTree = "<group>"; };
-		9E380FA329D903F838B82778 /* Murmur.mom */ = {isa = PBXFileReference; path = Murmur.mom; sourceTree = "<group>"; };
+		9E380FA329D903F838B82778 /* Murmur.mom */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = Murmur.mom; sourceTree = "<group>"; };
 		9E7F759B36904EDEB8515E4E /* AddActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddActivityView.swift; sourceTree = "<group>"; };
 		9E9E2FF1F427BB56B3952547 /* SwitchControlSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwitchControlSupport.swift; sourceTree = "<group>"; };
 		A078BE4C03C6D3CF859D62B8 /* TestDataBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestDataBuilder.swift; sourceTree = "<group>"; };
@@ -305,7 +305,7 @@
 		B14314534599F51122F1007F /* UnifiedEventView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedEventView.swift; sourceTree = "<group>"; };
 		B2BD40A2C8E9218AC827D77E /* CoreDataErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDataErrorView.swift; sourceTree = "<group>"; };
 		B696D61D728DF13148578C78 /* DataExporterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataExporterTests.swift; sourceTree = "<group>"; };
-		B8BA6995267A1D1D685FC87E /* Murmur.omo */ = {isa = PBXFileReference; path = Murmur.omo; sourceTree = "<group>"; };
+		B8BA6995267A1D1D685FC87E /* Murmur.omo */ = {isa = PBXFileReference; lastKnownFileType = file; path = Murmur.omo; sourceTree = "<group>"; };
 		B9585259D3FA30929CE14ECD /* SpeechService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechService.swift; sourceTree = "<group>"; };
 		B9A8A11F09958DDCAF01293B /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineView.swift; sourceTree = "<group>"; };
 		B9FF6FD1099E67EA75B54AE4 /* MurmurUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MurmurUITestsLaunchTests.swift; sourceTree = "<group>"; };
@@ -318,10 +318,10 @@
 		C27805056AA84686FE8073A6 /* NaturalLanguageParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NaturalLanguageParserTests.swift; sourceTree = "<group>"; };
 		C36077676BDF4B8C524C78CD /* LocationAssistant.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationAssistant.swift; sourceTree = "<group>"; };
 		C44C3BEC8D6329D86B18D51B /* AnalysisEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisEngineTests.swift; sourceTree = "<group>"; };
-		C834EC374C4A986C47F46292 /* Murmur.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Murmur.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C834EC374C4A986C47F46292 /* Murmur.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Murmur.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C9E78674330AB63EA905B964 /* HapticFeedback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticFeedback.swift; sourceTree = "<group>"; };
 		CE353696FE7138F48C5EDCA6 /* SymptomEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymptomEntry.swift; sourceTree = "<group>"; };
-		CF356E06DDC7D03CEFB46DEB /* AccessibilityTests.swift.tmp */ = {isa = PBXFileReference; path = AccessibilityTests.swift.tmp; sourceTree = "<group>"; };
+		CF356E06DDC7D03CEFB46DEB /* AccessibilityTests.swift.tmp */ = {isa = PBXFileReference; lastKnownFileType = text; path = AccessibilityTests.swift.tmp; sourceTree = "<group>"; };
 		D004406773FCDDDF81047BAC /* ReminderFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderFormView.swift; sourceTree = "<group>"; };
 		D240C1148C083CA1E0603667 /* CalendarTestHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarTestHelpers.swift; sourceTree = "<group>"; };
 		E20D60F584362337A0F8FF47 /* EdgeCaseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EdgeCaseTests.swift; sourceTree = "<group>"; };
@@ -332,7 +332,7 @@
 		EAA0198439F31325F290D02D /* PlacemarkTransformer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlacemarkTransformer.swift; sourceTree = "<group>"; };
 		ECFF1F2040D75D3EB5B6F526 /* Colors.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Colors.xcassets; sourceTree = "<group>"; };
 		ED35761EBF7EF881FA0E7BB9 /* MurmurApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MurmurApp.swift; sourceTree = "<group>"; };
-		EE9125CF9BA7446243976D6A /* XCUIElement+Extensions.swift.tmp */ = {isa = PBXFileReference; path = "XCUIElement+Extensions.swift.tmp"; sourceTree = "<group>"; };
+		EE9125CF9BA7446243976D6A /* XCUIElement+Extensions.swift.tmp */ = {isa = PBXFileReference; lastKnownFileType = text; path = "XCUIElement+Extensions.swift.tmp"; sourceTree = "<group>"; };
 		EFAF2F7AA9F4A6A64B5DA90F /* SymptomHistoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymptomHistoryTests.swift; sourceTree = "<group>"; };
 		F1AE5E8F228CB132A1B85E8E /* MurmurUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MurmurUITests.swift; sourceTree = "<group>"; };
 		F1E495F4516F11F417B1A282 /* ExampleUserJourneyTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExampleUserJourneyTest.swift; sourceTree = "<group>"; };
@@ -817,7 +817,6 @@
 			);
 			mainGroup = 55AFDC8326A0474CEB29A9C9;
 			minimizedProjectReferenceProxies = 1;
-			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -1075,9 +1074,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CURRENT_PROJECT_VERSION = 5;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = MurmurWidgets/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.cornelius-bell.Murmur.MurmurWidgets";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -1090,7 +1094,11 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				GENERATE_INFOPLIST_FILE = YES;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.cornelius-bell.MurmurUITests";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -1105,9 +1113,13 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Murmur/Murmur.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 5;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = Murmur/Resources/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.cornelius-bell.Murmur";
 				SDKROOT = iphoneos;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -1122,7 +1134,11 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = MurmurTests/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.cornelius-bell.MurmurTests";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -1137,9 +1153,13 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Murmur/Murmur.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 5;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = Murmur/Resources/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.cornelius-bell.Murmur";
 				SDKROOT = iphoneos;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -1215,7 +1235,11 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = MurmurTests/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.cornelius-bell.MurmurTests";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -1228,9 +1252,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CURRENT_PROJECT_VERSION = 5;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = MurmurWidgets/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.cornelius-bell.Murmur.MurmurWidgets";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -1310,7 +1339,11 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				GENERATE_INFOPLIST_FILE = YES;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.cornelius-bell.MurmurUITests";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";

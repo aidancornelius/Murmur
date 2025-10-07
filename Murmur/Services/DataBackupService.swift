@@ -474,6 +474,11 @@ final class DataBackupService {
             }
         }
 
+        // Refresh view context to trigger UI updates
+        await MainActor.run {
+            viewContext.refreshAllObjects()
+        }
+
         if !enabledReminderIDs.isEmpty {
             let viewContext = stack.container.viewContext
             Task { @MainActor in

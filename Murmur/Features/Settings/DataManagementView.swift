@@ -268,37 +268,42 @@ struct DataManagementView: View {
                 }
 
                 let context = CoreDataStack.shared.newBackgroundContext()
+                let viewContext = CoreDataStack.shared.context
 
                 try await context.perform {
-                    // Delete all symptom entries
-                    let entryDeleteRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "SymptomEntry")
-                    let entryDelete = NSBatchDeleteRequest(fetchRequest: entryDeleteRequest)
-                    try context.execute(entryDelete)
+                    // Helper to perform batch delete and return deleted object IDs
+                    func deleteAll(entityName: String) throws -> [NSManagedObjectID] {
+                        let request = NSFetchRequest<NSFetchRequestResult>(entityName: entityName)
+                        let delete = NSBatchDeleteRequest(fetchRequest: request)
+                        delete.resultType = .resultTypeObjectIDs
+                        let result = try context.execute(delete) as? NSBatchDeleteResult
+                        return (result?.result as? [NSManagedObjectID]) ?? []
+                    }
 
-                    // Delete all symptom types
-                    let typeDeleteRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "SymptomType")
-                    let typeDelete = NSBatchDeleteRequest(fetchRequest: typeDeleteRequest)
-                    try context.execute(typeDelete)
+                    // Delete all data and collect object IDs
+                    let deletedObjectIDs: [NSManagedObjectID] = try [
+                        deleteAll(entityName: "SymptomEntry"),
+                        deleteAll(entityName: "SymptomType"),
+                        deleteAll(entityName: "ActivityEvent"),
+                        deleteAll(entityName: "SleepEvent"),
+                        deleteAll(entityName: "MealEvent"),
+                        deleteAll(entityName: "ManualCycleEntry"),
+                        deleteAll(entityName: "Reminder")
+                    ].flatMap { $0 }
 
-                    // Delete all activity events
-                    let activityDeleteRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "ActivityEvent")
-                    let activityDelete = NSBatchDeleteRequest(fetchRequest: activityDeleteRequest)
-                    try context.execute(activityDelete)
-
-                    // Delete all manual cycle entries
-                    let cycleDeleteRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "ManualCycleEntry")
-                    let cycleDelete = NSBatchDeleteRequest(fetchRequest: cycleDeleteRequest)
-                    try context.execute(cycleDelete)
-
-                    // Delete all reminders
-                    let reminderDeleteRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "Reminder")
-                    let reminderDelete = NSBatchDeleteRequest(fetchRequest: reminderDeleteRequest)
-                    try context.execute(reminderDelete)
+                    // Merge the deletions into the view context
+                    let changes = [NSDeletedObjectsKey: deletedObjectIDs]
+                    NSManagedObjectContext.mergeChanges(
+                        fromRemoteContextSave: changes,
+                        into: [viewContext]
+                    )
 
                     try context.save()
                 }
 
+                // Refresh view context to trigger UI updates
                 await MainActor.run {
+                    viewContext.refreshAllObjects()
                     HapticFeedback.success.trigger()
                     isProcessing = false
                     successMessage = "All data has been deleted"
