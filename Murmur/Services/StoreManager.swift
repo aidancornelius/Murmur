@@ -47,16 +47,7 @@ class StoreManager: ObservableObject {
     func loadProducts() async {
         do {
             products = try await Product.products(for: productIDs)
-
-            // Log detailed product information
-            for product in products {
-                logger.info("Loaded product: \(product.id)")
-                logger.info("  Display name: \(product.displayName)")
-                logger.info("  Display price: \(product.displayPrice)")
-                logger.info("  Price: \(product.price)")
-                logger.info("  Currency code: \(product.priceFormatStyle.currencyCode)")
-                logger.info("  Locale: \(product.priceFormatStyle.locale.identifier)")
-            }
+            logger.debug("Loaded \(self.products.count) products")
         } catch {
             logger.error("Failed to load products: \(error.localizedDescription)")
             purchaseState = .failed("Unable to load products")

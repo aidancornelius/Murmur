@@ -39,7 +39,7 @@ struct NaturalLanguageParser {
     // Keywords for event type detection
     private static let sleepKeywords = ["slept", "sleep", "nap", "rest", "bed", "wake", "woke", "awake", "tired", "insomnia", "nightmare", "dream"]
     private static let mealKeywords = ["ate", "eat", "food", "meal", "breakfast", "lunch", "dinner", "snack", "drink", "drank", "coffee", "tea"]
-    private static let activityKeywords = ["ran", "run", "walk", "walked", "gym", "workout", "exercise", "meeting", "work", "study", "read", "watch", "play", "drive", "drove"]
+    private static let activityKeywords = ["ran", "run", "walk", "walked", "gym", "workout", "exercise", "yoga", "pilates", "swim", "cycle", "bike", "hike", "stretch", "stretching", "meditation", "meditate", "meeting", "work", "study", "studied", "read", "reading", "watch", "watched", "play", "played", "drive", "drove", "driving", "shopping", "cleaned", "cleaning"]
 
     // Meal type detection
     private static let breakfastKeywords = ["breakfast", "morning", "cereal", "toast", "eggs", "bacon", "coffee"]
@@ -203,8 +203,9 @@ struct NaturalLanguageParser {
             if let sleepHours = extractSleepHours(from: input) {
                 durationMinutes = sleepHours * 60
                 // Calculate approximate bed/wake times
-                wakeTime = timestamp ?? now
-                bedTime = calendar.date(byAdding: .minute, value: -(sleepHours * 60), to: wakeTime!)
+                let wake = timestamp ?? now
+                wakeTime = wake
+                bedTime = calendar.date(byAdding: .minute, value: -(sleepHours * 60), to: wake)
             }
 
             // Parse sleep quality

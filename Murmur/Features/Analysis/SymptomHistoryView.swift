@@ -279,11 +279,16 @@ private struct SymptomCountRow: View {
 
 private struct SymptomOccurrenceRow: View {
     let entry: SymptomEntry
-    @State private var showingDayDetail = false
+    @State private var selectedDay: SelectedDay?
+
+    private struct SelectedDay: Identifiable {
+        let id = UUID()
+        let date: Date
+    }
 
     var body: some View {
         Button {
-            showingDayDetail = true
+            selectedDay = SelectedDay(date: entry.backdatedAt ?? entry.createdAt ?? Date())
         } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
@@ -313,9 +318,9 @@ private struct SymptomOccurrenceRow: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .sheet(isPresented: $showingDayDetail) {
+        .sheet(item: $selectedDay) { selectedDay in
             NavigationView {
-                DayDetailView(date: entry.backdatedAt ?? entry.createdAt ?? Date())
+                DayDetailView(date: selectedDay.date)
                     .navigationBarTitleDisplayMode(.inline)
             }
         }

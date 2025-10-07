@@ -166,6 +166,7 @@ final class DataBackupService {
         // Fetch all entries
         let entryRequest = SymptomEntry.fetchRequest()
         entryRequest.relationshipKeyPathsForPrefetching = ["symptomType"]
+        entryRequest.fetchBatchSize = 100
         let entries = try context.fetch(entryRequest)
 
         // Fetch all symptom types
@@ -214,6 +215,7 @@ final class DataBackupService {
         activityRequest.sortDescriptors = [
             NSSortDescriptor(keyPath: \ActivityEvent.createdAt, ascending: false)
         ]
+        activityRequest.fetchBatchSize = 100
         let activities = try context.fetch(activityRequest)
 
         let activityBackups = activities.compactMap { activity -> BackupData.ActivityBackup? in
@@ -275,6 +277,65 @@ final class DataBackupService {
             manualCycleEntries: manualCycleBackups,
             reminders: reminderBackups,
             manualCyclePreferences: manualCyclePreferences
+        )
+    }
+
+    // MARK: - Backup Metadata
+
+    struct BackupMetadata {
+        let createdAt: Date
+        let version: Int
+        let entryCount: Int
+        let symptomTypeCount: Int
+        let activityCount: Int
+        let manualCycleEntryCount: Int
+        let reminderCount: Int
+
+        var formattedCreatedAt: String {
+            let formatter = DateFormatter()
+            formatter.dateStyle = .medium
+            formatter.timeStyle = .short
+            return formatter.string(from: createdAt)
+        }
+
+        var summary: String {
+            var parts: [String] = []
+            if entryCount > 0 {
+                parts.append("\(entryCount) symptom \(entryCount == 1 ? "entry" : "entries")")
+            }
+            if symptomTypeCount > 0 {
+                parts.append("\(symptomTypeCount) symptom \(symptomTypeCount == 1 ? "type" : "types")")
+            }
+            if activityCount > 0 {
+                parts.append("\(activityCount) \(activityCount == 1 ? "activity" : "activities")")
+            }
+            if manualCycleEntryCount > 0 {
+                parts.append("\(manualCycleEntryCount) cycle \(manualCycleEntryCount == 1 ? "entry" : "entries")")
+            }
+            if reminderCount > 0 {
+                parts.append("\(reminderCount) \(reminderCount == 1 ? "reminder" : "reminders")")
+            }
+            return parts.isEmpty ? "No data" : parts.joined(separator: ", ")
+        }
+    }
+
+    func readBackupMetadata(from url: URL, password: String) async throws -> BackupMetadata {
+        let encryptedData = try Data(contentsOf: url)
+
+        // Decrypt the data
+        let jsonData = try decrypt(data: encryptedData, password: password)
+
+        // Decode backup
+        let backupData = try JSONDecoder().decode(BackupData.self, from: jsonData)
+
+        return BackupMetadata(
+            createdAt: backupData.createdAt,
+            version: backupData.version,
+            entryCount: backupData.entries.count,
+            symptomTypeCount: backupData.symptomTypes.count,
+            activityCount: backupData.activities.count,
+            manualCycleEntryCount: backupData.manualCycleEntries.count,
+            reminderCount: backupData.reminders.count
         )
     }
 

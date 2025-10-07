@@ -471,7 +471,9 @@ final class SymptomHistoryTests: XCTestCase {
             positiveType = SymptomType(context: testStack.context)
             positiveType?.id = UUID()
             positiveType?.name = "Test Positive"
-            positiveType?.isPositive = true
+            positiveType?.category = "Positive wellbeing"
+            positiveType?.color = "green"
+            positiveType?.iconName = "star.fill"
         }
 
         guard let positiveType = positiveType else {

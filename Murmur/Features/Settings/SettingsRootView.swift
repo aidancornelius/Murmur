@@ -296,29 +296,25 @@ struct AccessibilityOptionsView: View {
                     .listRowBackground(Color.clear)
             }
 
-            if #available(iOS 15.0, *) {
-                Section("Voice logging") {
-                    NavigationLink {
-                        VoiceCommandView()
-                    } label: {
-                        Label("Voice commands", systemImage: "mic.circle")
-                    }
-                    Text("Log symptoms hands-free. The first time you open this screen you'll be prompted to allow speech recognition.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+            Section("Voice logging") {
+                NavigationLink {
+                    VoiceCommandView()
+                } label: {
+                    Label("Voice commands", systemImage: "mic.circle")
                 }
-                .listRowBackground(palette.surfaceColor)
+                Text("Log symptoms hands-free. The first time you open this screen you'll be prompted to allow speech recognition.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
+            .listRowBackground(palette.surfaceColor)
 
-            if #available(iOS 15.0, *) {
-                Section("Audio summaries") {
-                    Label("Hear daily summaries", systemImage: "speaker.wave.2")
-                    Text("Open any day in your timeline to find buttons that read the day aloud or play a tone graph of symptom severity.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .listRowBackground(palette.surfaceColor)
+            Section("Audio summaries") {
+                Label("Hear daily summaries", systemImage: "speaker.wave.2")
+                Text("Open any day in your timeline to find buttons that read the day aloud or play a tone graph of symptom severity.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
+            .listRowBackground(palette.surfaceColor)
 
             Section("Switch Control & AssistiveTouch") {
                 Label("Optimised controls", systemImage: "hand.point.up.left")

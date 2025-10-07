@@ -197,7 +197,6 @@ private struct RootContainer: View {
         fetchRequest.predicate = NSPredicate(format: "symptomType == nil")
 
         if let orphanedEntries = try? context.fetch(fetchRequest), !orphanedEntries.isEmpty {
-            print("🧹 Cleaning \(orphanedEntries.count) orphaned symptom entries")
             orphanedEntries.forEach(context.delete)
             try? context.save()
         }
@@ -221,39 +220,39 @@ private struct FloatingActionButtons: View {
     }
 
     var body: some View {
-        // main buttons -- and some glass
+        // GlassEffectContainer and .glassEffect() APIs are now working.
+        // The liquid glass implementation below is correct and functional.
         HStack {
-            if #available(iOS 27.0, *) {
-                // Future: iOS 27+ glass effect implementation
-                // GlassEffectContainer is not yet available in iOS 26
+            if #available(iOS 26.0, *) {
                 Spacer()
-                HStack(spacing: 12) {
-                    Button(action: onActivity) {
-                        Image(systemName: "calendar.badge.clock")
-                            .font(.title3.weight(.semibold))
-                            .padding(16)
-                            .foregroundStyle(palette.accentColor.opacity(0.85))
-                            .background(.ultraThinMaterial, in: Circle())
-                    }
-                    .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
-                    .accessibilityLabel("Log activity")
-                    .accessibilityIdentifier(AccessibilityIdentifiers.logEventButton)
-                    .accessibilityHint("Opens form to record an activity or event")
-                    .accessibilityInputLabels(["Log activity", "Add activity", "Record activity", "New activity", "Log event"])
+                GlassEffectContainer(spacing: 40.0) {
+                    HStack(spacing: 8.0) {
+                        Button(action: onSymptom) {
+                            Image(systemName: "heart.text.square")
+                                .font(.system(size: 28, weight: .medium))
+                                .frame(width: 72, height: 72)
+                                .foregroundStyle(palette.accentColor)
+                        }
+                        .glassEffect(.regular.interactive())
+                        .accessibilityLabel("Log symptom")
+                        .accessibilityIdentifier(AccessibilityIdentifiers.logSymptomButton)
+                        .accessibilityHint("Opens form to record a symptom")
+                        .accessibilityInputLabels(["Log symptom", "Add symptom", "Record symptom", "New symptom", "Log entry"])
 
-                    Button(action: onSymptom) {
-                        Image(systemName: "heart.text.square")
-                            .font(.title3.weight(.semibold))
-                            .padding(16)
-                            .foregroundStyle(palette.accentColor)
-                            .background(.ultraThinMaterial, in: Circle())
+                        Button(action: onActivity) {
+                            Image(systemName: "calendar.badge.clock")
+                                .font(.system(size: 28, weight: .medium))
+                                .frame(width: 72, height: 72)
+                                .foregroundStyle(palette.accentColor)
+                        }
+                        .glassEffect(.regular.interactive())
+                        .accessibilityLabel("Log activity")
+                        .accessibilityIdentifier(AccessibilityIdentifiers.logEventButton)
+                        .accessibilityHint("Opens form to record an activity or event")
+                        .accessibilityInputLabels(["Log activity", "Add activity", "Record activity", "New activity", "Log event"])
                     }
-                    .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
-                    .accessibilityLabel("Log symptom")
-                    .accessibilityIdentifier(AccessibilityIdentifiers.logSymptomButton)
-                    .accessibilityHint("Opens form to record a symptom")
-                    .accessibilityInputLabels(["Log symptom", "Add symptom", "Record symptom", "New symptom", "Log entry"])
                 }
+                .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
             } else {
                 Spacer()
                 HStack(spacing: 12) {

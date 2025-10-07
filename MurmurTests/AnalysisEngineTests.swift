@@ -34,7 +34,7 @@ final class AnalysisEngineTests: XCTestCase {
         let calendar = Calendar.current
         let now = Date()
         let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
-        symptomType.isPositive = false
+        symptomType.category = "Physical"
         symptomType.name = "Fatigue"
 
         // Create worsening trend: low severity in first half, high in second half
@@ -62,7 +62,7 @@ final class AnalysisEngineTests: XCTestCase {
         let calendar = Calendar.current
         let now = Date()
         let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
-        symptomType.isPositive = false
+        symptomType.category = "Physical"
         symptomType.name = "Pain"
 
         // Create improving trend: high severity in first half, low in second half
@@ -113,7 +113,7 @@ final class AnalysisEngineTests: XCTestCase {
         let calendar = Calendar.current
         let now = Date()
         let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
-        symptomType.isPositive = true
+        symptomType.category = "Positive wellbeing"
         symptomType.name = "Energy"
 
         // Create improving trend for positive symptom: low in first half, high in second half
@@ -172,7 +172,7 @@ final class AnalysisEngineTests: XCTestCase {
         let calendar = Calendar.current
         let now = Date()
         let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
-        symptomType.isPositive = false
+        symptomType.category = "Physical"
         symptomType.name = "Headache"
 
         // Create activities followed by symptoms
@@ -220,7 +220,7 @@ final class AnalysisEngineTests: XCTestCase {
         let calendar = Calendar.current
         let now = Date()
         let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
-        symptomType.isPositive = true
+        symptomType.category = "Positive wellbeing"
         symptomType.name = "Mood"
 
         // Create activities followed by improved positive symptoms
@@ -386,7 +386,7 @@ final class AnalysisEngineTests: XCTestCase {
 
     func testAnalysePhysiologicalCorrelationsHRV() throws {
         let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
-        symptomType.isPositive = false
+        symptomType.category = "Physical"
         symptomType.name = "Stress"
 
         // Create high severity entries with low HRV
@@ -422,7 +422,7 @@ final class AnalysisEngineTests: XCTestCase {
 
     func testAnalysePhysiologicalCorrelationsRestingHR() throws {
         let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
-        symptomType.isPositive = false
+        symptomType.category = "Physical"
         symptomType.name = "Anxiety"
 
         // High severity with high resting HR
@@ -457,7 +457,7 @@ final class AnalysisEngineTests: XCTestCase {
 
     func testAnalysePhysiologicalCorrelationsSleep() throws {
         let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
-        symptomType.isPositive = false
+        symptomType.category = "Physical"
         symptomType.name = "Fatigue"
 
         // High severity with low sleep

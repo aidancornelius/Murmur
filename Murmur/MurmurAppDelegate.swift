@@ -8,6 +8,7 @@
 import UIKit
 import UserNotifications
 import AppIntents
+import BackgroundTasks
 
 final class MurmurAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     let healthKitAssistant: HealthKitAssistant
@@ -42,10 +43,33 @@ final class MurmurAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificati
             }
         }
 
+        // Register background task for auto backups (unless in UI test mode)
+        if !UITestConfiguration.isUITesting {
+            registerBackgroundTasks()
+        }
+
         // Configure UIKit appearance for forms
         configureFormAppearance()
 
         return true
+    }
+
+    private func registerBackgroundTasks() {
+        BGTaskScheduler.shared.register(
+            forTaskWithIdentifier: AutoBackupService.backgroundTaskIdentifier,
+            using: nil
+        ) { task in
+            Task { @MainActor in
+                AutoBackupService.shared.handleBackgroundTask(task as! BGAppRefreshTask)
+            }
+        }
+    }
+
+    func applicationDidEnterBackground(_ application: UIApplication) {
+        // Attempt backup if needed when entering background
+        Task { @MainActor in
+            await AutoBackupService.shared.performBackupIfNeeded()
+        }
     }
 
     private func configureFormAppearance() {

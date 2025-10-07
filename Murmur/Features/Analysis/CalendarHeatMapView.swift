@@ -13,9 +13,13 @@ struct CalendarHeatMapView: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var currentMonth = Date()
     @State private var dayData: [Date: DayIntensity] = [:]
-    @State private var selectedDate: Date?
-    @State private var showingDayDetail = false
+    @State private var selectedDate: SelectedDay?
     @State private var isLoading = true
+
+    private struct SelectedDay: Identifiable {
+        let id = UUID()
+        let date: Date
+    }
 
     struct DayIntensity {
         let date: Date
@@ -54,8 +58,7 @@ struct CalendarHeatMapView: View {
                                     intensity: dayData[calendar.startOfDay(for: date)],
                                     isToday: calendar.isDateInToday(date),
                                     onTap: {
-                                        selectedDate = date
-                                        showingDayDetail = true
+                                        selectedDate = SelectedDay(date: date)
                                     }
                                 )
                             } else {
@@ -81,12 +84,10 @@ struct CalendarHeatMapView: View {
             }
             .themedScrollBackground()
         }
-        .sheet(isPresented: $showingDayDetail) {
-            if let date = selectedDate {
-                NavigationView {
-                    DayDetailView(date: date)
-                        .navigationBarTitleDisplayMode(.inline)
-                }
+        .sheet(item: $selectedDate) { selectedDay in
+            NavigationView {
+                DayDetailView(date: selectedDay.date)
+                    .navigationBarTitleDisplayMode(.inline)
             }
         }
         .task(id: currentMonth) {

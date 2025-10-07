@@ -13,18 +13,17 @@ import Speech
 import SwiftUI
 
 // MARK: - Voice Command Controller
-@available(iOS 15.0, *)
 class VoiceCommandController: NSObject, ObservableObject {
     @Published var isListening = false
     @Published var recognisedText = ""
     @Published var feedbackMessage: String?
     @Published var authorizationStatus: SFSpeechRecognizerAuthorizationStatus = .notDetermined
 
-    private let speechRecogniser = SFSpeechRecognizer(locale: Locale(identifier: "en-AU"))
+    private let speechRecogniser = SFSpeechRecognizer(locale: Locale.current)
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private let audioEngine = AVAudioEngine()
-    private let synthesizer = AVSpeechSynthesizer()
+    private let speechService = SpeechService.shared
     private let logger = Logger(subsystem: "app.murmur", category: "VoiceCommand")
 
     private var context: NSManagedObjectContext?
@@ -144,6 +143,17 @@ class VoiceCommandController: NSObject, ObservableObject {
         }
 
         let recordingFormat = inputNode.outputFormat(forBus: 0)
+
+        // Validate format for simulator compatibility
+        guard recordingFormat.sampleRate > 0 && recordingFormat.channelCount > 0 else {
+            logger.error("Invalid audio format: sampleRate=\(recordingFormat.sampleRate), channels=\(recordingFormat.channelCount)")
+            throw NSError(
+                domain: "VoiceCommand",
+                code: 3,
+                userInfo: [NSLocalizedDescriptionKey: "Audio format not supported. Voice commands require a physical device with a microphone."]
+            )
+        }
+
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, _ in
             recognitionRequest.append(buffer)
         }
@@ -313,10 +323,7 @@ class VoiceCommandController: NSObject, ObservableObject {
     }
 
     private func speak(_ text: String) {
-        let utterance = AVSpeechUtterance(string: text)
-        utterance.voice = AVSpeechSynthesisVoice(language: "en-AU")
-        utterance.rate = AVSpeechUtteranceDefaultSpeechRate
-        synthesizer.speak(utterance)
+        speechService.speak(text)
 
         DispatchQueue.main.async {
             self.feedbackMessage = text
@@ -325,7 +332,6 @@ class VoiceCommandController: NSObject, ObservableObject {
 }
 
 // MARK: - SwiftUI Integration
-@available(iOS 15.0, *)
 struct VoiceCommandButton: View {
     @EnvironmentObject var voiceController: VoiceCommandController
 
@@ -349,7 +355,6 @@ struct VoiceCommandButton: View {
     }
 }
 
-@available(iOS 15.0, *)
 struct VoiceCommandView: View {
     @StateObject private var voiceController = VoiceCommandController()
     @Environment(\.managedObjectContext) private var context

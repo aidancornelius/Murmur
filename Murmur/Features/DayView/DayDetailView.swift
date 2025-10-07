@@ -112,7 +112,7 @@ struct DayDetailView: View {
                 .listRowBackground(palette.surfaceColor)
             }
 
-            if #available(iOS 15.0, *), !dayEntries.isEmpty {
+            if !dayEntries.isEmpty {
                 Section("Accessibility") {
                     AudioGraphButton(entries: dayEntries)
                     DayAudioSummaryButton(entries: dayEntries, date: date)

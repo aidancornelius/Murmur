@@ -11,9 +11,7 @@ import SwiftUI
 @main
 struct MurmurWidgetsBundle: WidgetBundle {
     var body: some Widget {
-        if #available(iOS 18.0, *) {
-            LogSymptomControl()
-            LogActivityControl()
-        }
+        LogSymptomControl()
+        LogActivityControl()
     }
 }

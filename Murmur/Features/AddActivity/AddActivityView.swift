@@ -366,9 +366,12 @@ struct AddActivityView: View {
         activity.backdatedAt = timestamp
 
         // Use cleaned text if available from natural language parsing, otherwise use raw name
-        let activityName = parsedData?.cleanedText.isEmpty == false
-            ? parsedData!.cleanedText
-            : name.trimmingCharacters(in: .whitespaces)
+        let activityName: String
+        if let parsedText = parsedData?.cleanedText, !parsedText.isEmpty {
+            activityName = parsedText
+        } else {
+            activityName = name.trimmingCharacters(in: .whitespaces)
+        }
         activity.name = activityName
 
         activity.note = note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : note

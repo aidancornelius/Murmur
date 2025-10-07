@@ -38,12 +38,28 @@ extension ActivityEvent: Identifiable {
 extension ActivityEvent {
     public override func validateForInsert() throws {
         try super.validateForInsert()
+        try validateRequiredFields()
         try validateExertionLevels()
+        try validateDuration()
+        try validateDates()
     }
 
     public override func validateForUpdate() throws {
         try super.validateForUpdate()
+        try validateRequiredFields()
         try validateExertionLevels()
+        try validateDuration()
+        try validateDates()
+    }
+
+    private func validateRequiredFields() throws {
+        guard let name = name, !name.isEmpty else {
+            throw NSError(
+                domain: "ActivityEvent",
+                code: 3004,
+                userInfo: [NSLocalizedDescriptionKey: "Activity name is required"]
+            )
+        }
     }
 
     private func validateExertionLevels() throws {
@@ -69,6 +85,58 @@ extension ActivityEvent {
                 code: 3003,
                 userInfo: [NSLocalizedDescriptionKey: "Emotional load must be between 1 and 5"]
             )
+        }
+    }
+
+    private func validateDuration() throws {
+        guard let durationMinutes = durationMinutes else {
+            return // Duration is optional
+        }
+
+        let minutes = durationMinutes.intValue
+
+        // Validate reasonable duration (1 minute to 24 hours)
+        guard minutes >= 1 else {
+            throw NSError(
+                domain: "ActivityEvent",
+                code: 3005,
+                userInfo: [NSLocalizedDescriptionKey: "Activity duration must be at least 1 minute"]
+            )
+        }
+
+        guard minutes <= 1440 else { // 24 hours
+            throw NSError(
+                domain: "ActivityEvent",
+                code: 3006,
+                userInfo: [NSLocalizedDescriptionKey: "Activity duration cannot exceed 24 hours"]
+            )
+        }
+    }
+
+    private func validateDates() throws {
+        let now = Date()
+
+        // Validate createdAt is not in future
+        if let created = createdAt, created > now.addingTimeInterval(60) {
+            throw NSError(
+                domain: "ActivityEvent",
+                code: 3007,
+                userInfo: [NSLocalizedDescriptionKey: "Created date cannot be in the future"]
+            )
+        }
+
+        // Validate backdatedAt is within reasonable range (1 year)
+        if let backdated = backdatedAt {
+            let oneYearAgo = Calendar.current.date(byAdding: .year, value: -1, to: now) ?? now
+            let oneYearFuture = Calendar.current.date(byAdding: .year, value: 1, to: now) ?? now
+
+            guard backdated >= oneYearAgo && backdated <= oneYearFuture else {
+                throw NSError(
+                    domain: "ActivityEvent",
+                    code: 3008,
+                    userInfo: [NSLocalizedDescriptionKey: "Activity date must be within the past year"]
+                )
+            }
         }
     }
 }

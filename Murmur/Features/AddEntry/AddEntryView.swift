@@ -23,7 +23,7 @@ struct SelectedSymptom: Identifiable, Equatable {
     }
 
     static func == (lhs: SelectedSymptom, rhs: SelectedSymptom) -> Bool {
-        lhs.id == rhs.id
+        lhs.id == rhs.id && lhs.severity == rhs.severity
     }
 }
 
@@ -285,10 +285,8 @@ struct AddEntryView: View {
                 dismiss()
             } catch is CancellationError {
                 // Task was cancelled - service already rolled back changes
-                print("⚠️ AddEntryView: Save cancelled")
                 isSaving = false
             } catch {
-                print("❌ AddEntryView: Failed to save - \(error.localizedDescription)")
                 HapticFeedback.error.trigger()
                 errorMessage = error.localizedDescription
                 isSaving = false

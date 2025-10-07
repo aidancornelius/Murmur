@@ -30,7 +30,11 @@ final class LocationAssistantTests: XCTestCase {
     // MARK: - Initial State Tests
 
     func testInitialState() {
-        XCTAssertEqual(assistant.state, .idle, "LocationAssistant should start in idle state")
+        if case .idle = assistant.state {
+            // Success
+        } else {
+            XCTFail("LocationAssistant should start in idle state, but was \(assistant.state)")
+        }
     }
 
     // MARK: - Permission Handling Tests
@@ -138,7 +142,11 @@ final class LocationAssistantTests: XCTestCase {
 
         // When: Check initial state
         // Then: Should be idle
-        XCTAssertEqual(mock.state, .idle)
+        if case .idle = mock.state {
+            // Success
+        } else {
+            XCTFail("Mock should start in idle state, but was \(mock.state)")
+        }
     }
 
     func testMockLocationAssistantRequestWithPermissionDenied() {
@@ -200,7 +208,11 @@ final class LocationAssistantTests: XCTestCase {
         mock.reset()
 
         // Then: Should return to initial state
-        XCTAssertEqual(mock.state, .idle)
+        if case .idle = mock.state {
+            // Success
+        } else {
+            XCTFail("Mock should be idle after reset, but was \(mock.state)")
+        }
         XCTAssertNil(mock.mockPlacemark)
         XCTAssertFalse(mock.shouldDenyPermission)
         XCTAssertEqual(mock.requestLocationCallCount, 0)
@@ -252,7 +264,11 @@ final class LocationAssistantTests: XCTestCase {
         // Then: Should call delegate with location
         XCTAssertEqual(manager.requestLocationCallCount, 1)
         XCTAssertNotNil(delegate.receivedLocations)
-        XCTAssertEqual(delegate.receivedLocations?.first?.coordinate.latitude, expectedLocation.coordinate.latitude, accuracy: 0.001)
+        if let latitude = delegate.receivedLocations?.first?.coordinate.latitude {
+            XCTAssertEqual(latitude, expectedLocation.coordinate.latitude, accuracy: 0.001)
+        } else {
+            XCTFail("No latitude received")
+        }
     }
 
     func testMockCLLocationManagerFailedLocationRequest() async {

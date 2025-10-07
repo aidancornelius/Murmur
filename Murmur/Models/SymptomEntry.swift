@@ -80,14 +80,26 @@ extension SymptomEntry {
 extension SymptomEntry {
     public override func validateForInsert() throws {
         try super.validateForInsert()
+        try validateRequiredFields()
         try validateSeverity()
         try validateDates()
     }
 
     public override func validateForUpdate() throws {
         try super.validateForUpdate()
+        try validateRequiredFields()
         try validateSeverity()
         try validateDates()
+    }
+
+    private func validateRequiredFields() throws {
+        guard symptomType != nil else {
+            throw NSError(
+                domain: "SymptomEntry",
+                code: 1003,
+                userInfo: [NSLocalizedDescriptionKey: "Symptom type is required"]
+            )
+        }
     }
 
     private func validateSeverity() throws {
@@ -112,22 +124,6 @@ extension SymptomEntry {
             )
         }
 
-        // Validate backdatedAt is not in future
-        if let backdated = backdatedAt, backdated > now.addingTimeInterval(60) {
-            throw NSError(
-                domain: "SymptomEntry",
-                code: 1003,
-                userInfo: [NSLocalizedDescriptionKey: "Entry date cannot be in the future"]
-            )
-        }
-
-        // Validate createdAt is before or equal to backdatedAt
-        if let created = createdAt, let backdated = backdatedAt, created > backdated {
-            throw NSError(
-                domain: "SymptomEntry",
-                code: 1004,
-                userInfo: [NSLocalizedDescriptionKey: "Entry cannot be backdated to before it was created"]
-            )
-        }
+        // Allow backdatedAt to be any time (past or future) for flexible entry logging
     }
 }

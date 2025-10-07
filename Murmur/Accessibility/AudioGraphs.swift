@@ -11,11 +11,10 @@ import SwiftUI
 import os.log
 
 // MARK: - Audio Graph Support
-/// Provides audio feedback for visualising symptom patterns
-@available(iOS 15.0, *)
+/// Provides audio feedback for visualising symptom and activity patterns
 class AudioGraphController: NSObject, ObservableObject {
     private var audioPlayer: AVAudioPlayer?
-    private let synthesizer = AVSpeechSynthesizer()
+    private let speechService = SpeechService.shared
     private let logger = Logger(subsystem: "app.murmur", category: "AudioGraphs")
 
     // Reusable audio engine components to prevent memory leaks
@@ -42,16 +41,11 @@ class AudioGraphController: NSObject, ObservableObject {
             return lhsDate < rhsDate
         }
 
-        // Announce what we're about to play
+        // Announce what we're about to play, then play tones after speech finishes
         let announcement = "Playing audio graph of \(sorted.count) entries from \(dateRange(for: sorted))"
-        speak(announcement)
-
-        // Generate audio tones
-        let workItem = DispatchWorkItem { [weak self] in
+        speechService.speak(announcement) { [weak self] in
             self?.playTones(for: sorted, duration: duration)
         }
-        scheduledTones.append(workItem)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5, execute: workItem)
     }
 
     /// Play a single data point with speech
@@ -65,7 +59,7 @@ class AudioGraphController: NSObject, ObservableObject {
         let timeText = formatter.localizedString(for: date, relativeTo: Date())
 
         let text = "\(symptom), \(severity) severity, \(timeText)"
-        speak(text)
+        speechService.speak(text)
 
         // Play corresponding tone
         playTone(frequency: frequencyForSeverity(Int(entry.severity)), duration: 0.3)
@@ -74,7 +68,7 @@ class AudioGraphController: NSObject, ObservableObject {
     /// Provide audio summary of a day
     func summariseDay(entries: [SymptomEntry], date: Date) {
         guard !entries.isEmpty else {
-            speak("No entries for this day")
+            speechService.speak("No entries for this day")
             return
         }
 
@@ -95,7 +89,87 @@ class AudioGraphController: NSObject, ObservableObject {
         summary += "Average severity: \(SeverityScale.descriptor(for: Int(averageSeverity))). "
         summary += "Maximum severity: \(SeverityScale.descriptor(for: maxSeverity))."
 
-        speak(summary)
+        speechService.speak(summary)
+    }
+
+    // MARK: - Activity Event Methods
+
+    /// Play audio tones representing activity exertion levels over time
+    func sonifyActivityPattern(activities: [ActivityEvent], exertionType: ExertionType = .physical, duration: TimeInterval = 3.0) {
+        guard !activities.isEmpty else { return }
+
+        // Cancel any existing playback
+        stopPlayback()
+
+        // Sort activities by date
+        let sorted = activities.sorted { (lhs, rhs) in
+            let lhsDate = lhs.backdatedAt ?? lhs.createdAt ?? Date()
+            let rhsDate = rhs.backdatedAt ?? rhs.createdAt ?? Date()
+            return lhsDate < rhsDate
+        }
+
+        // Announce what we're about to play
+        let typeDescription = exertionType.description
+        let announcement = "Playing audio graph of \(sorted.count) \(sorted.count == 1 ? "activity" : "activities"), \(typeDescription) exertion, from \(dateRange(for: sorted))"
+        speechService.speak(announcement) { [weak self] in
+            self?.playTonesForActivities(sorted, exertionType: exertionType, duration: duration)
+        }
+    }
+
+    /// Announce a single activity with speech
+    func announceActivity(_ activity: ActivityEvent, exertionType: ExertionType = .physical) {
+        let name = activity.name ?? "Unknown activity"
+        let exertion = exertionValue(for: activity, type: exertionType)
+        let descriptor = SeverityScale.descriptor(for: exertion)
+        let date = activity.backdatedAt ?? activity.createdAt ?? Date()
+
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .full
+        let timeText = formatter.localizedString(for: date, relativeTo: Date())
+
+        let text = "\(name), \(descriptor) \(exertionType.description) exertion, \(timeText)"
+        speechService.speak(text)
+
+        // Play corresponding tone
+        playTone(frequency: frequencyForSeverity(exertion), duration: 0.3)
+    }
+
+    /// Provide audio summary of activities for a day
+    func summariseDayActivities(activities: [ActivityEvent], date: Date, exertionType: ExertionType = .physical) {
+        guard !activities.isEmpty else {
+            speechService.speak("No activities for this day")
+            return
+        }
+
+        let exertions = activities.map { exertionValue(for: $0, type: exertionType) }
+        let averageExertion = Double(exertions.reduce(0, +)) / Double(exertions.count)
+        let maxExertion = exertions.max() ?? 0
+
+        let formatter = DateFormatter()
+        formatter.dateStyle = .full
+        let dateString = formatter.string(from: date)
+
+        var summary = "Activity summary for \(dateString). "
+        summary += "\(activities.count) \(activities.count == 1 ? "activity" : "activities"). "
+        summary += "Average \(exertionType.description) exertion: \(SeverityScale.descriptor(for: Int(averageExertion))). "
+        summary += "Maximum \(exertionType.description) exertion: \(SeverityScale.descriptor(for: maxExertion))."
+
+        speechService.speak(summary)
+    }
+
+    /// Exertion type for activities
+    enum ExertionType {
+        case physical
+        case cognitive
+        case emotional
+
+        var description: String {
+            switch self {
+            case .physical: return "physical"
+            case .cognitive: return "cognitive"
+            case .emotional: return "emotional"
+            }
+        }
     }
 
     /// Stop all audio playback and clean up resources
@@ -103,6 +177,9 @@ class AudioGraphController: NSObject, ObservableObject {
         // Cancel all scheduled tones
         scheduledTones.forEach { $0.cancel() }
         scheduledTones.removeAll()
+
+        // Stop speech
+        speechService.stopSpeaking()
 
         // Stop audio playback
         playerNode?.stop()
@@ -130,6 +207,37 @@ class AudioGraphController: NSObject, ObservableObject {
             }
             scheduledTones.append(workItem)
             DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
+        }
+    }
+
+    private func playTonesForActivities(_ activities: [ActivityEvent], exertionType: ExertionType, duration: TimeInterval) {
+        // Cancel any previously scheduled tones
+        scheduledTones.forEach { $0.cancel() }
+        scheduledTones.removeAll()
+
+        let timePerEntry = duration / Double(activities.count)
+
+        for (index, activity) in activities.enumerated() {
+            let delay = Double(index) * timePerEntry
+            let exertion = exertionValue(for: activity, type: exertionType)
+            let frequency = frequencyForSeverity(exertion)
+
+            let workItem = DispatchWorkItem { [weak self] in
+                self?.playTone(frequency: frequency, duration: timePerEntry * 0.8)
+            }
+            scheduledTones.append(workItem)
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
+        }
+    }
+
+    private func exertionValue(for activity: ActivityEvent, type: ExertionType) -> Int {
+        switch type {
+        case .physical:
+            return Int(activity.physicalExertion)
+        case .cognitive:
+            return Int(activity.cognitiveExertion)
+        case .emotional:
+            return Int(activity.emotionalLoad)
         }
     }
 
@@ -204,13 +312,6 @@ class AudioGraphController: NSObject, ObservableObject {
         }
     }
 
-    private func speak(_ text: String) {
-        let utterance = AVSpeechUtterance(string: text)
-        utterance.voice = AVSpeechSynthesisVoice(language: "en-AU")
-        utterance.rate = AVSpeechUtteranceDefaultSpeechRate
-        synthesizer.speak(utterance)
-    }
-
     private func dateRange(for entries: [SymptomEntry]) -> String {
         guard !entries.isEmpty else { return "" }
 
@@ -227,10 +328,26 @@ class AudioGraphController: NSObject, ObservableObject {
 
         return "\(formatter.string(from: firstDate)) to \(formatter.string(from: lastDate))"
     }
+
+    private func dateRange(for activities: [ActivityEvent]) -> String {
+        guard !activities.isEmpty else { return "" }
+
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+
+        if activities.count == 1 {
+            let date = activities[0].backdatedAt ?? activities[0].createdAt ?? Date()
+            return formatter.string(from: date)
+        }
+
+        let firstDate = activities.first?.backdatedAt ?? activities.first?.createdAt ?? Date()
+        let lastDate = activities.last?.backdatedAt ?? activities.last?.createdAt ?? Date()
+
+        return "\(formatter.string(from: firstDate)) to \(formatter.string(from: lastDate))"
+    }
 }
 
 // MARK: - SwiftUI Integration
-@available(iOS 15.0, *)
 struct AudioGraphButton: View {
     let entries: [SymptomEntry]
     @StateObject private var audioController = AudioGraphController()
@@ -247,7 +364,6 @@ struct AudioGraphButton: View {
     }
 }
 
-@available(iOS 15.0, *)
 struct DayAudioSummaryButton: View {
     let entries: [SymptomEntry]
     let date: Date
@@ -260,6 +376,40 @@ struct DayAudioSummaryButton: View {
             Label("Hear summary", systemImage: "speaker.wave.2")
         }
         .accessibilityLabel("Hear audio summary of this day")
+        .accessibilityInputLabels(["Hear summary", "Audio summary", "Read summary", "Play summary", "Speak summary"])
+    }
+}
+
+struct ActivityAudioGraphButton: View {
+    let activities: [ActivityEvent]
+    let exertionType: AudioGraphController.ExertionType
+    @StateObject private var audioController = AudioGraphController()
+
+    var body: some View {
+        Button(action: {
+            audioController.sonifyActivityPattern(activities: activities, exertionType: exertionType)
+        }) {
+            Label("Play audio graph", systemImage: "waveform")
+        }
+        .accessibilityLabel("Play audio representation of activity \(exertionType.description) exertion")
+        .accessibilityHint("Plays tones representing exertion levels over time")
+        .accessibilityInputLabels(["Play audio graph", "Play sound", "Audio graph", "Hear pattern", "Sonify data"])
+    }
+}
+
+struct ActivityDayAudioSummaryButton: View {
+    let activities: [ActivityEvent]
+    let date: Date
+    let exertionType: AudioGraphController.ExertionType
+    @StateObject private var audioController = AudioGraphController()
+
+    var body: some View {
+        Button(action: {
+            audioController.summariseDayActivities(activities: activities, date: date, exertionType: exertionType)
+        }) {
+            Label("Hear summary", systemImage: "speaker.wave.2")
+        }
+        .accessibilityLabel("Hear audio summary of this day's activities")
         .accessibilityInputLabels(["Hear summary", "Audio summary", "Read summary", "Play summary", "Speak summary"])
     }
 }

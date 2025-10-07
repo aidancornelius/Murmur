@@ -9,7 +9,6 @@ import AppIntents
 import SwiftUI
 import WidgetKit
 
-@available(iOS 18.0, *)
 struct LogSymptomControl: ControlWidget {
     static let kind: String = "com.murmur.LogSymptomControl"
 
@@ -27,7 +26,6 @@ struct LogSymptomControl: ControlWidget {
     }
 }
 
-@available(iOS 18.0, *)
 struct LogActivityControl: ControlWidget {
     static let kind: String = "com.murmur.LogActivityControl"
 
@@ -45,7 +43,6 @@ struct LogActivityControl: ControlWidget {
     }
 }
 
-@available(iOS 18.0, *)
 struct ControlWidgetProvider: ControlValueProvider {
     func currentValue() async throws -> String {
         ""

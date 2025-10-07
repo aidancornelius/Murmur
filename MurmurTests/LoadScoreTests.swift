@@ -94,7 +94,7 @@ final class LoadScoreTests: XCTestCase {
     func testCalculateLoadWithHighSeveritySymptoms() throws {
         let date = Date()
         let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
-        symptomType.isPositive = false
+        symptomType.category = "Physical"
 
         let symptom = SymptomEntry(context: testStack.context)
         symptom.id = UUID()
@@ -143,7 +143,7 @@ final class LoadScoreTests: XCTestCase {
     func testCalculateLoadWithPositiveSymptom() throws {
         let date = Date()
         let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
-        symptomType.isPositive = true
+        symptomType.category = "Positive wellbeing"
 
         let symptom = SymptomEntry(context: testStack.context)
         symptom.id = UUID()
@@ -184,7 +184,7 @@ final class LoadScoreTests: XCTestCase {
     func testCalculateLoadWithSymptomModifiedDecay() throws {
         let date = Date()
         let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
-        symptomType.isPositive = false
+        symptomType.category = "Physical"
 
         let highSeveritySymptom = SymptomEntry(context: testStack.context)
         highSeveritySymptom.id = UUID()

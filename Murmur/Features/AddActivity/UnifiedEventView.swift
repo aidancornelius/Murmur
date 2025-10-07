@@ -35,13 +35,14 @@ struct UnifiedEventView: View {
     @State private var mainInput: String = ""
     @State private var parsedData: ParsedActivityInput?
     @FocusState private var isInputFocused: Bool
+    @FocusState private var isNotesFocused: Bool
     @State private var hasUserEdited = false
     @State private var suggestedCalendarEvent: EKEvent?
     @State private var isFromCalendarEvent = false
 
     // Detected/Selected event type
-    @State private var eventType: DetectedEventType = .unknown
-    @State private var showEventTypePicker = false
+    @State private var eventType: DetectedEventType = .activity
+    @State private var hasManuallySelectedEventType = false
 
     // Progressive disclosure states
     @State private var showExertionCard = false
@@ -60,6 +61,7 @@ struct UnifiedEventView: View {
     @State private var timestamp = Date()
     @State private var durationMinutes: String = ""
     @State private var selectedTimeChip: TimeChip? = nil
+    @State private var selectedDurationChip: DurationChip? = nil
 
     // Sleep fields - default to yesterday 10pm to today 7am
     @State private var bedTime: Date = {
@@ -87,6 +89,7 @@ struct UnifiedEventView: View {
     // UI State
     @State private var isSaving = false
     @State private var errorMessage: String?
+    @State private var errorMessages: [String] = []
     @State private var showHints = true
     @State private var hasInteracted = false
 
@@ -126,6 +129,26 @@ struct UnifiedEventView: View {
         }
     }
 
+    enum DurationChip: String, CaseIterable {
+        case fifteen = "15 min"
+        case thirty = "30 min"
+        case fortyfive = "45 min"
+        case sixty = "1 hour"
+        case ninety = "1.5 hours"
+        case twoHours = "2 hours"
+
+        var minutes: Int {
+            switch self {
+            case .fifteen: return 15
+            case .thirty: return 30
+            case .fortyfive: return 45
+            case .sixty: return 60
+            case .ninety: return 90
+            case .twoHours: return 120
+            }
+        }
+    }
+
     var smartPlaceholder: String {
         // If we have a suggested calendar event, hint at it
         if let event = suggestedCalendarEvent, !hasUserEdited {
@@ -136,19 +159,15 @@ struct UnifiedEventView: View {
             }
         }
 
-        let calendar = Calendar.current
-        let hour = calendar.component(.hour, from: Date())
-
-        switch hour {
-        case 5..<9:
+        // Placeholder based on selected event type
+        switch eventType {
+        case .activity:
+            return "What did you do?"
+        case .sleep:
             return "How did you sleep?"
-        case 11..<14:
-            return "What did you have for lunch?"
-        case 17..<20:
-            return "What's for dinner?"
-        case 20..<24:
-            return "How was your day?"
-        default:
+        case .meal:
+            return "What did you eat?"
+        case .unknown:
             return "What happened?"
         }
     }
@@ -199,60 +218,64 @@ struct UnifiedEventView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                // Help hints for first-time users
-                if showHints && !hasSeenHints && !hasInteracted {
-                    helpHintsSection
-                }
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(spacing: 16) {
+                    // Help hints for first-time users
+                    if showHints && !hasSeenHints && !hasInteracted {
+                        helpHintsSection
+                    }
 
-                // Main smart input field
-                mainInputSection
+                    // Main smart input field
+                    mainInputSection
 
-                // Subtle contextual hints
-                if !hasInteracted && mainInput.isEmpty {
-                    contextualHintsSection
-                }
+                    // Subtle contextual hints
+                    if !hasInteracted && mainInput.isEmpty {
+                        contextualHintsSection
+                    }
 
-                // Quick time chips
-                if !mainInput.isEmpty {
-                    timeChipsSection
-                }
+                    // Calendar suggestions
+                    if showCalendarCard {
+                        calendarSuggestionsCard
+                    }
 
-                // Calendar suggestions
-                if showCalendarCard {
-                    calendarSuggestionsCard
-                }
+                    // Progressive disclosure cards based on event type
+                    if eventType == .activity && showExertionCard {
+                        activityExertionCard
+                    }
 
-                // Progressive disclosure cards based on event type
-                if eventType == .activity && showExertionCard {
-                    activityExertionCard
-                }
+                    if eventType == .sleep && showSleepQualityCard {
+                        sleepCard
+                    }
 
-                if eventType == .sleep && showSleepQualityCard {
-                    sleepCard
-                }
+                    if eventType == .meal && showMealTypeCard {
+                        mealCard
+                    }
 
-                if eventType == .meal && showMealTypeCard {
-                    mealCard
-                }
+                    // Time and duration (for activities)
+                    if showTimeCard {
+                        timeDurationCard
+                    }
 
-                // Time and duration (for activities)
-                if showTimeCard {
-                    timeDurationCard
-                }
-
-                // Notes (always available but collapsed by default)
-                if showNotesCard {
+                    // Notes (always available at the bottom)
                     notesCard
-                }
 
-                // Error message
-                if let errorMessage {
-                    errorCard(message: errorMessage)
+                    // Error message
+                    if let errorMessage {
+                        errorCard(message: errorMessage)
+                            .id("errorCard")
+                    }
+                }
+                .padding()
+            }
+            .onChange(of: errorMessage) { _, newValue in
+                // Auto-scroll to error when it appears
+                if newValue != nil {
+                    withAnimation {
+                        proxy.scrollTo("errorCard", anchor: .center)
+                    }
                 }
             }
-            .padding()
         }
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
@@ -262,33 +285,25 @@ struct UnifiedEventView: View {
                 if calendarAssistant.authorizationStatus == .fullAccess {
                     await calendarAssistant.fetchTodaysEvents()
 
-                    // Auto-suggest the most relevant calendar event
+                    // Suggest the most relevant calendar event
                     if let relevantEvent = getMostRelevantCalendarEvent() {
                         suggestedCalendarEvent = relevantEvent
-
-                        // Auto-fill the input if user hasn't started typing
-                        if !hasUserEdited && mainInput.isEmpty {
-                            withAnimation(.easeOut(duration: 0.3)) {
-                                mainInput = relevantEvent.title ?? ""
-                                isFromCalendarEvent = true
-                                populateFromCalendarEvent(relevantEvent)
-                                // Show a subtle hint that we auto-filled
-                                showCalendarCard = false  // Hide the calendar card since we already used it
-                            }
-                        }
+                        // Show the calendar card so user can tap to fill
+                        showCalendarCard = true
                     }
                 }
             }
 
-            // Focus after a slight delay to allow auto-fill animation
+            // Focus the input field
             Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(500))
+                try? await Task.sleep(for: .milliseconds(200))
                 isInputFocused = true
             }
         }
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel", role: .cancel) { dismiss() }
+                    .foregroundStyle(.primary)
             }
             ToolbarItem(placement: .confirmationAction) {
                 Button {
@@ -298,9 +313,11 @@ struct UnifiedEventView: View {
                         ProgressView()
                     } else {
                         Text("Save")
+                            .fontWeight(.semibold)
                     }
                 }
                 .disabled(isSaving || mainInput.trimmingCharacters(in: .whitespaces).isEmpty)
+                .foregroundStyle(isSaving || mainInput.trimmingCharacters(in: .whitespaces).isEmpty ? .secondary : palette.accentColor)
             }
         }
         .onChange(of: mainInput) { oldValue, newValue in
@@ -323,39 +340,21 @@ struct UnifiedEventView: View {
                 }
             }
             parseInput(newValue, isFromCalendar: isFromCalendarEvent)
+
+            // Clear error when user makes changes
+            if errorMessage != nil {
+                errorMessage = nil
+            }
         }
-        .confirmationDialog("Event type", isPresented: $showEventTypePicker) {
-            Button("Activity") {
-                eventType = .activity
-                withAnimation {
-                    showExertionCard = true
-                    showTimeCard = true
-                    showSleepQualityCard = false
-                    showMealTypeCard = false
-                }
-            }
-            Button("Sleep") {
-                eventType = .sleep
-                withAnimation {
-                    showExertionCard = false
-                    showTimeCard = false
-                    showSleepQualityCard = true
-                    showMealTypeCard = false
-                }
-            }
-            Button("Meal") {
-                eventType = .meal
-                withAnimation {
-                    showExertionCard = false
-                    showTimeCard = false
-                    showSleepQualityCard = false
-                    showMealTypeCard = true
-                }
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Choose the type of event")
-        }
+        .onChange(of: physicalExertion) { _, _ in errorMessage = nil }
+        .onChange(of: cognitiveExertion) { _, _ in errorMessage = nil }
+        .onChange(of: emotionalLoad) { _, _ in errorMessage = nil }
+        .onChange(of: sleepQuality) { _, _ in errorMessage = nil }
+        .onChange(of: bedTime) { _, _ in errorMessage = nil }
+        .onChange(of: wakeTime) { _, _ in errorMessage = nil }
+        .onChange(of: mealType) { _, _ in errorMessage = nil }
+        .onChange(of: durationMinutes) { _, _ in errorMessage = nil }
+        .onChange(of: timestamp) { _, _ in errorMessage = nil }
         .sheet(isPresented: $showingSymptomPicker) {
             NavigationStack {
                 AllSymptomsSheet(
@@ -466,24 +465,31 @@ struct UnifiedEventView: View {
     private var mainInputSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             ZStack(alignment: .topTrailing) {
-                TextField(smartPlaceholder, text: $mainInput, axis: .vertical)
-                    .font(.title3)
-                    .focused($isInputFocused)
-                    .lineLimit(1)  // Single line only
-                    .submitLabel(.done)
-                    .onSubmit {
-                        // Dismiss keyboard on return/done
-                        isInputFocused = false
-                    }
-                    .padding()
-                    .background(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(palette.color(for: "surface").opacity(0.8))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .strokeBorder(palette.accentColor.opacity(0.2), lineWidth: 1)
-                    )
+                // Main input row with event type selector inside
+                HStack(spacing: 8) {
+                    // Event type selector - always visible on the left
+                    eventTypeDropdown
+
+                    // Text input field
+                    TextField(smartPlaceholder, text: $mainInput, axis: .vertical)
+                        .font(.title3)
+                        .focused($isInputFocused)
+                        .lineLimit(1)  // Single line only
+                        .submitLabel(.done)
+                        .onSubmit {
+                            // Dismiss keyboard on return/done
+                            isInputFocused = false
+                        }
+                }
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(palette.color(for: "surface").opacity(0.8))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .strokeBorder(palette.accentColor.opacity(0.2), lineWidth: 1)
+                )
 
                 // Calendar indicator when auto-populated
                 if suggestedCalendarEvent != nil && !hasUserEdited && !mainInput.isEmpty {
@@ -514,72 +520,97 @@ struct UnifiedEventView: View {
                 }
             }
 
-            // Event type indicator/picker and controls - always show for manual fallback
-            HStack {
-                eventTypeChip(eventType)
+            // Additional controls
+            HStack(spacing: 8) {
+                // Calendar suggestions toggle - only show if there are matching events
+                if calendarAssistant.authorizationStatus == .fullAccess {
+                    let hasMatchingEvents = !calendarAssistant.recentEvents.filter { event in
+                        mainInput.trimmingCharacters(in: .whitespaces).isEmpty ||
+                        (event.title?.localizedCaseInsensitiveContains(mainInput) ?? false)
+                    }.isEmpty
 
-                Spacer()
-
-                HStack(spacing: 12) {
-                    // Calendar suggestions toggle - only show if there are matching events
-                    if calendarAssistant.authorizationStatus == .fullAccess {
-                        let hasMatchingEvents = !calendarAssistant.recentEvents.filter { event in
-                            mainInput.trimmingCharacters(in: .whitespaces).isEmpty ||
-                            (event.title?.localizedCaseInsensitiveContains(mainInput) ?? false)
-                        }.isEmpty
-
-                        if hasMatchingEvents {
-                            Button(action: { withAnimation { showCalendarCard.toggle() } }) {
+                    if hasMatchingEvents {
+                        Button(action: { withAnimation { showCalendarCard.toggle() } }) {
+                            HStack(spacing: 4) {
                                 Image(systemName: showCalendarCard ? "calendar" : "calendar.badge.plus")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                    .font(.subheadline)
+                                Text(showCalendarCard ? "Hide calendar" : "From calendar")
+                                    .font(.subheadline)
                             }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(
+                                Capsule()
+                                    .fill(palette.surfaceColor.opacity(0.8))
+                            )
+                            .foregroundStyle(.primary)
                         }
-                    }
-
-                    // Notes toggle
-                    if !mainInput.isEmpty {
-                        Button(action: { withAnimation { showNotesCard.toggle() } }) {
-                            Image(systemName: showNotesCard ? "note.text" : "note.text.badge.plus")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
+                        .buttonStyle(.plain)
                     }
                 }
+
+                Spacer()
             }
             .padding(.horizontal, 4)
         }
     }
 
     @ViewBuilder
-    private func eventTypeChip(_ type: DetectedEventType) -> some View {
-        HStack(spacing: 4) {
-            Image(systemName: iconForEventType(type))
-                .font(.caption)
-            Text(labelForEventType(type))
-                .font(.caption.weight(.medium))
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(
-            Capsule()
-                .fill(Color.accentColor.opacity(0.15))
-        )
-        .foregroundStyle(Color.accentColor)
-        .onTapGesture {
-            showEventTypePickerMenu()
-        }
-    }
-
-    @ViewBuilder
-    private var timeChipsSection: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(TimeChip.allCases, id: \.self) { chip in
-                    timeChipButton(chip)
+    private var eventTypeDropdown: some View {
+        Menu {
+            Button(action: {
+                withAnimation {
+                    eventType = .activity
+                    hasManuallySelectedEventType = true
+                    showExertionCard = true
+                    showTimeCard = true
+                    showSleepQualityCard = false
+                    showMealTypeCard = false
                 }
+                HapticFeedback.selection.trigger()
+            }) {
+                Label("Activity", systemImage: "figure.walk")
+            }
+
+            Button(action: {
+                withAnimation {
+                    eventType = .sleep
+                    hasManuallySelectedEventType = true
+                    showExertionCard = false
+                    showTimeCard = false
+                    showSleepQualityCard = true
+                    showMealTypeCard = false
+                }
+                HapticFeedback.selection.trigger()
+            }) {
+                Label("Sleep", systemImage: "moon.stars.fill")
+            }
+
+            Button(action: {
+                withAnimation {
+                    eventType = .meal
+                    hasManuallySelectedEventType = true
+                    showExertionCard = false
+                    showTimeCard = false
+                    showSleepQualityCard = false
+                    showMealTypeCard = true
+                }
+                HapticFeedback.selection.trigger()
+            }) {
+                Label("Meal", systemImage: "fork.knife")
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: iconForEventType(eventType))
+                    .font(.body)
+                    .foregroundStyle(palette.accentColor)
+
+                Image(systemName: "chevron.down")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
             }
         }
+        .buttonStyle(.plain)
     }
 
     @ViewBuilder
@@ -614,6 +645,26 @@ struct UnifiedEventView: View {
                         .fill(selectedTimeChip == chip ? palette.accentColor : palette.surfaceColor.opacity(0.8))
                 )
                 .foregroundStyle(selectedTimeChip == chip ? .white : .primary)
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private func durationChipButton(_ chip: DurationChip) -> some View {
+        Button(action: {
+            selectedDurationChip = chip
+            durationMinutes = "\(chip.minutes)"
+            HapticFeedback.selection.trigger()
+        }) {
+            Text(chip.rawValue)
+                .font(.subheadline)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(
+                    Capsule()
+                        .fill(selectedDurationChip == chip ? palette.accentColor : palette.surfaceColor.opacity(0.8))
+                )
+                .foregroundStyle(selectedDurationChip == chip ? .white : .primary)
         }
         .buttonStyle(.plain)
     }
@@ -787,7 +838,37 @@ struct UnifiedEventView: View {
             isExpanded: .constant(true)
         ) {
             VStack(spacing: 12) {
+                // Quick time chips
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("When")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(TimeChip.allCases, id: \.self) { chip in
+                                timeChipButton(chip)
+                            }
+                        }
+                    }
+                }
+
                 DatePicker("Time", selection: $timestamp)
+
+                // Duration chips
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("How long")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(DurationChip.allCases, id: \.self) { chip in
+                                durationChipButton(chip)
+                            }
+                        }
+                    }
+                }
 
                 HStack {
                     Text("Duration")
@@ -796,6 +877,15 @@ struct UnifiedEventView: View {
                         .keyboardType(.numberPad)
                         .multilineTextAlignment(.trailing)
                         .frame(width: 100)
+                        .onChange(of: durationMinutes) { oldValue, newValue in
+                            // Only clear selected chip if the value doesn't match any chip
+                            // (meaning user manually typed something different)
+                            if let selected = selectedDurationChip {
+                                if newValue != "\(selected.minutes)" {
+                                    selectedDurationChip = nil
+                                }
+                            }
+                        }
                     Text("minutes")
                         .foregroundStyle(.secondary)
                 }
@@ -805,13 +895,66 @@ struct UnifiedEventView: View {
 
     @ViewBuilder
     private var notesCard: some View {
-        DisclosureCard(
-            title: "Notes",
-            icon: "note.text",
-            isExpanded: $showNotesCard
-        ) {
-            TextField("Add any details...", text: $note, axis: .vertical)
-                .lineLimit(3...6)
+        VStack(alignment: .leading, spacing: 0) {
+            Button(action: {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    showNotesCard.toggle()
+                    HapticFeedback.light.trigger()
+
+                    // Auto-focus the notes field when expanding
+                    if showNotesCard {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            isNotesFocused = true
+                        }
+                    }
+                }
+            }) {
+                HStack {
+                    Image(systemName: "note.text")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+
+                    Text(showNotesCard ? "Notes" : "Add notes")
+                        .font(.subheadline.weight(.medium))
+
+                    Spacer()
+
+                    Image(systemName: "chevron.down")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                        .rotationEffect(.degrees(showNotesCard ? 0 : -90))
+                }
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(palette.surfaceColor.opacity(0.8))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .strokeBorder(palette.accentColor.opacity(0.1), lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
+
+            if showNotesCard {
+                TextField("Add any details...", text: $note, axis: .vertical)
+                    .focused($isNotesFocused)
+                    .lineLimit(3...6)
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(palette.surfaceColor.opacity(0.8))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .strokeBorder(palette.accentColor.opacity(0.1), lineWidth: 1)
+                    )
+                    .padding(.top, 8)
+                    .transition(.asymmetric(
+                        insertion: .push(from: .top).combined(with: .opacity),
+                        removal: .push(from: .bottom).combined(with: .opacity)
+                    ))
+            }
         }
     }
 
@@ -879,18 +1022,48 @@ struct UnifiedEventView: View {
 
     @ViewBuilder
     private func errorCard(message: String) -> some View {
-        HStack {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(.red)
-            Text(message)
-                .font(.subheadline)
-                .foregroundStyle(.red)
-            Spacer()
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.red)
+                    .font(.body)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    // Split message by newlines to support multiple errors
+                    let messages = message.components(separatedBy: "\n").filter { !$0.isEmpty }
+
+                    if messages.count == 1 {
+                        Text(message)
+                            .font(.subheadline)
+                            .foregroundStyle(.red)
+                    } else {
+                        Text("Please fix the following issues:")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.red)
+
+                        ForEach(messages, id: \.self) { msg in
+                            HStack(alignment: .top, spacing: 4) {
+                                Text("•")
+                                    .foregroundStyle(.red)
+                                Text(msg)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.red)
+                            }
+                        }
+                    }
+                }
+
+                Spacer()
+            }
         }
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(Color.red.opacity(0.1))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(Color.red.opacity(0.3), lineWidth: 1)
         )
     }
 
@@ -899,8 +1072,8 @@ struct UnifiedEventView: View {
     private func parseInput(_ input: String, isFromCalendar: Bool = false) {
         parsedData = NaturalLanguageParser.parse(input, isFromCalendar: isFromCalendar)
 
-        // Update event type
-        if parsedData?.detectedType != .unknown {
+        // Only update event type if user hasn't manually selected one
+        if !hasManuallySelectedEventType && parsedData?.detectedType != .unknown {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                 eventType = parsedData?.detectedType ?? .unknown
             }
@@ -1006,11 +1179,6 @@ struct UnifiedEventView: View {
         }
     }
 
-    private func showEventTypePickerMenu() {
-        showEventTypePicker = true
-        HapticFeedback.light.trigger()
-    }
-
     private func iconForEventType(_ type: DetectedEventType) -> String {
         switch type {
         case .activity: return "figure.walk"
@@ -1053,15 +1221,11 @@ struct UnifiedEventView: View {
                 // Save to persistent store
                 if context.hasChanges {
                     try context.save()
-                    print("✅ UnifiedEventView: Successfully saved \(eventType) event to persistent store")
-                } else {
-                    print("⚠️ UnifiedEventView: No changes to save")
                 }
 
                 HapticFeedback.success.trigger()
                 dismiss()
             } catch {
-                print("❌ UnifiedEventView: Failed to save - \(error.localizedDescription)")
                 HapticFeedback.error.trigger()
                 errorMessage = error.localizedDescription
                 context.rollback()
@@ -1076,9 +1240,16 @@ struct UnifiedEventView: View {
         activity.createdAt = Date()
         activity.backdatedAt = timestamp
 
-        let activityName = parsedData?.cleanedText.isEmpty == false
-            ? parsedData!.cleanedText
-            : mainInput.trimmingCharacters(in: .whitespaces)
+        // Ensure we have a non-empty name
+        let trimmedInput = mainInput.trimmingCharacters(in: .whitespaces)
+        let activityName: String
+        if let parsedText = parsedData?.cleanedText, !parsedText.isEmpty {
+            activityName = parsedText
+        } else if !trimmedInput.isEmpty {
+            activityName = trimmedInput
+        } else {
+            activityName = "Activity"  // Fallback - should never happen due to save button being disabled
+        }
         activity.name = activityName
 
         activity.note = note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : note
@@ -1101,7 +1272,20 @@ struct UnifiedEventView: View {
         sleep.bedTime = bedTime
         sleep.wakeTime = wakeTime
         sleep.quality = Int16(sleepQuality)
-        sleep.note = note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : note
+
+        // Combine mainInput and note field
+        let trimmedInput = mainInput.trimmingCharacters(in: .whitespaces)
+        let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if !trimmedInput.isEmpty && !trimmedNote.isEmpty {
+            sleep.note = "\(trimmedInput)\n\n\(trimmedNote)"
+        } else if !trimmedInput.isEmpty {
+            sleep.note = trimmedInput
+        } else if !trimmedNote.isEmpty {
+            sleep.note = trimmedNote
+        } else {
+            sleep.note = nil
+        }
 
         // Add HealthKit data if available - await these before saving
         if let hkSleepHours = await healthKit.recentSleepHours() {
@@ -1126,7 +1310,15 @@ struct UnifiedEventView: View {
         meal.createdAt = Date()
         meal.backdatedAt = timestamp
         meal.mealType = mealType
-        meal.mealDescription = mainInput.trimmingCharacters(in: .whitespaces)
+
+        // Ensure we have a non-empty description
+        let trimmedInput = mainInput.trimmingCharacters(in: .whitespaces)
+        if !trimmedInput.isEmpty {
+            meal.mealDescription = trimmedInput
+        } else {
+            meal.mealDescription = mealType.capitalized  // Fallback to meal type name
+        }
+
         meal.note = note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : note
     }
 

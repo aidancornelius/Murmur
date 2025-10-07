@@ -34,6 +34,7 @@ struct PDFExporter {
         let request = SymptomEntry.fetchRequest()
         request.sortDescriptors = [NSSortDescriptor(keyPath: \SymptomEntry.createdAt, ascending: false)]
         request.relationshipKeyPathsForPrefetching = ["symptomType"]
+        request.fetchBatchSize = 100
 
         return try context.fetch(request)
     }

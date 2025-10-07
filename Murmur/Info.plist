@@ -46,6 +46,10 @@
 		<string>GetDailySummaryIntent</string>
 		<string>CountSymptomsIntent</string>
 	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.aidancb.Murmur.autobackup</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

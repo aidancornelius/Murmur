@@ -38,11 +38,7 @@ final class EventStoreWrapper: CalendarStoreProtocol {
     private let store = EKEventStore()
 
     func requestAccess() async throws -> Bool {
-        if #available(iOS 17.0, *) {
-            return try await store.requestFullAccessToEvents()
-        } else {
-            return try await store.requestAccess(to: .event)
-        }
+        return try await store.requestFullAccessToEvents()
     }
 
     func events(matching predicate: NSPredicate) -> [EKEvent] {
@@ -79,11 +75,7 @@ final class CalendarAssistant: CalendarAssistantProtocol, ObservableObject {
     }
 
     private var hasCalendarAccess: Bool {
-        if #available(iOS 17.0, *) {
-            return authorizationStatus == .fullAccess || authorizationStatus == .writeOnly
-        } else {
-            return authorizationStatus == .authorized
-        }
+        return authorizationStatus == .fullAccess || authorizationStatus == .writeOnly
     }
 
     func requestAccess() async -> Bool {

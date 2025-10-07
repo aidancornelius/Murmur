@@ -137,6 +137,7 @@ struct UITestConfiguration {
         }
 
         // Handle data seeding (priority order)
+        #if targetEnvironment(simulator)
         if shouldSeedLargeDataSet {
             logger.info("Seeding large data set")
             clearAllData(context: context, preserveSymptomTypes: true)
@@ -163,6 +164,11 @@ struct UITestConfiguration {
             SampleDataSeeder.seedIfNeeded(in: context, forceSeed: true)
             SampleDataSeeder.generateRecentData(in: context)
         }
+        #else
+        // Data generation methods only available in simulator - just seed default types
+        SampleDataSeeder.seedIfNeeded(in: context, forceSeed: true)
+        logger.warning("Sample data generation is only available in simulator builds")
+        #endif
 
         logger.info("UI test configuration complete")
     }
@@ -207,7 +213,10 @@ struct UITestConfiguration {
     }
 
     private static func clearUserDefaults() {
-        let domain = Bundle.main.bundleIdentifier!
+        guard let domain = Bundle.main.bundleIdentifier else {
+            logger.error("Failed to get bundle identifier for clearing UserDefaults")
+            return
+        }
         UserDefaults.standard.removePersistentDomain(forName: domain)
         UserDefaults.standard.synchronize()
         logger.debug("Cleared UserDefaults")

@@ -141,9 +141,6 @@ struct SymptomEntryService {
         do {
             if context.hasChanges {
                 try context.save()
-                print("✅ SymptomEntryService: Successfully saved \(createdEntries.count) entries to persistent store")
-            } else {
-                print("⚠️ SymptomEntryService: No changes to save")
             }
         } catch {
             // Rollback on error
