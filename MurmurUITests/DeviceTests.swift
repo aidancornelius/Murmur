@@ -6,7 +6,6 @@
 //
 
 import XCTest
-@testable import Murmur
 
 /// Cross-device and orientation testing
 /// Note: Run these tests on different simulators to verify device-specific layouts
@@ -50,7 +49,8 @@ final class DeviceTests: XCTestCase {
                       message: "Log button should be accessible on small screen")
 
         // Check that entries are readable
-        if let firstEntry = timeline.getFirstEntry() {
+        if app.cells.count > 0 {
+            let firstEntry = app.cells.firstMatch
             XCTAssertTrue(firstEntry.isHittable,
                          "Entries should be tappable on small screen")
             XCTAssertTrue(firstEntry.frame.width > 0,
@@ -58,7 +58,7 @@ final class DeviceTests: XCTestCase {
         }
 
         // Navigate to other screens to verify layout
-        app.tabBars.buttons["Analysis"].tap()
+        app.buttons[AccessibilityIdentifiers.analysisButton].tap()
         Thread.sleep(forTimeInterval: 1.0)
 
         let analysis = AnalysisScreen(app: app)
@@ -107,7 +107,7 @@ final class DeviceTests: XCTestCase {
                       message: "UI should be accessible on large iPhone")
 
         // Check if more content is visible
-        let entries = timeline.getAllEntries()
+        let entries = app.cells
         XCTAssertGreaterThan(entries.count, 0, "Should show entries on large screen")
 
         takeScreenshot(named: "DeviceTest_iPhoneProMax_Timeline")
@@ -305,13 +305,17 @@ final class DeviceTests: XCTestCase {
                          "Button should fit within screen width")
 
         // Navigate through all screens to verify layout
-        app.tabBars.buttons["Analysis"].tap()
+        app.buttons[AccessibilityIdentifiers.analysisButton].tap()
         Thread.sleep(forTimeInterval: 1.0)
 
         let analysis = AnalysisScreen(app: app)
         XCTAssertTrue(analysis.waitForLoad(), "Analysis should load with adapted layout")
 
-        app.tabBars.buttons["Settings"].tap()
+        // Go back to timeline
+        app.navigationBars.buttons.firstMatch.tap()
+        Thread.sleep(forTimeInterval: 0.5)
+
+        app.buttons[AccessibilityIdentifiers.settingsButton].tap()
         Thread.sleep(forTimeInterval: 1.0)
 
         let settings = SettingsScreen(app: app)
@@ -329,7 +333,7 @@ final class DeviceTests: XCTestCase {
 
         app.launchWithData()
 
-        app.tabBars.buttons["Analysis"].tap()
+        app.buttons[AccessibilityIdentifiers.analysisButton].tap()
 
         let analysis = AnalysisScreen(app: app)
         XCTAssertTrue(analysis.waitForLoad(), "Analysis should load")
@@ -400,10 +404,10 @@ final class DeviceTests: XCTestCase {
                       message: "Log symptom button should be accessible")
 
         // Verify tab bar buttons are accessible
-        let analysisTab = app.tabBars.buttons["Analysis"]
+        let analysisTab = app.buttons[AccessibilityIdentifiers.analysisButton]
         assertHittable(analysisTab, message: "Analysis tab should be accessible")
 
-        let settingsTab = app.tabBars.buttons["Settings"]
+        let settingsTab = app.buttons[AccessibilityIdentifiers.settingsButton]
         assertHittable(settingsTab, message: "Settings tab should be accessible")
 
         // Navigate to add entry and verify buttons there
@@ -418,7 +422,7 @@ final class DeviceTests: XCTestCase {
         // Cancel and go to settings
         cancelButton.tap()
 
-        app.tabBars.buttons["Settings"].tap()
+        app.buttons[AccessibilityIdentifiers.settingsButton].tap()
 
         let settings = SettingsScreen(app: app)
         settings.waitForLoad()

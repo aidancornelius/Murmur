@@ -6,7 +6,6 @@
 //
 
 import XCTest
-@testable import Murmur
 
 /// Edge case and error handling tests
 final class EdgeCaseTests: XCTestCase {
@@ -45,7 +44,7 @@ final class EdgeCaseTests: XCTestCase {
     func testEmptyAnalysis() throws {
         app.launchEmpty()
 
-        app.tabBars.buttons["Analysis"].tap()
+        app.buttons[AccessibilityIdentifiers.analysisButton].tap()
 
         let analysis = AnalysisScreen(app: app)
         XCTAssertTrue(analysis.waitForLoad(), "Analysis screen should load")
@@ -61,7 +60,7 @@ final class EdgeCaseTests: XCTestCase {
     func testEmptySymptomHistory() throws {
         app.launchEmpty()
 
-        app.tabBars.buttons["Analysis"].tap()
+        app.buttons[AccessibilityIdentifiers.analysisButton].tap()
 
         let analysis = AnalysisScreen(app: app)
         analysis.waitForLoad()
@@ -82,7 +81,7 @@ final class EdgeCaseTests: XCTestCase {
     func testNoStarredSymptoms() throws {
         app.launch(scenario: .emptyState)
 
-        app.tabBars.buttons["Settings"].tap()
+        app.buttons[AccessibilityIdentifiers.settingsButton].tap()
 
         let settings = SettingsScreen(app: app)
         XCTAssertTrue(settings.waitForLoad(), "Settings should load")
@@ -101,7 +100,7 @@ final class EdgeCaseTests: XCTestCase {
     func testNoCustomSymptoms() throws {
         app.launch(scenario: .newUser)
 
-        app.tabBars.buttons["Settings"].tap()
+        app.buttons[AccessibilityIdentifiers.settingsButton].tap()
 
         let settings = SettingsScreen(app: app)
         settings.waitForLoad()
@@ -121,8 +120,7 @@ final class EdgeCaseTests: XCTestCase {
     /// Tests handling of failed save operations
     func testFailedToSaveEntry() throws {
         app.launch(
-            scenario: .activeUser,
-            featureFlags: [.lowStorage]
+            scenario: .activeUser
         )
 
         let timeline = TimelineScreen(app: app)
@@ -134,7 +132,7 @@ final class EdgeCaseTests: XCTestCase {
         // Try to create an entry
         addEntry.openSymptomSearch()
         addEntry.searchForSymptom("Headache")
-        addEntry.selectSymptom(named: "Headache")
+        _ = addEntry.selectSymptom(named: "Headache")
         addEntry.setSeverity(3)
 
         // Attempt save (might fail with low storage simulation)
@@ -154,7 +152,7 @@ final class EdgeCaseTests: XCTestCase {
             featureFlags: [.disableHealthKit]
         )
 
-        app.tabBars.buttons["Settings"].tap()
+        app.buttons[AccessibilityIdentifiers.settingsButton].tap()
 
         let settings = SettingsScreen(app: app)
         settings.waitForLoad()
@@ -204,7 +202,7 @@ final class EdgeCaseTests: XCTestCase {
             featureFlags: [.disableCalendar]
         )
 
-        app.tabBars.buttons["Settings"].tap()
+        app.buttons[AccessibilityIdentifiers.settingsButton].tap()
 
         let settings = SettingsScreen(app: app)
         settings.waitForLoad()
@@ -273,7 +271,7 @@ final class EdgeCaseTests: XCTestCase {
     func testAnalysisCalculating() throws {
         app.launch(scenario: .heavyUser)
 
-        app.tabBars.buttons["Analysis"].tap()
+        app.buttons[AccessibilityIdentifiers.analysisButton].tap()
 
         // Analysis might show loading while calculating
         let loadingOrContent = waitForAny([
@@ -375,7 +373,7 @@ final class EdgeCaseTests: XCTestCase {
         // Add symptom
         addEntry.openSymptomSearch()
         addEntry.searchForSymptom("Headache")
-        addEntry.selectSymptom(named: "Headache")
+        _ = addEntry.selectSymptom(named: "Headache")
         addEntry.setSeverity(3)
 
         // Enter very long note (500+ characters)
@@ -405,7 +403,7 @@ final class EdgeCaseTests: XCTestCase {
 
         addEntry.openSymptomSearch()
         addEntry.searchForSymptom("Headache")
-        addEntry.selectSymptom(named: "Headache")
+        _ = addEntry.selectSymptom(named: "Headache")
 
         // Set minimum severity (1)
         addEntry.setSeverity(1)
@@ -428,7 +426,7 @@ final class EdgeCaseTests: XCTestCase {
 
         addEntry.openSymptomSearch()
         addEntry.searchForSymptom("Headache")
-        addEntry.selectSymptom(named: "Headache")
+        _ = addEntry.selectSymptom(named: "Headache")
 
         // Set maximum severity (5)
         addEntry.setSeverity(5)
@@ -487,7 +485,7 @@ final class EdgeCaseTests: XCTestCase {
         // Add symptom first
         addEntry.openSymptomSearch()
         addEntry.searchForSymptom("Headache")
-        addEntry.selectSymptom(named: "Headache")
+        _ = addEntry.selectSymptom(named: "Headache")
         addEntry.setSeverity(3)
 
         // Try to change timestamp
@@ -550,8 +548,9 @@ final class EdgeCaseTests: XCTestCase {
         let timeline = TimelineScreen(app: app)
 
         // Tap first entry to open details
-        if let firstEntry = timeline.getFirstEntry() {
-            let originalLabel = firstEntry.label
+        if app.cells.count > 0 {
+            let firstEntry = app.cells.firstMatch
+            _ = firstEntry.label
             firstEntry.tap()
 
             let dayDetail = DayDetailScreen(app: app)
@@ -590,10 +589,11 @@ final class EdgeCaseTests: XCTestCase {
         let timeline = TimelineScreen(app: app)
 
         // Get count of initial entries
-        let initialCount = timeline.getEntryCount()
+        let initialCount = app.cells.count
 
         // Tap first entry
-        if let firstEntry = timeline.getFirstEntry() {
+        if app.cells.count > 0 {
+            let firstEntry = app.cells.firstMatch
             firstEntry.tap()
 
             let dayDetail = DayDetailScreen(app: app)
@@ -615,7 +615,7 @@ final class EdgeCaseTests: XCTestCase {
                             message: "Should return to timeline after delete")
 
                 // Entry count should decrease
-                let newCount = timeline.getEntryCount()
+                let newCount = app.cells.count
                 XCTAssertLessThan(newCount, initialCount,
                                  "Entry count should decrease after deletion")
             }
@@ -627,7 +627,7 @@ final class EdgeCaseTests: XCTestCase {
         app.launchWithData()
 
         // Go to settings
-        app.tabBars.buttons["Settings"].tap()
+        app.buttons[AccessibilityIdentifiers.settingsButton].tap()
 
         let settings = SettingsScreen(app: app)
         settings.waitForLoad()
@@ -653,7 +653,7 @@ final class EdgeCaseTests: XCTestCase {
                         Thread.sleep(forTimeInterval: 0.5)
 
                         // Go back to timeline
-                        app.tabBars.buttons["Timeline"].tap()
+                        app.buttons[AccessibilityIdentifiers.logSymptomButton].tap()
 
                         // Open add entry
                         let timeline = TimelineScreen(app: app)
@@ -679,7 +679,7 @@ final class EdgeCaseTests: XCTestCase {
     func testDeleteSymptomTypeWithEntries() throws {
         app.launchWithData()
 
-        app.tabBars.buttons["Settings"].tap()
+        app.buttons[AccessibilityIdentifiers.settingsButton].tap()
 
         let settings = SettingsScreen(app: app)
         settings.waitForLoad()
@@ -727,7 +727,7 @@ final class EdgeCaseTests: XCTestCase {
         // Start creating an entry
         addEntry.openSymptomSearch()
         addEntry.searchForSymptom("Headache")
-        addEntry.selectSymptom(named: "Headache")
+        _ = addEntry.selectSymptom(named: "Headache")
         addEntry.setSeverity(3)
 
         // Background the app

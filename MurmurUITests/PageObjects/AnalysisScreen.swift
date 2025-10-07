@@ -6,7 +6,6 @@
 //
 
 import XCTest
-@testable import Murmur
 
 /// Page Object representing the analysis screen
 struct AnalysisScreen {

@@ -25,6 +25,7 @@ protocol CalendarAssistantProtocol: AnyObject {
 }
 
 /// Protocol abstraction for EKEventStore to enable testing with mock implementations
+@MainActor
 protocol CalendarStoreProtocol {
     func requestAccess() async throws -> Bool
     func events(matching predicate: NSPredicate) -> [EKEvent]

@@ -9,7 +9,6 @@
 //
 
 import XCTest
-@testable import Murmur
 
 final class ExampleUserJourneyTest: XCTestCase {
     var app: XCUIApplication!
@@ -224,7 +223,7 @@ final class ExampleUserJourneyTest: XCTestCase {
         let timeline = TimelineScreen(app: app)
 
         // Retry an action that might be flaky
-        let success = retry(attempts: 3, delay: 0.5) {
+        let success = retry(3, delay: 0.5) {
             timeline.logSymptomButton.exists && timeline.logSymptomButton.isHittable
         }
 

@@ -6,7 +6,6 @@
 //
 
 import XCTest
-@testable import Murmur
 
 /// Performance and responsiveness tests
 /// Tests app performance with various data sizes and interaction patterns
@@ -81,7 +80,8 @@ final class PerformanceTests: XCTestCase {
         assertExists(timeline.logSymptomButton, message: "Timeline should load")
 
         // Find first entry
-        if let firstEntry = timeline.getFirstEntry() {
+        if app.cells.count > 0 {
+            let firstEntry = app.cells.firstMatch
             // Measure time to load day detail
             measure(metrics: [XCTClockMetric()]) {
                 firstEntry.tap()
@@ -110,13 +110,19 @@ final class PerformanceTests: XCTestCase {
 
         // Measure tab switching performance
         measure(metrics: [XCTClockMetric()]) {
-            app.tabBars.buttons["Analysis"].tap()
+            app.buttons[AccessibilityIdentifiers.analysisButton].tap()
             Thread.sleep(forTimeInterval: 0.3)
 
-            app.tabBars.buttons["Settings"].tap()
+            app.navigationBars.buttons.firstMatch.tap()
             Thread.sleep(forTimeInterval: 0.3)
 
-            app.tabBars.buttons["Timeline"].tap()
+            app.buttons[AccessibilityIdentifiers.settingsButton].tap()
+            Thread.sleep(forTimeInterval: 0.3)
+
+            app.navigationBars.buttons.firstMatch.tap()
+            Thread.sleep(forTimeInterval: 0.3)
+
+            app.buttons[AccessibilityIdentifiers.logSymptomButton].tap()
             Thread.sleep(forTimeInterval: 0.3)
         }
     }
@@ -125,7 +131,7 @@ final class PerformanceTests: XCTestCase {
     func testChartAnimationComplete() throws {
         app.launchWithData()
 
-        app.tabBars.buttons["Analysis"].tap()
+        app.buttons[AccessibilityIdentifiers.analysisButton].tap()
 
         let analysis = AnalysisScreen(app: app)
         XCTAssertTrue(analysis.waitForLoad(), "Analysis should load")
@@ -217,7 +223,7 @@ final class PerformanceTests: XCTestCase {
     func testAnalysisWithNinetyDays() throws {
         app.launch(scenario: .heavyUser)
 
-        app.tabBars.buttons["Analysis"].tap()
+        app.buttons[AccessibilityIdentifiers.analysisButton].tap()
 
         let analysis = AnalysisScreen(app: app)
 
@@ -246,7 +252,7 @@ final class PerformanceTests: XCTestCase {
     func testCalendarWithFullYear() throws {
         app.launch(scenario: .heavyUser)
 
-        app.tabBars.buttons["Analysis"].tap()
+        app.buttons[AccessibilityIdentifiers.analysisButton].tap()
 
         let analysis = AnalysisScreen(app: app)
         XCTAssertTrue(analysis.waitForLoad(), "Analysis should load")
@@ -275,7 +281,7 @@ final class PerformanceTests: XCTestCase {
     func testSymptomHistoryWithThousandEntries() throws {
         app.launchWithLargeData()
 
-        app.tabBars.buttons["Analysis"].tap()
+        app.buttons[AccessibilityIdentifiers.analysisButton].tap()
 
         let analysis = AnalysisScreen(app: app)
         XCTAssertTrue(analysis.waitForLoad(), "Analysis should load")
@@ -325,19 +331,22 @@ final class PerformanceTests: XCTestCase {
         assertExists(timeline.logSymptomButton, timeout: 15, message: "Timeline should load")
 
         // Navigate through all screens to verify no memory issues
-        app.tabBars.buttons["Analysis"].tap()
+        app.buttons[AccessibilityIdentifiers.analysisButton].tap()
         Thread.sleep(forTimeInterval: 2.0)
 
         let analysis = AnalysisScreen(app: app)
         XCTAssertTrue(analysis.waitForLoad(), "Analysis should load")
 
-        app.tabBars.buttons["Settings"].tap()
+        app.navigationBars.buttons.firstMatch.tap()
+        Thread.sleep(forTimeInterval: 0.5)
+
+        app.buttons[AccessibilityIdentifiers.settingsButton].tap()
         Thread.sleep(forTimeInterval: 1.0)
 
         let settings = SettingsScreen(app: app)
         XCTAssertTrue(settings.waitForLoad(), "Settings should load")
 
-        app.tabBars.buttons["Timeline"].tap()
+        app.buttons[AccessibilityIdentifiers.logSymptomButton].tap()
         Thread.sleep(forTimeInterval: 1.0)
 
         // Should still be responsive
@@ -354,13 +363,16 @@ final class PerformanceTests: XCTestCase {
 
         // Perform rapid tab switches
         for _ in 0..<5 {
-            app.tabBars.buttons["Analysis"].tap()
+            app.buttons[AccessibilityIdentifiers.analysisButton].tap()
             Thread.sleep(forTimeInterval: 0.1)
 
-            app.tabBars.buttons["Settings"].tap()
+            app.navigationBars.buttons.firstMatch.tap()
             Thread.sleep(forTimeInterval: 0.1)
 
-            app.tabBars.buttons["Timeline"].tap()
+            app.buttons[AccessibilityIdentifiers.settingsButton].tap()
+            Thread.sleep(forTimeInterval: 0.1)
+
+            app.navigationBars.buttons.firstMatch.tap()
             Thread.sleep(forTimeInterval: 0.1)
         }
 

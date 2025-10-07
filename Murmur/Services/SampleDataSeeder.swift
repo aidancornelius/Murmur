@@ -526,7 +526,7 @@ struct SampleDataSeeder {
             let calendar = Calendar.current
             let entryCount = Int.random(in: 10...20)
 
-            for index in 0..<entryCount {
+            for _ in 0..<entryCount {
                 let entry = SymptomEntry(context: context)
                 entry.id = UUID()
 

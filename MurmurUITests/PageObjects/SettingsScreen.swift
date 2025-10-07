@@ -6,7 +6,6 @@
 //
 
 import XCTest
-@testable import Murmur
 
 /// Page Object representing the settings screen
 struct SettingsScreen {
@@ -133,7 +132,8 @@ struct SettingsScreen {
 
     /// Delete a symptom type by name
     func deleteSymptomType(named name: String, timeout: TimeInterval = 3) -> Bool {
-        let symptomCell = app.staticTexts[name]
+        // Find the cell containing the symptom name
+        let symptomCell = app.cells.containing(NSPredicate(format: "label CONTAINS[c] %@", name)).firstMatch
         guard symptomCell.waitForExistence(timeout: timeout) else {
             return false
         }
@@ -158,6 +158,9 @@ struct SettingsScreen {
 
     /// Check if symptom type exists
     func hasSymptomType(named name: String) -> Bool {
-        app.staticTexts[name].exists
+        // Check for the symptom name in static texts or as accessibility labels on buttons/links
+        app.staticTexts[name].exists ||
+        app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", name)).firstMatch.exists ||
+        app.otherElements.matching(NSPredicate(format: "label CONTAINS[c] %@", name)).firstMatch.exists
     }
 }

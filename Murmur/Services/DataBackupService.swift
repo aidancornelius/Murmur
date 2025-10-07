@@ -295,6 +295,7 @@ final class DataBackupService {
 
     private func restoreToDatabase(backupData: BackupData) async throws {
         let context = stack.newBackgroundContext()
+        let viewContext = stack.container.viewContext
         var enabledReminderIDs: [UUID] = []
 
         try await context.perform {
@@ -319,7 +320,7 @@ final class DataBackupService {
             let changes = [NSDeletedObjectsKey: deletedObjectIDs]
             NSManagedObjectContext.mergeChanges(
                 fromRemoteContextSave: changes,
-                into: [self.stack.container.viewContext]
+                into: [viewContext]
             )
 
             // Create symptom types

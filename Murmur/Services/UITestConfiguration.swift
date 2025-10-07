@@ -113,6 +113,12 @@ struct UITestConfiguration {
 
         logger.info("Configuring app for UI testing")
 
+        // Always skip onboarding in UI test mode unless explicitly told to show it
+        if !shouldShowOnboarding {
+            logger.info("Skipping onboarding for UI tests")
+            UserDefaults.standard.set(true, forKey: UserDefaultsKeys.hasCompletedOnboarding)
+        }
+
         // Handle fresh install (clears everything)
         if shouldSimulateFreshInstall {
             logger.info("Simulating fresh install")
@@ -128,17 +134,6 @@ struct UITestConfiguration {
             clearAllData(context: context, preserveSymptomTypes: true)
             UserDefaults.standard.set(true, forKey: UserDefaultsKeys.hasCompletedOnboarding)
             return
-        }
-
-        // Handle onboarding flags
-        if shouldSkipOnboarding {
-            logger.info("Skipping onboarding")
-            UserDefaults.standard.set(true, forKey: UserDefaultsKeys.hasCompletedOnboarding)
-        }
-
-        if shouldShowOnboarding {
-            logger.info("Forcing onboarding display")
-            UserDefaults.standard.set(false, forKey: UserDefaultsKeys.hasCompletedOnboarding)
         }
 
         // Handle data seeding (priority order)

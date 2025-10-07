@@ -180,9 +180,13 @@ struct SymptomHistoryView: View {
 
     private func loadMoreEntries(for symptomType: SymptomType) {
         loadingMore = true
+        let symptomTypeID = symptomType.objectID
 
         Task {
-            let newEntries = await context.perform {
+            let newEntries: [SymptomEntry] = await context.perform {
+                guard let symptomType = try? context.existingObject(with: symptomTypeID) as? SymptomType else {
+                    return []
+                }
                 let request = SymptomEntry.fetchRequest()
                 request.predicate = NSPredicate(format: "symptomType == %@", symptomType)
                 request.sortDescriptors = [

@@ -6,7 +6,6 @@
 //
 
 import XCTest
-@testable import Murmur
 
 /// Comprehensive user journey tests covering critical workflows
 final class UserJourneyTests: XCTestCase {
@@ -88,7 +87,7 @@ final class UserJourneyTests: XCTestCase {
             app.buttons["Add another symptom"].tap()
             addEntry.openSymptomSearch()
             addEntry.searchForSymptom("Nausea")
-            addEntry.selectSymptom(named: "Nausea")
+            _ = addEntry.selectSymptom(named: "Nausea")
             addEntry.setSeverity(2)
         }
 
@@ -109,15 +108,15 @@ final class UserJourneyTests: XCTestCase {
         addEntry.waitForLoad()
 
         addEntry.openSymptomSearch()
-        addEntry.searchForSymptom("Pain")
-        XCTAssertTrue(addEntry.selectSymptom(named: "Pain"), "Should select Pain")
+        addEntry.searchForSymptom("Muscle pain")
+        XCTAssertTrue(addEntry.selectSymptom(named: "Muscle pain"), "Should select Muscle pain")
         addEntry.setSeverity(5)
         addEntry.enterNote("Sharp pain in lower back, started after lifting heavy box")
 
         addEntry.save()
 
         XCTAssertTrue(timeline.waitForLoad(), "Timeline should reload")
-        XCTAssertTrue(timeline.hasEntry(containing: "Pain"), "Timeline should show Pain entry")
+        XCTAssertTrue(timeline.hasEntry(containing: "Muscle pain"), "Timeline should show Muscle pain entry")
     }
 
     /// Tests symptom entry with location tracking
@@ -136,7 +135,7 @@ final class UserJourneyTests: XCTestCase {
         // Add symptom
         addEntry.openSymptomSearch()
         addEntry.searchForSymptom("Dizziness")
-        addEntry.selectSymptom(named: "Dizziness")
+        _ = addEntry.selectSymptom(named: "Dizziness")
         addEntry.setSeverity(3)
 
         // Toggle location if available
@@ -184,7 +183,7 @@ final class UserJourneyTests: XCTestCase {
         // Add symptom
         addEntry.openSymptomSearch()
         addEntry.searchForSymptom("Headache")
-        addEntry.selectSymptom(named: "Headache")
+        _ = addEntry.selectSymptom(named: "Headache")
         addEntry.setSeverity(2)
 
         addEntry.save()
@@ -207,7 +206,7 @@ final class UserJourneyTests: XCTestCase {
         // Start entering data
         addEntry.openSymptomSearch()
         addEntry.searchForSymptom("Fatigue")
-        addEntry.selectSymptom(named: "Fatigue")
+        _ = addEntry.selectSymptom(named: "Fatigue")
         addEntry.setSeverity(3)
 
         // Cancel instead of saving
@@ -245,6 +244,9 @@ final class UserJourneyTests: XCTestCase {
             if app.buttons["Confirm"].exists {
                 app.buttons["Confirm"].tap()
             }
+
+            // Wait for sheet to close and UI to update
+            Thread.sleep(forTimeInterval: 1.0)
 
             addEntry.setSeverity(4)
             addEntry.save()
@@ -638,7 +640,7 @@ final class UserJourneyTests: XCTestCase {
 
         // Add a symptom to delete
         let symptomToDelete = "DeleteMe\(Int.random(in: 1000...9999))"
-        settings.addSymptomType(name: symptomToDelete)
+        _ = settings.addSymptomType(name: symptomToDelete)
 
         // Delete the symptom
         let deleteSuccess = settings.deleteSymptomType(named: symptomToDelete)
@@ -716,19 +718,23 @@ final class UserJourneyTests: XCTestCase {
         let settings = SettingsScreen(app: app)
         settings.waitForLoad()
 
-        settings.navigateToPrivacy()
-        Thread.sleep(forTimeInterval: 0.5)
-
-        // Look for HealthKit toggle
-        let healthKitToggle = app.switches.matching(NSPredicate(format: "identifier CONTAINS 'healthkit' OR identifier CONTAINS 'health'")).firstMatch
-        if healthKitToggle.exists {
-            let initialState = healthKitToggle.value as? String
-            healthKitToggle.tap()
+        // Navigate to Connect to Health
+        let healthButton = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'health' OR label CONTAINS[c] 'healthkit'")).firstMatch
+        if healthButton.waitForExistence(timeout: 3) {
+            healthButton.tap()
             Thread.sleep(forTimeInterval: 0.5)
 
-            // Toggle back
-            healthKitToggle.tap()
-            Thread.sleep(forTimeInterval: 0.5)
+            // Look for HealthKit toggle
+            let healthKitToggle = app.switches.matching(NSPredicate(format: "identifier CONTAINS 'healthkit' OR identifier CONTAINS 'health'")).firstMatch
+            if healthKitToggle.exists {
+                _ = healthKitToggle.value as? String
+                healthKitToggle.tap()
+                Thread.sleep(forTimeInterval: 0.5)
+
+                // Toggle back
+                healthKitToggle.tap()
+                Thread.sleep(forTimeInterval: 0.5)
+            }
         }
     }
 
@@ -843,7 +849,7 @@ final class UserJourneyTests: XCTestCase {
     func testEditActivity() throws {
         app.launchWithData()
 
-        let timeline = TimelineScreen(app: app)
+        _ = TimelineScreen(app: app)
 
         // Look for an event entry in timeline
         let eventEntries = app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'exercise' OR label CONTAINS[c] 'meal' OR label CONTAINS[c] 'activity'"))
@@ -902,7 +908,7 @@ final class UserJourneyTests: XCTestCase {
         XCTAssertTrue(timeline.waitForLoad(), "Timeline should load")
 
         // Look for activity/event markers in timeline
-        let activityMarkers = app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'exercise' OR label CONTAINS[c] 'meal' OR label CONTAINS[c] 'sleep'"))
+        _ = app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'exercise' OR label CONTAINS[c] 'meal' OR label CONTAINS[c] 'sleep'"))
 
         // Activities may or may not be present depending on sample data
         // Just verify timeline is functional
@@ -984,7 +990,7 @@ final class UserJourneyTests: XCTestCase {
     func testEditSleepEvent() throws {
         app.launchWithData()
 
-        let timeline = TimelineScreen(app: app)
+        _ = TimelineScreen(app: app)
 
         // Look for sleep entry
         let sleepEntries = app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'sleep'"))

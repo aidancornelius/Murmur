@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import Murmur
+import CoreGraphics
 
 final class MurmurUITests: XCTestCase {
     var app: XCUIApplication!
@@ -82,8 +82,16 @@ final class MurmurUITests: XCTestCase {
             healthApp.buttons["Allow All Data"]
         ]
 
+        var tappedTurnOnAll = false
         for candidate in turnOnAllCandidates where candidate.waitForExistence(timeout: 1.5) {
             candidate.tap()
+            tappedTurnOnAll = true
+            break
+        }
+
+        // Wait for next screen if we tapped "Turn On All"
+        if tappedTurnOnAll {
+            Thread.sleep(forTimeInterval: 0.5)
         }
 
         let allowCandidates: [XCUIElement] = [
@@ -95,10 +103,13 @@ final class MurmurUITests: XCTestCase {
             healthApp.buttons["Done"]
         ]
 
-        for candidate in allowCandidates where candidate.waitForExistence(timeout: 1.5) {
+        for candidate in allowCandidates where candidate.waitForExistence(timeout: 2.0) {
             candidate.tap()
+            break
         }
 
+        // Final check for Done button
+        Thread.sleep(forTimeInterval: 0.5)
         let doneButton = healthApp.buttons["Done"]
         if doneButton.waitForExistence(timeout: 1.5) {
             doneButton.tap()
@@ -257,7 +268,7 @@ final class MurmurUITests: XCTestCase {
         // Navigate to settings
         let settingsButton = require(app.navigationBars.buttons.matching(NSPredicate(format: "identifier CONTAINS[c] 'gear' OR label CONTAINS[c] 'settings'")).firstMatch,
                                      timeout: 10)
-        settingsButton.tap()
+        tap(element: settingsButton)
 
         let trackedSymptomsButton = require(app.buttons["tracked-symptoms-button"], timeout: 10)
         trackedSymptomsButton.tap()
@@ -393,11 +404,11 @@ final class MurmurUITests: XCTestCase {
     func testPositiveSymptomAnalysis() throws {
         // This test verifies analysis views handle positive symptoms correctly
         // Navigate to analysis
-        let analysisButton = require(app.navigationBars.buttons["Analysis"], timeout: 5)
+        let analysisButton = require(app.buttons[AccessibilityIdentifiers.analysisButton], timeout: 5)
         analysisButton.tap()
 
         // Check that trends view loads (it should handle positive symptoms)
-        let trendsSegment = require(app.buttons["Trends"], timeout: 5)
+        _ = require(app.buttons["Trends"], timeout: 5)
 
         // If there's data, verify it shows "Improving" or "Worsening" not "Increasing/Decreasing"
         let improvingLabel = app.staticTexts.containing(NSPredicate(format: "label CONTAINS 'Improving'")).firstMatch
@@ -434,10 +445,12 @@ final class MurmurUITests: XCTestCase {
 
         // Wait for app to fully launch and load data
         _ = require(app.buttons.matching(identifier: "log-symptom-button").firstMatch, timeout: timeout(10))
+        NSLog("✅ Timeline ready, starting screenshot capture")
 
         // Screenshot 1: Main timeline view
         snapshot("01Timeline")
         capturedScreenshots.insert("01Timeline")
+        NSLog("📸 Captured 01Timeline")
 
         // Screenshot 2: Day detail view
         let firstCell = app.cells.firstMatch
@@ -448,6 +461,7 @@ final class MurmurUITests: XCTestCase {
                 snapshot("02DayDetail")
                 capturedScreenshots.insert("02DayDetail")
                 detailBackButton.tap()
+                NSLog("📸 Captured 02DayDetail")
             }
         }
 
@@ -461,11 +475,12 @@ final class MurmurUITests: XCTestCase {
                 snapshot("03AddSymptom")
                 capturedScreenshots.insert("03AddSymptom")
                 cancelButton.tap()
+                NSLog("📸 Captured 03AddSymptom")
             }
         }
 
         // Screenshot 4: Analysis view
-        let analysisButton = app.navigationBars.buttons["Analysis"]
+        let analysisButton = app.buttons[AccessibilityIdentifiers.analysisButton]
         if analysisButton.waitForExistence(timeout: timeout(5)) {
             analysisButton.tap()
 
@@ -474,6 +489,7 @@ final class MurmurUITests: XCTestCase {
             _ = trendsButton.waitForExistence(timeout: timeout(5))
             snapshot("04Analysis")
             capturedScreenshots.insert("04Analysis")
+            NSLog("📸 Captured 04Analysis")
 
             // Screenshot 5: Calendar heat map in analysis
             // Open the analysis view selector menu
@@ -491,6 +507,7 @@ final class MurmurUITests: XCTestCase {
                     if monthLabel.waitForExistence(timeout: timeout(5)) {
                         snapshot("05CalendarHeatMap")
                         capturedScreenshots.insert("05CalendarHeatMap")
+                        NSLog("📸 Captured 05CalendarHeatMap")
                     }
                 }
             }
@@ -502,27 +519,45 @@ final class MurmurUITests: XCTestCase {
         }
 
         // Screenshot 6: Settings
-        let settingsButton = app.navigationBars.buttons.matching(identifier: "gearshape").firstMatch
-        if settingsButton.waitForExistence(timeout: timeout(5)) {
-            settingsButton.tap()
+        guard let settingsButton = findSettingsButton(timeout: timeout(6)) else {
+            XCTFail("Settings button not available for screenshot capture")
+            return
+        }
+        NSLog("➡️ Tapping Settings from timeline")
+        tap(element: settingsButton)
 
-            let loadCapacityButton = app.buttons["load-capacity-button"]
-            if loadCapacityButton.waitForExistence(timeout: timeout(5)) {
-                snapshot("06Settings")
-                capturedScreenshots.insert("06Settings")
+        let settingsNavBar = app.navigationBars["Settings"]
+        guard settingsNavBar.waitForExistence(timeout: timeout(4)) else {
+            XCTFail("Settings screen did not appear")
+            return
+        }
+        NSLog("✅ Settings screen loaded")
 
-                // Screenshot 7: Load capacity settings
-                loadCapacityButton.tap()
-                if app.tables.firstMatch.waitForExistence(timeout: timeout(3)) {
-                    snapshot("07LoadCapacitySettings")
-                    capturedScreenshots.insert("07LoadCapacitySettings")
-                }
+        guard let loadCapacityButton = findLoadCapacityButton(timeout: timeout(6)) else {
+            XCTFail("Load capacity button not available for screenshot capture")
+            return
+        }
+        snapshot("06Settings")
+        capturedScreenshots.insert("06Settings")
+        NSLog("📸 Captured 06Settings")
 
-                let loadBackButton = app.navigationBars.buttons.element(boundBy: 0)
-                if loadBackButton.waitForExistence(timeout: timeout(3)) {
-                    loadBackButton.tap()
-                }
-            }
+        // Screenshot 7: Load capacity settings
+        NSLog("➡️ Navigating to Load Capacity settings")
+        tap(element: loadCapacityButton)
+
+        let loadCapacityNavBar = app.navigationBars["Load capacity"]
+        guard loadCapacityNavBar.waitForExistence(timeout: timeout(4)) else {
+            XCTFail("Load capacity settings screen did not appear")
+            return
+        }
+        NSLog("✅ Load capacity screen loaded")
+        snapshot("07LoadCapacitySettings")
+        capturedScreenshots.insert("07LoadCapacitySettings")
+        NSLog("📸 Captured 07LoadCapacitySettings")
+
+        let loadBackButton = app.navigationBars.buttons.element(boundBy: 0)
+        if loadBackButton.waitForExistence(timeout: timeout(3)) {
+            loadBackButton.tap()
         }
 
         // Verify all expected screenshots were captured
@@ -530,5 +565,57 @@ final class MurmurUITests: XCTestCase {
         XCTAssertTrue(missingScreenshots.isEmpty, "Missing screenshots: \(missingScreenshots.sorted().joined(separator: ", "))")
 
         NSLog("✓ Successfully captured all \(capturedScreenshots.count) screenshots: \(capturedScreenshots.sorted().joined(separator: ", "))")
+    }
+
+    private func findSettingsButton(timeout: TimeInterval) -> XCUIElement? {
+        let identifierMatch = app.buttons[AccessibilityIdentifiers.settingsButton]
+        if identifierMatch.waitForExistence(timeout: timeout) {
+            return identifierMatch
+        }
+
+        let anyMatch = app.descendants(matching: .any).matching(identifier: AccessibilityIdentifiers.settingsButton).firstMatch
+        if anyMatch.waitForExistence(timeout: 1) {
+            return anyMatch
+        }
+
+        let fallbackPredicate = NSPredicate(format: "identifier CONTAINS[c] 'gear' OR label CONTAINS[c] 'settings'")
+        let fallback = app.navigationBars.buttons.matching(fallbackPredicate).firstMatch
+        if fallback.waitForExistence(timeout: 1) {
+            return fallback
+        }
+
+        NSLog("⚠️ Settings button not found. Debug tree: \(app.debugDescription)")
+        return nil
+    }
+
+    private func findLoadCapacityButton(timeout: TimeInterval) -> XCUIElement? {
+        let button = app.buttons[AccessibilityIdentifiers.loadCapacityButton]
+        if button.waitForExistence(timeout: timeout) {
+            return button
+        }
+
+        let anyMatch = app.descendants(matching: .any).matching(identifier: AccessibilityIdentifiers.loadCapacityButton).firstMatch
+        if anyMatch.waitForExistence(timeout: 1) {
+            return anyMatch
+        }
+
+        let fallback = app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'load capacity'"))
+        let firstMatch = fallback.firstMatch
+        if firstMatch.waitForExistence(timeout: 1) {
+            return firstMatch
+        }
+
+        NSLog("⚠️ Load capacity button not found. Debug tree: \(app.debugDescription)")
+        return nil
+    }
+
+    private func tap(element: XCUIElement) {
+        if element.isHittable {
+            element.tap()
+            return
+        }
+
+        let coordinate = element.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        coordinate.tap()
     }
 }

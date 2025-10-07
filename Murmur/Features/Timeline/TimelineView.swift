@@ -167,6 +167,8 @@ struct TimelineView: View {
         }
         .frame(maxWidth: .infinity)
         .listRowBackground(Color.clear)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Empty timeline. Record an event or how you're feeling with the buttons in the bottom right to get started.")
     }
 
     private func daySummaryLabel(for section: DaySection) -> String {

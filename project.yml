@@ -150,3 +150,6 @@ schemes:
       config: Debug
       targets:
         - name: MurmurUITests
+      commandLineArguments:
+        "-CaptureTestScreenshots":
+          enabled: true

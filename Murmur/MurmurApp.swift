@@ -21,6 +21,14 @@ struct MurmurApp: App {
 
     private let stack = CoreDataStack.shared
 
+    init() {
+        // Configure onboarding state for UI testing BEFORE any views are created
+        // Do this synchronously but defer data seeding to avoid deadlock
+        if UITestConfiguration.isUITesting && !UITestConfiguration.shouldShowOnboarding {
+            UserDefaults.standard.set(true, forKey: UserDefaultsKeys.hasCompletedOnboarding)
+        }
+    }
+
     var body: some Scene {
         WindowGroup {
             // Check for CoreData initialization errors first
@@ -34,9 +42,14 @@ struct MurmurApp: App {
                     .environmentObject(manualCycleTracker)
                     .environmentObject(appearanceManager)
                     .environmentObject(appLock)
-                    .onAppear {
-                        // Configure app for UI testing if needed
-                        UITestConfiguration.configure(context: stack.context)
+                    .task {
+                        // Configure app for UI testing (data seeding etc)
+                        // Run in background to avoid blocking UI
+                        if UITestConfiguration.isUITesting {
+                            Task.detached(priority: .userInitiated) {
+                                UITestConfiguration.configure(context: stack.context)
+                            }
+                        }
                     }
             } else {
                 ProgressView()
@@ -77,6 +90,7 @@ private struct RootContainer: View {
                                 NavigationLink(value: Route.settings) {
                                     Image(systemName: "gearshape")
                                 }
+                                .accessibilityIdentifier(AccessibilityIdentifiers.settingsButton)
                                 .accessibilityLabel("Settings")
                                 .accessibilityHint("Manage app preferences, symptoms, and integrations")
                                 .accessibilityInputLabels(["Settings", "Preferences", "Options", "Configure"])
@@ -85,6 +99,7 @@ private struct RootContainer: View {
                                 NavigationLink(value: Route.analysis) {
                                     Image(systemName: "chart.line.uptrend.xyaxis")
                                 }
+                                .accessibilityIdentifier(AccessibilityIdentifiers.analysisButton)
                                 .accessibilityLabel("Analysis")
                                 .accessibilityHint("View trends and correlations")
                                 .accessibilityInputLabels(["Analysis", "Charts", "Trends", "View analysis", "Show charts"])
@@ -92,8 +107,9 @@ private struct RootContainer: View {
                         }
                 }
                 .task {
-                    // Skip HealthKit authorization dialog if disabled for UI testing
-                    if !UITestConfiguration.shouldDisableHealthKit {
+                    // Skip HealthKit authorization in UI test mode (unless explicitly enabled)
+                    let shouldSkipHealthKit = UITestConfiguration.isUITesting || UITestConfiguration.shouldDisableHealthKit
+                    if !shouldSkipHealthKit {
                         await healthKit.bootstrapAuthorizations()
                     }
                 }
@@ -207,36 +223,37 @@ private struct FloatingActionButtons: View {
     var body: some View {
         // main buttons -- and some glass
         HStack {
-            if #available(iOS 26.0, *) {
+            if #available(iOS 27.0, *) {
+                // Future: iOS 27+ glass effect implementation
+                // GlassEffectContainer is not yet available in iOS 26
                 Spacer()
-                GlassEffectContainer(spacing: 40.0) {
-                    HStack(spacing: 8.0) {
-                        Button(action: onSymptom) {
-                            Image(systemName: "heart.text.square")
-                                .font(.system(size: 28, weight: .medium))
-                                .frame(width: 72, height: 72)
-                                .foregroundStyle(palette.accentColor)
-                        }
-                        .glassEffect(.regular.interactive())
-                        .accessibilityLabel("Log symptom")
-                        .accessibilityIdentifier(AccessibilityIdentifiers.logSymptomButton)
-                        .accessibilityHint("Opens form to record a symptom")
-                        .accessibilityInputLabels(["Log symptom", "Add symptom", "Record symptom", "New symptom", "Log entry"])
-
-                        Button(action: onActivity) {
-                            Image(systemName: "calendar.badge.clock")
-                                .font(.system(size: 28, weight: .medium))
-                                .frame(width: 72, height: 72)
-                                .foregroundStyle(palette.accentColor)
-                        }
-                        .glassEffect(.regular.interactive())
-                        .accessibilityLabel("Log activity")
-                        .accessibilityIdentifier(AccessibilityIdentifiers.logEventButton)
-                        .accessibilityHint("Opens form to record an activity or event")
-                        .accessibilityInputLabels(["Log activity", "Add activity", "Record activity", "New activity", "Log event"])
+                HStack(spacing: 12) {
+                    Button(action: onActivity) {
+                        Image(systemName: "calendar.badge.clock")
+                            .font(.title3.weight(.semibold))
+                            .padding(16)
+                            .foregroundStyle(palette.accentColor.opacity(0.85))
+                            .background(.ultraThinMaterial, in: Circle())
                     }
+                    .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+                    .accessibilityLabel("Log activity")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.logEventButton)
+                    .accessibilityHint("Opens form to record an activity or event")
+                    .accessibilityInputLabels(["Log activity", "Add activity", "Record activity", "New activity", "Log event"])
+
+                    Button(action: onSymptom) {
+                        Image(systemName: "heart.text.square")
+                            .font(.title3.weight(.semibold))
+                            .padding(16)
+                            .foregroundStyle(palette.accentColor)
+                            .background(.ultraThinMaterial, in: Circle())
+                    }
+                    .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+                    .accessibilityLabel("Log symptom")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.logSymptomButton)
+                    .accessibilityHint("Opens form to record a symptom")
+                    .accessibilityInputLabels(["Log symptom", "Add symptom", "Record symptom", "New symptom", "Log entry"])
                 }
-                .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
             } else {
                 Spacer()
                 HStack(spacing: 12) {

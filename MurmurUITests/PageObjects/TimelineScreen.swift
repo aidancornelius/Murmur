@@ -6,7 +6,6 @@
 //
 
 import XCTest
-@testable import Murmur
 
 /// Page Object representing the main timeline screen
 struct TimelineScreen {
@@ -23,15 +22,15 @@ struct TimelineScreen {
     }
 
     var settingsButton: XCUIElement {
-        app.navigationBars.buttons.matching(identifier: "gearshape").firstMatch
+        app.buttons[AccessibilityIdentifiers.settingsButton]
     }
 
     var analysisButton: XCUIElement {
-        app.navigationBars.buttons["Analysis"]
+        app.buttons[AccessibilityIdentifiers.analysisButton]
     }
 
     var timeline: XCUIElement {
-        app.scrollViews.firstMatch
+        app.tables.matching(identifier: AccessibilityIdentifiers.timelineList).firstMatch
     }
 
     var firstEntry: XCUIElement {

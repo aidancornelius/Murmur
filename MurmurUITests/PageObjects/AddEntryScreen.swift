@@ -6,7 +6,6 @@
 //
 
 import XCTest
-@testable import Murmur
 
 /// Page Object representing the add entry screen
 struct AddEntryScreen {
@@ -39,7 +38,7 @@ struct AddEntryScreen {
     }
 
     var notesField: XCUIElement {
-        app.textFields["Notes (optional)"]
+        app.textFields.matching(identifier: AccessibilityIdentifiers.noteTextField).firstMatch
     }
 
     // MARK: - Actions
@@ -58,18 +57,18 @@ struct AddEntryScreen {
 
     /// Search for a symptom by name
     func searchForSymptom(_ name: String, timeout: TimeInterval = 3) {
-        searchField.waitForExistence(timeout: timeout)
+        _ = searchField.waitForExistence(timeout: timeout)
         searchField.tap()
         searchField.typeText(name)
     }
 
     /// Select a symptom from the search results
     func selectSymptom(named name: String, timeout: TimeInterval = 3) -> Bool {
-        let symptomCell = app.staticTexts[name]
-        guard symptomCell.waitForExistence(timeout: timeout) else {
+        let symptomButton = app.buttons.matching(identifier: AccessibilityIdentifiers.quickSymptomButton(name)).firstMatch
+        guard symptomButton.waitForExistence(timeout: timeout) else {
             return false
         }
-        symptomCell.tap()
+        symptomButton.tap()
         return true
     }
 
@@ -92,7 +91,7 @@ struct AddEntryScreen {
 
     /// Enter note text
     func enterNote(_ text: String, timeout: TimeInterval = 2) {
-        notesField.waitForExistence(timeout: timeout)
+        _ = notesField.waitForExistence(timeout: timeout)
         notesField.tap()
         notesField.typeText(text)
     }

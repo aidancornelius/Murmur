@@ -2,8 +2,11 @@
 
 # List of devices to generate screenshots for
 devices([
-  "iPhone 17 Pro Max",   # 6.9" - Will be resized to 1284 × 2778px for App Store
-  "iPad Pro 13-inch (M4)"  # 13" iPad Pro
+  "iPhone 17 Pro Max",        # 6.9" - Will be resized to 1284 × 2778px for App Store
+  "iPhone 17 Pro",            # 6.3" - Standard Pro model
+  "iPhone 13 mini",           # 5.4" - Smallest modern iPhone
+  "iPad Pro 13-inch (M4)",    # 13" iPad Pro
+  "iPad mini (A17 Pro)"       # 8.3" iPad mini
 ])
 
 # List of languages to screenshot

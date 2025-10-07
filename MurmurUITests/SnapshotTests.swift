@@ -6,7 +6,6 @@
 //
 
 import XCTest
-@testable import Murmur
 
 /// Visual regression tests capturing screenshots of app screens
 /// Run these tests with Fastlane snapshot for consistent locale and device configuration
@@ -71,10 +70,11 @@ final class SnapshotTests: XCTestCase {
     func testDayDetailSnapshot() throws {
         app.launchForSnapshots()
 
-        let timeline = TimelineScreen(app: app)
+        _ = TimelineScreen(app: app)
 
         // Find and tap first entry to open day detail
-        if let firstEntry = app.cells.firstMatch {
+        if app.cells.count > 0 {
+            let firstEntry = app.cells.firstMatch
             firstEntry.tap()
 
             let dayDetail = DayDetailScreen(app: app)
@@ -92,7 +92,7 @@ final class SnapshotTests: XCTestCase {
         app.launchForSnapshots()
 
         // Navigate to analysis
-        app.tabBars.buttons["Analysis"].tap()
+        app.buttons[AccessibilityIdentifiers.analysisButton].tap()
 
         let analysis = AnalysisScreen(app: app)
         XCTAssertTrue(analysis.waitForLoad(), "Analysis screen should load")
@@ -114,7 +114,7 @@ final class SnapshotTests: XCTestCase {
         app.launchForSnapshots()
 
         // Navigate to analysis
-        app.tabBars.buttons["Analysis"].tap()
+        app.buttons[AccessibilityIdentifiers.analysisButton].tap()
 
         let analysis = AnalysisScreen(app: app)
         XCTAssertTrue(analysis.waitForLoad(), "Analysis screen should load")
@@ -136,7 +136,7 @@ final class SnapshotTests: XCTestCase {
         app.launchForSnapshots()
 
         // Navigate to settings
-        app.tabBars.buttons["Settings"].tap()
+        app.buttons[AccessibilityIdentifiers.settingsButton].tap()
 
         let settings = SettingsScreen(app: app)
         XCTAssertTrue(settings.waitForLoad(), "Settings screen should load")
@@ -181,9 +181,10 @@ final class SnapshotTests: XCTestCase {
         app.launchDarkMode()
         setupSnapshot(app)
 
-        let timeline = TimelineScreen(app: app)
+        _ = TimelineScreen(app: app)
 
-        if let firstEntry = app.cells.firstMatch {
+        if app.cells.count > 0 {
+            let firstEntry = app.cells.firstMatch
             firstEntry.tap()
 
             let dayDetail = DayDetailScreen(app: app)
@@ -199,7 +200,7 @@ final class SnapshotTests: XCTestCase {
         app.launchDarkMode()
         setupSnapshot(app)
 
-        app.tabBars.buttons["Analysis"].tap()
+        app.buttons[AccessibilityIdentifiers.analysisButton].tap()
 
         let analysis = AnalysisScreen(app: app)
         XCTAssertTrue(analysis.waitForLoad(), "Analysis screen should load")
@@ -219,7 +220,7 @@ final class SnapshotTests: XCTestCase {
         app.launchDarkMode()
         setupSnapshot(app)
 
-        app.tabBars.buttons["Analysis"].tap()
+        app.buttons[AccessibilityIdentifiers.analysisButton].tap()
 
         let analysis = AnalysisScreen(app: app)
         XCTAssertTrue(analysis.waitForLoad(), "Analysis screen should load")
@@ -239,7 +240,7 @@ final class SnapshotTests: XCTestCase {
         app.launchDarkMode()
         setupSnapshot(app)
 
-        app.tabBars.buttons["Settings"].tap()
+        app.buttons[AccessibilityIdentifiers.settingsButton].tap()
 
         let settings = SettingsScreen(app: app)
         XCTAssertTrue(settings.waitForLoad(), "Settings screen should load")
@@ -291,7 +292,7 @@ final class SnapshotTests: XCTestCase {
 
         app.launchForSnapshots()
 
-        app.tabBars.buttons["Analysis"].tap()
+        app.buttons[AccessibilityIdentifiers.analysisButton].tap()
 
         let analysis = AnalysisScreen(app: app)
         XCTAssertTrue(analysis.waitForLoad(), "Analysis screen should load")
@@ -328,7 +329,7 @@ final class SnapshotTests: XCTestCase {
 
         app.launchForSnapshots()
 
-        app.tabBars.buttons["Settings"].tap()
+        app.buttons[AccessibilityIdentifiers.settingsButton].tap()
 
         let settings = SettingsScreen(app: app)
         XCTAssertTrue(settings.waitForLoad(), "Settings screen should load")
@@ -347,7 +348,7 @@ final class SnapshotTests: XCTestCase {
         setupSnapshot(app)
 
         // Trigger a view that shows loading
-        app.tabBars.buttons["Analysis"].tap()
+        app.buttons[AccessibilityIdentifiers.analysisButton].tap()
 
         // Capture immediately to catch loading state
         snapshot("18LoadingState", timeWaitingForIdle: 0)
@@ -363,7 +364,7 @@ final class SnapshotTests: XCTestCase {
         setupSnapshot(app)
 
         // Navigate to settings and try to enable HealthKit to trigger error
-        app.tabBars.buttons["Settings"].tap()
+        app.buttons[AccessibilityIdentifiers.settingsButton].tap()
 
         let settings = SettingsScreen(app: app)
         settings.waitForLoad()
@@ -403,7 +404,7 @@ final class SnapshotTests: XCTestCase {
         // Make some selections
         addEntry.openSymptomSearch()
         addEntry.searchForSymptom("Headache")
-        addEntry.selectSymptom(named: "Headache")
+        _ = addEntry.selectSymptom(named: "Headache")
         addEntry.setSeverity(3)
         addEntry.enterNote("Example note for screenshot")
 
@@ -421,7 +422,7 @@ final class SnapshotTests: XCTestCase {
         )
         setupSnapshot(app)
 
-        app.tabBars.buttons["Analysis"].tap()
+        app.buttons[AccessibilityIdentifiers.analysisButton].tap()
 
         let analysis = AnalysisScreen(app: app)
         XCTAssertTrue(analysis.waitForLoad(), "Analysis screen should load")
@@ -442,7 +443,7 @@ final class SnapshotTests: XCTestCase {
     func testLoadCapacityViewSnapshot() throws {
         app.launchForSnapshots()
 
-        app.tabBars.buttons["Analysis"].tap()
+        app.buttons[AccessibilityIdentifiers.analysisButton].tap()
 
         let analysis = AnalysisScreen(app: app)
         XCTAssertTrue(analysis.waitForLoad(), "Analysis screen should load")

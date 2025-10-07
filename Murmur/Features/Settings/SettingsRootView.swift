@@ -55,6 +55,7 @@ struct SettingsRootView: View {
             Section("Personalisation") {
                 NavigationLink("Appearance", value: SettingsRoute.appearance)
                     .accessibilityHint("Customise colour schemes for light and dark mode")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.appearanceButton)
                     .accessibilityInputLabels(["Appearance", "Theme", "Colours", "Color scheme", "Appearance settings"])
                     .listRowBackground(palette.surfaceColor)
             }
@@ -73,6 +74,7 @@ struct SettingsRootView: View {
             Section("Privacy & data") {
                 NavigationLink("Data management", value: SettingsRoute.dataManagement)
                     .accessibilityHint("Backup, restore, or reset your data")
+                    .accessibilityIdentifier(AccessibilityIdentifiers.dataManagementButton)
                     .accessibilityInputLabels(["Data management", "Backup", "Restore data", "Manage data"])
                     .listRowBackground(palette.surfaceColor)
 //                NavigationLink("Export entries", value: SettingsRoute.export)
