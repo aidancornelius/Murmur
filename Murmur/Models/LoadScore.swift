@@ -42,6 +42,7 @@ struct LoadScore: Hashable {
     ///   - previousLoad: The decayed load from the previous day
     ///   - configuration: Optional configuration override (uses LoadCapacityManager if nil)
     /// - Returns: LoadScore for the day
+    @MainActor
     static func calculate(
         for date: Date,
         activities: [ActivityEvent],
@@ -123,6 +124,7 @@ struct LoadScore: Hashable {
     ///   - symptomsByDate: Dictionary of symptoms grouped by day
     ///   - configuration: Optional configuration override (uses LoadCapacityManager if nil)
     /// - Returns: Array of LoadScores, one per day
+    @MainActor
     static func calculateRange(
         from startDate: Date,
         to endDate: Date,

@@ -508,7 +508,7 @@ private struct TimelineMealRow: View {
     }
 }
 
-private enum TimelineItem: Identifiable {
+enum TimelineItem: Identifiable {
     case symptom(SymptomEntry)
     case activity(ActivityEvent)
     case sleep(SleepEvent)
@@ -541,7 +541,7 @@ private enum TimelineItem: Identifiable {
     }
 }
 
-private struct DaySection: Identifiable, Equatable {
+struct DaySection: Identifiable, Equatable {
     var id: Date { date }
     let date: Date
     let entries: [SymptomEntry]
@@ -593,6 +593,7 @@ private struct DaySection: Identifiable, Equatable {
         return lhsDate > rhsDate
     }
 
+    @MainActor
     static func sectionsFromArrays(entries: [SymptomEntry], activities: [ActivityEvent], sleepEvents: [SleepEvent], mealEvents: [MealEvent]) -> [DaySection] {
         let calendar = Calendar.current
 

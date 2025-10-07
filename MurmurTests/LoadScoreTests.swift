@@ -9,6 +9,7 @@ import CoreData
 import XCTest
 @testable import Murmur
 
+@MainActor
 final class LoadScoreTests: XCTestCase {
     var testStack: InMemoryCoreDataStack!
 

@@ -12,6 +12,7 @@ import os.log
 
 // MARK: - Audio Graph Support
 /// Provides audio feedback for visualising symptom and activity patterns
+@MainActor
 class AudioGraphController: NSObject, ObservableObject {
     private var audioPlayer: AVAudioPlayer?
     private let speechService = SpeechService.shared
@@ -23,8 +24,13 @@ class AudioGraphController: NSObject, ObservableObject {
     private var currentFormat: AVAudioFormat?
     private var scheduledTones: [DispatchWorkItem] = []
 
-    deinit {
-        stopPlayback()
+    nonisolated deinit {
+        // Cancel all scheduled tones
+        scheduledTones.forEach { $0.cancel() }
+
+        // Stop audio playback - these are thread-safe
+        playerNode?.stop()
+        audioEngine?.stop()
     }
 
     /// Play audio tones representing severity levels over time

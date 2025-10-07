@@ -590,7 +590,7 @@ struct SampleDataSeeder {
     #endif
 
     static func seedIfNeeded(in context: NSManagedObjectContext, forceSeed: Bool = false) {
-        context.perform {
+        context.performAndWait {
             let lastSeedVersion = UserDefaults.standard.integer(forKey: UserDefaultsKeys.symptomSeedVersion)
 
             // Check if we need to seed or update (unless forceSeed is true for testing)

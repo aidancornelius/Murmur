@@ -8,6 +8,7 @@
 import Foundation
 
 /// Manages personalised baseline values for health metrics
+@MainActor
 class HealthMetricBaselines: ObservableObject {
     static let shared = HealthMetricBaselines()
 

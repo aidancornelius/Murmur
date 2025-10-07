@@ -9,11 +9,12 @@ import HealthKit
 import XCTest
 @testable import Murmur
 
-// MARK: - Mock HealthKit Store
+// MARK: - Mock HealthKit Data Provider
 
-/// Mock implementation of HealthKitStoreProtocol for testing
+/// Mock implementation of HealthKitDataProvider for testing
+/// This properly implements the data provider protocol without trying to access HKQuery internals
 @MainActor
-final class MockHealthKitStore: HealthKitStoreProtocol {
+final class MockHealthKitDataProvider: HealthKitDataProvider {
 
     // MARK: - Mock Configuration
 
@@ -25,32 +26,78 @@ final class MockHealthKitStore: HealthKitStoreProtocol {
 
     // MARK: - Tracking
 
-    private(set) var executeCount = 0
-    private(set) var stopCount = 0
+    private(set) var fetchQuantityCount = 0
+    private(set) var fetchCategoryCount = 0
+    private(set) var fetchWorkoutsCount = 0
     private(set) var requestAuthorizationCalled = false
     private(set) var requestedReadTypes: Set<HKObjectType>?
     private(set) var requestedShareTypes: Set<HKSampleType>?
-    private(set) var executedQueries: [HKQuery] = []
 
-    // MARK: - HealthKitStoreProtocol Implementation
+    // MARK: - HealthKitDataProvider Implementation
 
-    func execute(_ query: HKQuery) {
-        executeCount += 1
-        executedQueries.append(query)
+    func fetchQuantitySamples(
+        type: HKQuantityType,
+        predicate: NSPredicate?,
+        limit: Int,
+        sortDescriptors: [NSSortDescriptor]?
+    ) async throws -> [HKQuantitySample] {
+        fetchQuantityCount += 1
 
-        // Simulate async callback
-        Task { @MainActor in
-            if let error = shouldThrowError {
-                self.deliverError(error, to: query)
-                return
-            }
-
-            self.deliverResults(to: query)
+        if let error = shouldThrowError {
+            throw error
         }
+
+        var filtered = filterSamples(mockQuantitySamples, with: predicate)
+        filtered = sortSamples(filtered, using: sortDescriptors)
+
+        if limit != HKObjectQueryNoLimit && limit > 0 {
+            filtered = Array(filtered.prefix(limit))
+        }
+
+        return filtered
     }
 
-    func stop(_ query: HKQuery) {
-        stopCount += 1
+    func fetchCategorySamples(
+        type: HKCategoryType,
+        predicate: NSPredicate?,
+        limit: Int,
+        sortDescriptors: [NSSortDescriptor]?
+    ) async throws -> [HKCategorySample] {
+        fetchCategoryCount += 1
+
+        if let error = shouldThrowError {
+            throw error
+        }
+
+        var filtered = filterSamples(mockCategorySamples, with: predicate)
+        filtered = sortSamples(filtered, using: sortDescriptors)
+
+        if limit != HKObjectQueryNoLimit && limit > 0 {
+            filtered = Array(filtered.prefix(limit))
+        }
+
+        return filtered
+    }
+
+    func fetchWorkouts(
+        predicate: NSPredicate?,
+        limit: Int,
+        sortDescriptors: [NSSortDescriptor]?
+    ) async throws -> [HKWorkout] {
+        fetchWorkoutsCount += 1
+
+        if let error = shouldThrowError {
+            throw error
+        }
+
+        var filtered = filterSamples(mockWorkouts, with: predicate)
+        filtered = sortSamples(filtered, using: sortDescriptors)
+
+        if limit != HKObjectQueryNoLimit && limit > 0 {
+            filtered = Array(filtered.prefix(limit))
+        }
+
+        return filtered
     }
 
     func requestAuthorization(toShare typesToShare: Set<HKSampleType>, read typesToRead: Set<HKObjectType>) async throws {
@@ -64,46 +111,6 @@ final class MockHealthKitStore: HealthKitStoreProtocol {
     }
 
     // MARK: - Helper Methods
-
-    private func deliverError(_ error: Error, to query: HKQuery) {
-        if let sampleQuery = query as? HKSampleQuery {
-            sampleQuery.resultsHandler?(sampleQuery, nil, error)
-        }
-    }
-
-    private func deliverResults(to query: HKQuery) {
-        guard let sampleQuery = query as? HKSampleQuery else { return }
-
-        // Determine which samples to return based on query type
-        let sampleType = sampleQuery.sampleType
-
-        if sampleType is HKQuantityType {
-            // Filter by predicate if present
-            let filteredSamples = filterSamples(mockQuantitySamples, with: sampleQuery.predicate)
-
-            // Apply sort descriptors
-            let sortedSamples = sortSamples(filteredSamples, using: sampleQuery.sortDescriptors)
-
-            // Apply limit
-            let limitedSamples = Array(sortedSamples.prefix(sampleQuery.limit == HKObjectQueryNoLimit ? sortedSamples.count : sampleQuery.limit))
-
-            sampleQuery.resultsHandler?(sampleQuery, limitedSamples, nil)
-        } else if sampleType is HKCategoryType {
-            // Filter category samples
-            let filteredSamples = filterSamples(mockCategorySamples, with: sampleQuery.predicate)
-            let sortedSamples = sortSamples(filteredSamples, using: sampleQuery.sortDescriptors)
-            let limitedSamples = Array(sortedSamples.prefix(sampleQuery.limit == HKObjectQueryNoLimit ? sortedSamples.count : sampleQuery.limit))
-
-            sampleQuery.resultsHandler?(sampleQuery, limitedSamples, nil)
-        } else if sampleType is HKWorkoutType {
-            // Filter workouts
-            let filteredWorkouts = filterSamples(mockWorkouts, with: sampleQuery.predicate)
-            let sortedWorkouts = sortSamples(filteredWorkouts, using: sampleQuery.sortDescriptors)
-            let limitedWorkouts = Array(sortedWorkouts.prefix(sampleQuery.limit == HKObjectQueryNoLimit ? sortedWorkouts.count : sampleQuery.limit))
-
-            sampleQuery.resultsHandler?(sampleQuery, limitedWorkouts, nil)
-        }
-    }
 
     private func filterSamples<T: HKSample>(_ samples: [T], with predicate: NSPredicate?) -> [T] {
         guard let predicate = predicate else { return samples }
@@ -123,12 +130,17 @@ final class MockHealthKitStore: HealthKitStoreProtocol {
         mockWorkouts.removeAll()
         shouldThrowError = nil
         authorizationError = nil
-        executeCount = 0
-        stopCount = 0
+        fetchQuantityCount = 0
+        fetchCategoryCount = 0
+        fetchWorkoutsCount = 0
         requestAuthorizationCalled = false
         requestedReadTypes = nil
         requestedShareTypes = nil
-        executedQueries.removeAll()
+    }
+
+    /// Property for backwards compatibility with existing tests
+    var executeCount: Int {
+        fetchQuantityCount + fetchCategoryCount + fetchWorkoutsCount
     }
 }
 

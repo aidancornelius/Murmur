@@ -66,6 +66,7 @@ enum PhysiologicalState: String {
     ///   - flowLevel: Menstrual flow level
     ///   - baselines: Optional personalised baselines (defaults to shared instance)
     /// - Returns: The computed state, or nil if insufficient data
+    @MainActor
     static func compute(
         hrv: Double?,
         restingHR: Double?,

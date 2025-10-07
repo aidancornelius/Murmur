@@ -16,8 +16,12 @@ struct ReminderListView: View {
         sortDescriptors: [NSSortDescriptor(key: "hour", ascending: true), NSSortDescriptor(key: "minute", ascending: true)]
     ) private var reminders: FetchedResults<Reminder>
 
-    @State private var presentingForm = false
-    @State private var selectedReminder: Reminder?
+    @State private var formReminder: FormReminder?
+
+    private struct FormReminder: Identifiable {
+        let id = UUID()
+        let reminder: Reminder?
+    }
 
     private var palette: ColorPalette {
         appearanceManager.currentPalette(for: colorScheme)
@@ -62,8 +66,7 @@ struct ReminderListView: View {
                 }
                 .contentShape(Rectangle())
                 .onTapGesture {
-                    selectedReminder = reminder
-                    presentingForm = true
+                    formReminder = FormReminder(reminder: reminder)
                 }
                 .listRowBackground(palette.surfaceColor)
             }
@@ -74,16 +77,15 @@ struct ReminderListView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
-                    selectedReminder = nil
-                    presentingForm = true
+                    formReminder = FormReminder(reminder: nil)
                 } label: {
                     Image(systemName: "plus")
                 }
             }
         }
-        .sheet(isPresented: $presentingForm) {
+        .sheet(item: $formReminder) { form in
             NavigationStack {
-                ReminderFormView(editingReminder: selectedReminder)
+                ReminderFormView(editingReminder: form.reminder)
             }
             .themedSurface()
         }

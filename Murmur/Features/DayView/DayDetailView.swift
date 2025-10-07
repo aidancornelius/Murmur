@@ -737,6 +737,7 @@ private struct DayMetrics {
     let predominantState: PhysiologicalState?
     let cycleDay: Int?
 
+    @MainActor
     init(entries: [SymptomEntry]) {
         let hrvValues = entries.compactMap { $0.hkHRV?.doubleValue }
         averageHRV = hrvValues.isEmpty ? nil : hrvValues.reduce(0, +) / Double(hrvValues.count)

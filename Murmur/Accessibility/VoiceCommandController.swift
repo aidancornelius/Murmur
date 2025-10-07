@@ -13,6 +13,7 @@ import Speech
 import SwiftUI
 
 // MARK: - Voice Command Controller
+@MainActor
 class VoiceCommandController: NSObject, ObservableObject {
     @Published var isListening = false
     @Published var recognisedText = ""

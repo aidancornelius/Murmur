@@ -23,6 +23,7 @@ struct DaySummary: Hashable, Identifiable {
         Color.severityColor(for: Double(severityLevel), colorScheme: colorScheme)
     }
 
+    @MainActor
     static func make(for date: Date, entries: [SymptomEntry], activities: [ActivityEvent] = [], previousLoad: Double = 0.0) -> DaySummary? {
         guard !entries.isEmpty || !activities.isEmpty else { return nil }
         let entryCount = entries.count

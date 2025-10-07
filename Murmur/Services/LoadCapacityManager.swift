@@ -9,6 +9,7 @@ import Foundation
 import SwiftUI
 
 /// Manages user's load capacity settings and adaptability preferences
+@MainActor
 class LoadCapacityManager: ObservableObject {
     static let shared = LoadCapacityManager()
 

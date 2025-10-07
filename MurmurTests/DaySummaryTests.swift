@@ -9,6 +9,7 @@ import CoreData
 import XCTest
 @testable import Murmur
 
+@MainActor
 final class DaySummaryTests: XCTestCase {
     var testStack: InMemoryCoreDataStack!
 

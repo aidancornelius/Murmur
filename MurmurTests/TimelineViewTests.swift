@@ -168,16 +168,21 @@ final class TimelineViewTests: XCTestCase {
         activity.createdAt = recentDate
         activity.name = "Test Activity"
         activity.physicalExertion = 2
+        activity.cognitiveExertion = 1
+        activity.emotionalLoad = 1
 
         let sleep = SleepEvent(context: testStack.context)
         sleep.id = UUID()
         sleep.createdAt = recentDate
+        sleep.bedTime = calendar.date(byAdding: .hour, value: -8, to: recentDate)
+        sleep.wakeTime = recentDate
         sleep.quality = 3
 
         let meal = MealEvent(context: testStack.context)
         meal.id = UUID()
         meal.createdAt = recentDate
         meal.mealType = "Breakfast"
+        meal.mealDescription = "Toast and eggs"
 
         try testStack.context.save()
 
@@ -217,6 +222,7 @@ final class TimelineViewTests: XCTestCase {
 
     // MARK: - DaySection Grouping Tests
 
+    @MainActor
     func testDaySectionGroupsByDate() throws {
         let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
         let now = Date()
@@ -261,6 +267,7 @@ final class TimelineViewTests: XCTestCase {
         XCTAssertEqual(secondSection?.entries.count, 1)
     }
 
+    @MainActor
     func testDaySectionHandlesBackdatedEntries() throws {
         let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
         let now = Date()
@@ -290,6 +297,7 @@ final class TimelineViewTests: XCTestCase {
         XCTAssertTrue(matchingSection?.entries.contains(entry) ?? false)
     }
 
+    @MainActor
     func testDaySectionGroupsMixedEventTypes() throws {
         let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
         let testDate = calendar.date(byAdding: .day, value: -5, to: Date())!
@@ -305,16 +313,22 @@ final class TimelineViewTests: XCTestCase {
         activity.id = UUID()
         activity.createdAt = testDate
         activity.name = "Test Activity"
+        activity.physicalExertion = 2
+        activity.cognitiveExertion = 1
+        activity.emotionalLoad = 1
 
         let sleep = SleepEvent(context: testStack.context)
         sleep.id = UUID()
         sleep.createdAt = testDate
+        sleep.bedTime = calendar.date(byAdding: .hour, value: -8, to: testDate)
+        sleep.wakeTime = testDate
         sleep.quality = 4
 
         let meal = MealEvent(context: testStack.context)
         meal.id = UUID()
         meal.createdAt = testDate
         meal.mealType = "Lunch"
+        meal.mealDescription = "Salad with chicken"
 
         try testStack.context.save()
 
@@ -337,6 +351,7 @@ final class TimelineViewTests: XCTestCase {
         XCTAssertEqual(section.mealEvents.count, 1)
     }
 
+    @MainActor
     func testDaySectionsSortedChronologically() throws {
         let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
         let now = Date()
@@ -374,6 +389,7 @@ final class TimelineViewTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testDaySectionHandlesEmptyInput() throws {
         let sections = DaySection.sectionsFromArrays(
             entries: [],
@@ -387,6 +403,7 @@ final class TimelineViewTests: XCTestCase {
 
     // MARK: - Timeline Item Ordering Tests
 
+    @MainActor
     func testTimelineItemsWithinDaySortedByTime() throws {
         let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
         let baseDate = calendar.startOfDay(for: Date())
@@ -431,6 +448,7 @@ final class TimelineViewTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testMidnightEntriesBelongToCorrectDay() throws {
         let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
         let baseDate = calendar.startOfDay(for: Date())
@@ -470,6 +488,7 @@ final class TimelineViewTests: XCTestCase {
 
     // MARK: - DaySummary Integration Tests
 
+    @MainActor
     func testDaySectionIncludesDaySummary() throws {
         let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
         let testDate = calendar.date(byAdding: .day, value: -5, to: Date())!
