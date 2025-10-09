@@ -466,11 +466,17 @@ private struct DayEntryRow: View {
                     Label(state.displayText, systemImage: state.iconName)
                         .font(.caption2)
                         .foregroundStyle(state.color)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(state.color.opacity(0.15), in: Capsule())
                 }
                 if let cycleDay = entry.hkCycleDay?.intValue {
                     Text("Cycle day \(cycleDay)")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(Color.secondary.opacity(0.15), in: Capsule())
                 }
             }
             Text(SeverityScale.descriptor(for: Int(entry.severity), isPositive: entry.symptomType?.isPositive ?? false))
@@ -718,6 +724,7 @@ private struct MetricTile: View {
     let value: String
     var emphasizesTrend: Bool = false
     var secondary: String?
+    var palette: Color?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
@@ -733,6 +740,15 @@ private struct MetricTile: View {
                     .foregroundStyle(.secondary)
             }
         }
+        .padding(.horizontal, palette != nil ? 12 : 0)
+        .padding(.vertical, palette != nil ? 8 : 0)
+        .background(
+            Group {
+                if let palette {
+                    Capsule().fill(palette.opacity(0.15))
+                }
+            }
+        )
     }
 }
 

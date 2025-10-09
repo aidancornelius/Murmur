@@ -157,10 +157,28 @@ struct SettingsScreen {
     }
 
     /// Check if symptom type exists
-    func hasSymptomType(named name: String) -> Bool {
+    func hasSymptomType(named name: String, timeout: TimeInterval = 5) -> Bool {
+        // Wait a moment for Core Data and UI to update after save
+        Thread.sleep(forTimeInterval: 0.3)
+
         // Check for the symptom name in static texts or as accessibility labels on buttons/links
-        app.staticTexts[name].exists ||
-        app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", name)).firstMatch.exists ||
-        app.otherElements.matching(NSPredicate(format: "label CONTAINS[c] %@", name)).firstMatch.exists
+        let symptomText = app.staticTexts[name]
+        if symptomText.waitForExistence(timeout: timeout) {
+            return true
+        }
+
+        // Check in links (NavigationLinks appear as links in the accessibility tree)
+        let symptomLink = app.links.matching(NSPredicate(format: "label CONTAINS[c] %@", name)).firstMatch
+        if symptomLink.waitForExistence(timeout: timeout) {
+            return true
+        }
+
+        let symptomButton = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", name)).firstMatch
+        if symptomButton.waitForExistence(timeout: timeout) {
+            return true
+        }
+
+        let symptomElement = app.otherElements.matching(NSPredicate(format: "label CONTAINS[c] %@", name)).firstMatch
+        return symptomElement.waitForExistence(timeout: timeout)
     }
 }
