@@ -463,12 +463,15 @@ private struct DayEntryRow: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 if let state = physiologicalState {
-                    Label(state.displayText, systemImage: state.iconName)
-                        .font(.caption2)
-                        .foregroundStyle(state.color)
-                        .padding(.horizontal, 2)
-                        .padding(.vertical, 4)
-                        .background(state.color.opacity(0.15), in: Capsule())
+                    HStack(spacing: 4) {
+                        Image(systemName: state.iconName)
+                        Text(state.displayText)
+                    }
+                    .font(.caption2)
+                    .foregroundStyle(state.color)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(state.color.opacity(0.15), in: Capsule())
                 }
                 if let cycleDay = entry.hkCycleDay?.intValue {
                     Text("Cycle day \(cycleDay)")

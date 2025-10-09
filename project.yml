@@ -11,7 +11,7 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "1.40"
+    MARKETING_VERSION: "1.50"
     CURRENT_PROJECT_VERSION: "100"
     ENABLE_HARDENED_RUNTIME: NO
     DEVELOPMENT_TEAM: HK6R36PLNR
@@ -38,7 +38,39 @@ targets:
       properties:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        ITSAppUsesNonExemptEncryption: false
         LSApplicationCategoryType: public.app-category.healthcare-fitness
+        LSRequiresIPhoneOS: true
+        UILaunchStoryboardName: LaunchScreen
+        UIRequiresPersistentWiFi: false
+        UIStatusBarHidden: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        NSCalendarsFullAccessUsageDescription: Murmur can read from your calendar to help you track exertion.
+        NSHealthClinicalHealthRecordsShareUsageDescription: Murmur may write symptom data to Health in the future to integrate with your health records.
+        NSHealthShareUsageDescription: Murmur can read your health data to add private context to your entries.
+        NSHealthUpdateUsageDescription: Murmur may write symptom data to Health in the future to integrate with your health records.
+        NSLocationWhenInUseUsageDescription: Optionally, to add location to your entries.
+        NSMicrophoneUsageDescription: Murmur needs microphone access for voice commands to log symptoms hands-free.
+        NSSpeechRecognitionUsageDescription: Murmur uses speech recognition to allow hands-free symptom logging via voice commands.
+        NSSupportsLiveActivitiesFrequentUpdates: true
+        NSUserActivityTypes:
+          - LogSymptomIntent
+          - OpenAddEntryIntent
+          - OpenAddActivityIntent
+          - GetRecentEntriesIntent
+          - GetSymptomsBySeverityIntent
+          - GetDailySummaryIntent
+          - CountSymptomsIntent
+        BGTaskSchedulerPermittedIdentifiers:
+          - com.aidancb.Murmur.autobackup
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.cornelius-bell.Murmur

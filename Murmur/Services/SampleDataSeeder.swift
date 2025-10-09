@@ -11,7 +11,7 @@ import os.log
 
 struct SampleDataSeeder {
     private static let logger = Logger(subsystem: "app.murmur", category: "SampleData")
-    private static let currentSeedVersion = 3 // Increment this when adding new default symptoms
+    private static let currentSeedVersion = 4 // Increment this when adding new default symptoms
 
     #if targetEnvironment(simulator)
     /// Generates realistic sample timeline entries for simulator testing
@@ -601,6 +601,8 @@ struct SampleDataSeeder {
                 ("Post-Exertional Malaise (PEM)", "#F5A3A3", "bolt.horizontal.circle", "Energy"),
                 ("Fatigue", "#FFD966", "bolt.slash", "Energy"),
                 ("Weakness", "#E8C89F", "figure.stand.line.dotted.figure.stand", "Energy"),
+                ("Energy crashes", "#FFB84D", "bolt.slash.fill", "Energy"),
+                ("Delayed fatigue", "#E8C89F", "hourglass", "Energy"),
 
                 // Pain
                 ("Headache", "#E06666", "bandage", "Pain"),
@@ -614,18 +616,27 @@ struct SampleDataSeeder {
                 ("Nerve pain", "#E67E9F", "bolt.badge.clock", "Pain"),
                 ("Chest pain", "#E08E8E", "heart.slash", "Pain"),
                 ("Stomach pain", "#FFD4A3", "cross.circle", "Pain"),
+                ("Pelvic pain", "#D9A8C7", "figure.stand.dress", "Pain"),
+                ("Neck pain", "#B88AA6", "figure.stand", "Pain"),
+                ("Foot/ankle pain", "#C99CB8", "shoe", "Pain"),
+                ("Tension headache", "#E06666", "head.profile", "Pain"),
 
                 // Cognitive
                 ("Brain fog", "#6FA8DC", "brain", "Cognitive"),
                 ("Cognitive difficulties", "#9BC4E8", "brain.head.profile", "Cognitive"),
                 ("Difficulty concentrating", "#A8D5F2", "text.magnifyingglass", "Cognitive"),
                 ("Memory problems", "#7FB3D5", "questionmark.circle", "Cognitive"),
+                ("Word-finding difficulty", "#9BC4E8", "text.bubble", "Cognitive"),
+                ("Slow processing", "#7FB3D5", "clock.arrow.circlepath", "Cognitive"),
+                ("Decision fatigue", "#A8D5F2", "arrow.triangle.branch", "Cognitive"),
 
                 // Sleep
                 ("Unrefreshing sleep", "#B4A7D6", "moon.zzz", "Sleep"),
                 ("Insomnia", "#C5B8D6", "moon.stars", "Sleep"),
                 ("Nightmares", "#9D88B3", "moon.haze", "Sleep"),
                 ("Restless sleep", "#B5A8C9", "bed.double", "Sleep"),
+                ("Sleep apnoea symptoms", "#9D88B3", "wind.circle", "Sleep"),
+                ("Early waking", "#C5B8D6", "sunrise", "Sleep"),
 
                 // Neurological
                 ("Dizziness", "#76C7C0", "arrow.triangle.2.circlepath", "Neurological"),
@@ -636,6 +647,11 @@ struct SampleDataSeeder {
                 ("Coordination problems", "#D4BFA8", "figure.fall", "Neurological"),
                 ("Vision problems", "#A8C5D9", "eye.trianglebadge.exclamationmark", "Neurological"),
                 ("Ringing in ears (tinnitus)", "#D9C1A8", "ear", "Neurological"),
+                ("Balance problems", "#8DC6D2", "figure.stairs", "Neurological"),
+                ("Brain zaps", "#76C7C0", "bolt.fill", "Neurological"),
+                ("Temperature sensitivity", "#FFB570", "thermometer.variable", "Neurological"),
+                ("Touch sensitivity", "#D4A5D9", "hand.point.up.fill", "Neurological"),
+                ("Restless legs", "#D4BFA8", "figure.walk.motion", "Neurological"),
 
                 // Digestive
                 ("Nausea", "#F4B183", "fork.knife", "Digestive"),
@@ -643,6 +659,9 @@ struct SampleDataSeeder {
                 ("Constipation", "#F5D4A8", "arrow.down.circle", "Digestive"),
                 ("Diarrhea", "#FFDBB3", "arrow.down.to.line.compact", "Digestive"),
                 ("IBS symptoms", "#FFE8C3", "exclamationmark.triangle", "Digestive"),
+                ("Reflux/heartburn", "#F4B183", "flame", "Digestive"),
+                ("Food sensitivities", "#FFE4B8", "exclamationmark.triangle.fill", "Digestive"),
+                ("Loss of appetite", "#F5D4A8", "fork.knife.circle", "Digestive"),
 
                 // Mental health
                 ("Anxiety", "#B8D4E0", "cloud", "Mental health"),
@@ -651,11 +670,19 @@ struct SampleDataSeeder {
                 ("Flashbacks", "#C9DEE8", "arrow.counterclockwise", "Mental health"),
                 ("Hypervigilance", "#D1E5F0", "eye", "Mental health"),
                 ("Dissociation", "#B3D3E3", "eye.slash", "Mental health"),
+                ("Mood swings", "#B8D4E0", "arrow.up.arrow.down.circle", "Mental health"),
+                ("Irritability", "#A5C8DB", "exclamationmark.bubble.fill", "Mental health"),
+                ("Brain fatigue", "#8FB4C9", "brain.head.profile.fill", "Mental health"),
+                ("Emotional overwhelm", "#C9DEE8", "cloud.rain.fill", "Mental health"),
 
                 // Respiratory & cardiovascular
                 ("Palpitations", "#F39C9C", "waveform.path.ecg.rectangle", "Respiratory & cardiovascular"),
                 ("Shortness of breath", "#A6D9E8", "lungs", "Respiratory & cardiovascular"),
                 ("Sore throat", "#FF9AA2", "mouth", "Respiratory & cardiovascular"),
+                ("Rapid heartbeat", "#F39C9C", "heart.circle.fill", "Respiratory & cardiovascular"),
+                ("Chest tightness", "#E08E8E", "square.compress", "Respiratory & cardiovascular"),
+                ("Exercise intolerance", "#FF9AA2", "figure.run.circle", "Respiratory & cardiovascular"),
+                ("Cough", "#FFB8C6", "wind", "Respiratory & cardiovascular"),
 
                 // Other
                 ("Flu-like symptoms", "#FFB8C6", "cross.case", "Other"),
@@ -663,6 +690,9 @@ struct SampleDataSeeder {
                 ("Temperature dysregulation", "#FFCBA4", "thermometer.medium", "Other"),
                 ("Inflammation", "#FFA894", "flame", "Other"),
                 ("Dry eyes/mouth", "#E8D4BF", "drop.triangle", "Other"),
+                ("Chemical sensitivity", "#FFCBA4", "nose", "Other"),
+                ("Light-headedness", "#FFA894", "sparkles.square.filled.on.square", "Other"),
+                ("Muscle twitches", "#E8D4BF", "waveform.path", "Other"),
 
                 // Reproductive & hormonal
                 ("Irregular periods", "#E8A0BF", "calendar.badge.clock", "Reproductive & hormonal"),
@@ -677,6 +707,9 @@ struct SampleDataSeeder {
                 ("Erectile dysfunction", "#C9B8D4", "exclamationmark.circle", "Reproductive & hormonal"),
                 ("Testicular pain", "#B8A8C9", "circle.circle", "Reproductive & hormonal"),
                 ("Gynaecomastia (breast tissue)", "#E8C8D9", "figure.stand", "Reproductive & hormonal"),
+                ("PMS symptoms", "#E8A0BF", "calendar.circle", "Reproductive & hormonal"),
+                ("Fertility concerns", "#D4A5B8", "heart.circle", "Reproductive & hormonal"),
+                ("Low testosterone symptoms", "#B8A8C9", "figure.stand.line.dotted.figure.stand", "Reproductive & hormonal"),
 
                 // Positive wellbeing
                 ("Energy", "#A8E6A3", "bolt.fill", "Positive wellbeing"),
@@ -688,7 +721,13 @@ struct SampleDataSeeder {
                 ("Calm", "#C2E8D4", "leaf.fill", "Positive wellbeing"),
                 ("Resilience", "#B8E6C9", "shield.fill", "Positive wellbeing"),
                 ("Creativity", "#E6C2FF", "paintbrush.fill", "Positive wellbeing"),
-                ("Social connection", "#FFD9B3", "person.2.fill", "Positive wellbeing")
+                ("Social connection", "#FFD9B3", "person.2.fill", "Positive wellbeing"),
+                ("Physical strength", "#B8E6C9", "figure.strengthtraining.traditional", "Positive wellbeing"),
+                ("Clear thinking", "#A3D9E6", "lightbulb.fill", "Positive wellbeing"),
+                ("Hope", "#C2E8D4", "sunrise.fill", "Positive wellbeing"),
+                ("Gratitude", "#FFD9B3", "heart.text.square.fill", "Positive wellbeing"),
+                ("Restful sleep", "#B4A7D6", "bed.double.fill", "Positive wellbeing"),
+                ("Connected to Country", "#C2E8D4", "leaf.circle.fill", "Positive wellbeing")
             ]
 
             // Only add symptoms that don't already exist (by name)

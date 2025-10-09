@@ -21,7 +21,15 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 [bundle exec] fastlane ios screenshots
 ```
 
-Generate screenshots for App Store Connect
+Generate screenshots for App Store Connect (latest devices)
+
+### ios screenshots_framed
+
+```sh
+[bundle exec] fastlane ios screenshots_framed
+```
+
+Generate screenshots with devices that support frames
 
 ### ios add_frames
 
@@ -39,6 +47,14 @@ Frame screenshots with device frames
 
 Generate, resize, and frame screenshots for App Store
 
+### ios prepare_framed_screenshots
+
+```sh
+[bundle exec] fastlane ios prepare_framed_screenshots
+```
+
+Generate framed screenshots ready for App Store
+
 ### ios resize_screenshots
 
 ```sh
@@ -46,6 +62,14 @@ Generate, resize, and frame screenshots for App Store
 ```
 
 Resize iPhone screenshots for App Store Connect
+
+### ios resize_screenshots_framed
+
+```sh
+[bundle exec] fastlane ios resize_screenshots_framed
+```
+
+Resize framed screenshots for App Store Connect
 
 ### ios ui_tests
 

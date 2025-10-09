@@ -5,15 +5,37 @@ require "shellwords"
 default_platform(:ios)
 
 platform :ios do
-  desc "Generate screenshots for App Store Connect"
+  desc "Generate screenshots for App Store Connect (latest devices)"
   lane :screenshots do
     snapshot(scheme: "MurmurUITests")
+  end
+
+  desc "Generate screenshots with devices that support frames"
+  lane :screenshots_framed do
+    snapshot(
+      scheme: "MurmurUITests",
+      devices: [
+        "iPhone 16 Pro Max",
+        "iPhone 15 Pro",
+        "iPhone 13"
+      ],
+      languages: ["en-AU"],
+      output_directory: "./fastlane-output/screenshots-framed",
+      clear_previous_screenshots: true,
+      override_status_bar: true,
+      override_status_bar_arguments: "--time 2025-05-09T09:41:00+10:30 --dataNetwork '5g-uwb' --cellularMode 'active' --cellularBars 3 --operatorName 'Telecom Australia' --batteryState 'discharging' --batteryLevel 80",
+      only_testing: ["MurmurUITests/MurmurUITests/testGenerateScreenshots"],
+      stop_after_first_error: false,
+      number_of_retries: 3,
+      erase_simulator: true,
+      reinstall_app: true
+    )
   end
 
   desc "Frame screenshots with device frames"
   lane :add_frames do
     frameit(
-      path: "./fastlane-output/screenshots",
+      path: "./fastlane-output/screenshots-framed",
       silver: true
     )
   end
@@ -22,13 +44,29 @@ platform :ios do
   lane :prepare_screenshots do
     screenshots
     resize_screenshots
+  end
+
+  desc "Generate framed screenshots ready for App Store"
+  lane :prepare_framed_screenshots do
+    screenshots_framed
+    # Resize if needed
+    resize_screenshots_framed
     add_frames
   end
 
   desc "Resize iPhone screenshots for App Store Connect"
   lane :resize_screenshots do
-    # Resize >6.7" iPhone captures (1320x2868) down to App Store requirement (1284x2778)
-    screenshot_dir = File.expand_path("../fastlane-output/screenshots", __dir__)
+    resize_screenshot_helper(directory: "./fastlane-output/screenshots")
+  end
+
+  desc "Resize framed screenshots for App Store Connect"
+  lane :resize_screenshots_framed do
+    resize_screenshot_helper(directory: "./fastlane-output/screenshots-framed")
+  end
+
+  # Helper method for resizing screenshots
+  private_lane :resize_screenshot_helper do |options|
+    screenshot_dir = File.expand_path("../#{options[:directory]}", __dir__)
     files = Dir.glob("#{screenshot_dir}/**/iPhone*.png").reject { |path| path.include?("/framed/") }
 
     if files.empty?

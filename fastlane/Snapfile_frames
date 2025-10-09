@@ -1,23 +1,22 @@
-# Snapfile for Murmur screenshot automation
+# Snapfile for Murmur screenshot automation - Devices with frame support
+# Use this configuration when you want to generate screenshots with device frames
 
-# List of devices to generate screenshots for
-# Using latest/future device models for testing
+# List of devices with confirmed frameit support
 devices([
-  "iPhone 17 Pro Max",        # 6.9" - Latest generation
-  "iPhone 17 Pro",            # 6.3" - Standard Pro model
-  "iPhone 13 mini",           # 5.4" - Smallest modern iPhone
-  "iPad Pro 13-inch (M4)",    # 13" iPad Pro
-  "iPad mini (A17 Pro)"       # 8.3" iPad mini
+  "iPhone 16 Pro Max",                      # 6.9" - Latest with frames
+  "iPhone 15 Pro",                          # 6.1" - Solid frame support
+  "iPhone 13",                              # 6.1" - Proven frame support
+  "iPad Pro (12.9-inch) (6th generation)",  # 12.9" - Has frame support
+  "iPad mini (6th generation)"              # 8.3" - Has frame support
 ])
 
 # List of languages to screenshot
-# Add more languages as needed for localisation
 languages([
   "en-AU"
 ])
 
 # Where to put the screenshots
-output_directory "./fastlane-output/screenshots"
+output_directory "./fastlane-output/screenshots-framed"
 
 # Clear previous screenshots
 clear_previous_screenshots true
@@ -28,9 +27,6 @@ override_status_bar true
 # Status bar override settings
 override_status_bar_arguments "--time 2025-05-09T09:41:00+10:30 --dataNetwork '5g-uwb' --cellularMode 'active' --cellularBars 3 --operatorName 'Telecom Australia' --batteryState 'discharging' --batteryLevel 80"
 
-# Arguments to pass to the app on launch
-# launch_arguments(["-FirstLaunch"])
-
 # Scheme that drives the UI tests for snapshot capture
 scheme "MurmurUITests"
 
@@ -38,9 +34,6 @@ scheme "MurmurUITests"
 only_testing([
   "MurmurUITests/MurmurUITests/testGenerateScreenshots"
 ])
-
-# For apps that support dark mode, enable this to capture dark mode screenshots
-# dark_mode true
 
 # Skip opening simulator after snapshot completes
 stop_after_first_error false
@@ -53,6 +46,3 @@ erase_simulator true
 
 # Reinstall app before running
 reinstall_app true
-
-# Delay between launching app and taking screenshots (in seconds)
-# launch_test_target_wait_for_animations true
