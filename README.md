@@ -50,7 +50,7 @@ This is a personal health tool, but suggestions and improvements are welcome. If
 
 ## License
 
-MIT License - see LICENSE file for details.
+MIT License - see LICENSE file for details. The name, logo, and branding are protected, and commercial app store distribution requires substantial modifications, distinct branding, and proper attribution to prevent low-effort clones. The MIT-licensed *code* can be freely used and modified.
 
 ## Support
 

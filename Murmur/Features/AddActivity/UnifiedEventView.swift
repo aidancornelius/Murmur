@@ -1106,7 +1106,9 @@ struct UnifiedEventView: View {
             case .unknown:
                 // Smart suggestion based on time
                 let hour = Calendar.current.component(.hour, from: Date())
-                if hour < 9 || hour > 21 {
+                let shouldSuggestSleep = (hour >= 6 && hour < 9) || hour > 21
+
+                if shouldSuggestSleep && !hasSleepInLast12Hours() {
                     eventType = .sleep
                     showSleepQualityCard = true
                 } else {
@@ -1340,6 +1342,23 @@ struct UnifiedEventView: View {
             }
         }
     }
+
+    private func hasSleepInLast12Hours() -> Bool {
+        let request = SleepEvent.fetchRequest()
+        let twelveHoursAgo = Date().addingTimeInterval(-12 * 3600)
+        request.predicate = NSPredicate(
+            format: "createdAt >= %@",
+            twelveHoursAgo as NSDate
+        )
+        request.fetchLimit = 1
+
+        do {
+            let count = try context.count(for: request)
+            return count > 0
+        } catch {
+            return false
+        }
+    }
 }
 
 // MARK: - Supporting Views
@@ -1450,7 +1469,6 @@ struct ExertionRingSelector: View {
                         color: color
                     ) {
                         value = level
-                        HapticFeedback.light.trigger()
                     }
                 }
             }

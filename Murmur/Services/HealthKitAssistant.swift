@@ -49,7 +49,7 @@ protocol HealthKitDataProvider {
 }
 
 /// Real HealthKit data provider that uses HKHealthStore
-final class RealHealthKitDataProvider: HealthKitDataProvider {
+final class RealHealthKitDataProvider: HealthKitDataProvider, @unchecked Sendable {
     private let store = HKHealthStore()
     private var activeQueries: [HKQuery] = []
 
@@ -343,13 +343,39 @@ final class HealthKitAssistant: HealthKitAssistantProtocol, ObservableObject {
                 sessions.append(currentSession)
             }
 
-            // Get the most recent sleep session
-            guard let lastSession = sessions.last, !lastSession.isEmpty else { return nil }
+            guard !sessions.isEmpty else { return nil }
 
-            let bedTime = lastSession.first?.startDate
-            let wakeTime = lastSession.last?.endDate
+            // Find the most recent session
+            guard let mostRecentSession = sessions.last else { return nil }
+            guard let mostRecentWakeTime = mostRecentSession.last?.endDate else { return nil }
 
-            let totalSeconds = lastSession.reduce(0.0) { total, sample in
+            // Include all sessions that are part of "tonight's sleep":
+            // - Within 8 hours before the most recent wake time (to catch broken sleep)
+            // - Started during sleep hours (after 6pm or before 2pm)
+            let calendar = Calendar.current
+            let sleepWindowStart = mostRecentWakeTime.addingTimeInterval(-8 * 3600) // 8 hours before wake
+
+            let tonightsSessions = sessions.filter { session in
+                guard let sessionStart = session.first?.startDate,
+                      let sessionEnd = session.last?.endDate else { return false }
+
+                // Must end after the sleep window start (within 12 hours of most recent wake)
+                guard sessionEnd >= sleepWindowStart else { return false }
+
+                // Must start during typical sleep hours (after 6pm or before 2pm)
+                let hour = calendar.component(.hour, from: sessionStart)
+                let isDuringSleepHours = hour >= 18 || hour < 14
+
+                return isDuringSleepHours
+            }
+
+            guard !tonightsSessions.isEmpty else { return nil }
+
+            // Combine all qualifying sessions
+            let bedTime = tonightsSessions.first?.first?.startDate
+            let wakeTime = tonightsSessions.last?.last?.endDate
+
+            let totalSeconds = tonightsSessions.flatMap { $0 }.reduce(0.0) { total, sample in
                 total + sample.endDate.timeIntervalSince(sample.startDate)
             }
             let totalHours = totalSeconds / 3600.0
@@ -429,14 +455,21 @@ final class HealthKitAssistant: HealthKitAssistantProtocol, ObservableObject {
             return
         }
         if !force, let lastRestingSampleDate, Date().timeIntervalSince(lastRestingSampleDate) < AppConstants.HealthKit.restingHeartRateCacheDuration {
+            logger.debug("Using cached resting heart rate from \(lastRestingSampleDate)")
             return
         }
         do {
+            logger.debug("Fetching resting heart rate samples from last \(AppConstants.HealthKit.quantitySampleLookback / 3600) hours")
             let samples = try await fetchQuantitySamples(for: restingHeartType, limit: AppConstants.HealthKit.restingHeartRateSampleLimit)
+            logger.debug("Retrieved \(samples.count) resting heart rate samples")
             if let latest = samples.first {
                 let unit = HKUnit.count().unitDivided(by: HKUnit.minute())
                 latestRestingHR = latest.quantity.doubleValue(for: unit)
                 lastRestingSampleDate = latest.endDate
+                logger.debug("Updated resting heart rate to \(self.latestRestingHR ?? 0) bpm from \(latest.endDate)")
+            } else {
+                logger.warning("No resting heart rate samples found in the last \(AppConstants.HealthKit.quantitySampleLookback / 3600) hours")
+                latestRestingHR = nil
             }
         } catch {
             logger.error("Failed to refresh resting heart rate: \(error.localizedDescription)")

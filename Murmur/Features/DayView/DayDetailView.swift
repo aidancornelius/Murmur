@@ -666,24 +666,30 @@ private struct DaySummaryCard: View {
             }
 
             if let metrics, (metrics.predominantState != nil || metrics.cycleDay != nil || (metrics.averageHRV ?? 0) > 0 || (metrics.averageRestingHR ?? 0) > 0 || metrics.primaryLocation != nil) {
-                HStack(spacing: 16) {
-                    if let state = metrics.predominantState {
-                        MetricTile(title: "Feeling", value: state.displayText)
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 16) {
+                        if let state = metrics.predominantState {
+                            MetricTile(title: "Feeling", value: state.displayText)
+                        }
+                        if let cycleDay = metrics.cycleDay, cycleDay > 0 {
+                            MetricTile(title: "Cycle day", value: "Day \(cycleDay)")
+                        }
+                        if let hrv = metrics.averageHRV, hrv > 0 {
+                            MetricTile(title: "HRV", value: String(format: "%.0f ms", hrv))
+                        }
+                        if let resting = metrics.averageRestingHR, resting > 0 {
+                            MetricTile(title: "Heart rate", value: String(format: "%.0f bpm", resting))
+                        }
                     }
-                    if let cycleDay = metrics.cycleDay, cycleDay > 0 {
-                        MetricTile(title: "Cycle day", value: "Day \(cycleDay)")
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(.ultraThinMaterial, in: Capsule())
+
+                    if let location = metrics.primaryLocation {
+                        Label(location, systemImage: "location.circle")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
-                    if let hrv = metrics.averageHRV, hrv > 0 {
-                        MetricTile(title: "HRV", value: String(format: "%.0f ms", hrv))
-                    }
-                    if let resting = metrics.averageRestingHR, resting > 0 {
-                        MetricTile(title: "Heart rate", value: String(format: "%.0f bpm", resting))
-                    }
-                }
-                if let location = metrics.primaryLocation {
-                    Label(location, systemImage: "location.circle")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 }
             }
 

@@ -1,7 +1,31 @@
 {
   "images" : [
     {
-      "filename" : "murmur.png",
+      "filename" : "eb-light@2x.png",
+      "idiom" : "universal",
+      "platform" : "ios",
+      "size" : "1024x1024"
+    },
+    {
+      "appearances" : [
+        {
+          "appearance" : "luminosity",
+          "value" : "dark"
+        }
+      ],
+      "filename" : "eb-dark@2x.png",
+      "idiom" : "universal",
+      "platform" : "ios",
+      "size" : "1024x1024"
+    },
+    {
+      "appearances" : [
+        {
+          "appearance" : "luminosity",
+          "value" : "tinted"
+        }
+      ],
+      "filename" : "eb-trs@2x.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
