@@ -11,10 +11,12 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "1.3"
-    CURRENT_PROJECT_VERSION: "1"
+    MARKETING_VERSION: "1.40"
+    CURRENT_PROJECT_VERSION: "100"
     ENABLE_HARDENED_RUNTIME: NO
     DEVELOPMENT_TEAM: HK6R36PLNR
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    ASSETCATALOG_COMPILER_GENERATE_SWIFT_APPINTENTS_METADATA: YES
   configs:
     Debug:
       SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
@@ -31,14 +33,23 @@ targets:
           - "**/*.md"
           - "**/Info.plist"
           - "MurmurTests"
+    info:
+      path: Murmur/Resources/Info.plist
+      properties:
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSApplicationCategoryType: public.app-category.healthcare-fitness
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.cornelius-bell.Murmur
         INFOPLIST_FILE: Murmur/Resources/Info.plist
         CODE_SIGN_ENTITLEMENTS: Murmur/Murmur.entitlements
+        MARKETING_VERSION: "1.40"
+        CURRENT_PROJECT_VERSION: "100"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         ASSETCATALOG_OTHER_FLAGS: --enable-icon-stack-fallback-generation=disabled
+        ASSETCATALOG_COMPILER_GENERATE_ASSET_SYMBOLS: YES
         SWIFT_EMIT_LOC_STRINGS: YES
         ENABLE_PREVIEWS: YES
         LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks"
@@ -65,11 +76,18 @@ targets:
     info:
       path: MurmurWidgets/Info.plist
       properties:
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleDisplayName: Murmur Widgets
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.cornelius-bell.Murmur.MurmurWidgets
+        PRODUCT_NAME: MurmurWidgets
+        PRODUCT_DISPLAY_NAME: Murmur Widgets
+        MARKETING_VERSION: "1.40"
+        CURRENT_PROJECT_VERSION: "100"
         SKIP_INSTALL: YES
         LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks"
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
@@ -89,7 +107,6 @@ targets:
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Murmur.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Murmur"
         BUNDLE_LOADER: "$(TEST_HOST)"
         LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks @loader_path/Frameworks"
-        ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES: YES
         GENERATE_INFOPLIST_FILE: YES
     dependencies:
       - target: Murmur

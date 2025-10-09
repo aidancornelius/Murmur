@@ -18,59 +18,7 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
-	<key>NSCalendarsFullAccessUsageDescription</key>
-	<string>Murmur can read from your calendar to help you track exertion.</string>
-	<key>NSHealthClinicalHealthRecordsShareUsageDescription</key>
-	<string>Murmur may write symptom data to Health in the future to integrate with your health records.</string>
-	<key>NSHealthShareUsageDescription</key>
-	<string>Murmur can read your health data to add private context to your entries.</string>
-	<key>NSHealthUpdateUsageDescription</key>
-	<string>Murmur may write symptom data to Health in the future to integrate with your health records.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Optionally, to add location to your entries.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Murmur needs microphone access for voice commands to log symptoms hands-free.</string>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Murmur uses speech recognition to allow hands-free symptom logging via voice commands.</string>
-	<key>NSSupportsLiveActivitiesFrequentUpdates</key>
-	<true/>
-	<key>NSUserActivityTypes</key>
-	<array>
-		<string>LogSymptomIntent</string>
-		<string>OpenAddEntryIntent</string>
-		<string>OpenAddActivityIntent</string>
-		<string>GetRecentEntriesIntent</string>
-		<string>GetSymptomsBySeverityIntent</string>
-		<string>GetDailySummaryIntent</string>
-		<string>CountSymptomsIntent</string>
-	</array>
-	<key>BGTaskSchedulerPermittedIdentifiers</key>
-	<array>
-		<string>com.aidancb.Murmur.autobackup</string>
-	</array>
-	<key>UIApplicationSceneManifest</key>
-	<dict>
-		<key>UIApplicationSupportsMultipleScenes</key>
-		<false/>
-	</dict>
-	<key>UILaunchStoryboardName</key>
-	<string>LaunchScreen</string>
-	<key>UIRequiresPersistentWiFi</key>
-	<false/>
-	<key>UIStatusBarHidden</key>
-	<false/>
-	<key>UISupportedInterfaceOrientations</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-	</array>
-	<key>UISupportedInterfaceOrientations~ipad</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.healthcare-fitness</string>
 </dict>
 </plist>

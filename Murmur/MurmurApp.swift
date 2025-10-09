@@ -17,7 +17,6 @@ extension Notification.Name {
 struct MurmurApp: App {
     @UIApplicationDelegateAdaptor(MurmurAppDelegate.self) private var appDelegate
     @StateObject private var appearanceManager = AppearanceManager.shared
-    @StateObject private var appLock = AppLockController()
 
     private let stack = CoreDataStack.shared
 
@@ -41,7 +40,6 @@ struct MurmurApp: App {
                     .environmentObject(appDelegate.calendarAssistant)
                     .environmentObject(manualCycleTracker)
                     .environmentObject(appearanceManager)
-                    .environmentObject(appLock)
                     .task {
                         // Configure app for UI testing (data seeding etc)
                         // Run in background to avoid blocking UI
@@ -63,7 +61,6 @@ private struct RootContainer: View {
     @Environment(\.managedObjectContext) private var context
     @EnvironmentObject private var healthKit: HealthKitAssistant
     @EnvironmentObject private var calendar: CalendarAssistant
-    @EnvironmentObject private var appLock: AppLockController
     @Environment(\.scenePhase) private var scenePhase
     @State private var showingAddEntry = false
     @State private var showingAddActivity = false
@@ -169,28 +166,10 @@ private struct RootContainer: View {
                         }
                     }
                     .environmentObject(healthKit)
-                    .environmentObject(appLock)
                 }
-            }
-
-            if appLock.isLockActive {
-                LockOverlayView()
             }
         }
         .themedSurface()
-        .onChange(of: scenePhase) { _, newPhase in
-            switch newPhase {
-            case .background:
-                appLock.appDidEnterBackground()
-            case .active:
-                Task { await appLock.requestUnlockIfNeeded() }
-            default:
-                break
-            }
-        }
-        .task {
-            await appLock.requestUnlockIfNeeded()
-        }
     }
 
     private func cleanOrphanedEntries(in context: NSManagedObjectContext) {

@@ -38,12 +38,8 @@ struct AddEntryScreen {
     }
 
     var notesField: XCUIElement {
-        // TextField with axis: .vertical may appear as textView instead of textField
-        let textField = app.textFields.matching(identifier: AccessibilityIdentifiers.noteTextField).firstMatch
-        if textField.exists {
-            return textField
-        }
-        return app.textViews.matching(identifier: AccessibilityIdentifiers.noteTextField).firstMatch
+        // TextField with axis: .vertical appears as textView in the accessibility tree
+        app.textViews.matching(identifier: AccessibilityIdentifiers.noteTextField).firstMatch
     }
 
     // MARK: - Actions
@@ -96,7 +92,9 @@ struct AddEntryScreen {
 
     /// Enter note text
     func enterNote(_ text: String, timeout: TimeInterval = 2) {
-        _ = notesField.waitForExistence(timeout: timeout)
+        guard notesField.waitForExistence(timeout: timeout) else {
+            return
+        }
         // Scroll to make the field visible if needed
         notesField.scrollToVisible()
         notesField.tap()

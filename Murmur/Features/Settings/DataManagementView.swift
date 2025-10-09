@@ -80,7 +80,7 @@ struct DataManagementView: View {
 
     private var introSection: some View {
         Section {
-            Text("You may wish to back up your entries, for instance, to transfer them to a new device. You may also reset the app to start fresh.")
+            Text("You may wish to back up your entries, for instance, to transfer them to a new device. Automatic incremental backups are also available so you can recover from accidental deletion or incorrect entries. You may also reset the app to start fresh.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .listRowBackground(Color.clear)

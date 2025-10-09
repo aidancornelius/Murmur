@@ -15,7 +15,6 @@ enum SettingsRoute: Hashable {
     case manualCycle
     case dataManagement
     case export
-    case security
     case appearance
     case accessibility
     case tipJar
@@ -77,12 +76,9 @@ struct SettingsRootView: View {
                     .accessibilityIdentifier(AccessibilityIdentifiers.dataManagementButton)
                     .accessibilityInputLabels(["Data management", "Backup", "Restore data", "Manage data"])
                     .listRowBackground(palette.surfaceColor)
-//                NavigationLink("Export entries", value: SettingsRoute.export)
-//                    .accessibilityHint("Generate a PDF export of your symptom history")
-//                    .listRowBackground(palette.surfaceColor)
-//                NavigationLink("Privacy & security", value: SettingsRoute.security)
-//                    .accessibilityHint("Enable biometric lock and review privacy options")
-//                    .listRowBackground(palette.surfaceColor)
+                  NavigationLink("Export entries", value: SettingsRoute.export)
+                      .accessibilityHint("Generate a PDF export of your symptom history")
+                      .listRowBackground(palette.surfaceColor)
             }
 
             Section("Accessibility") {
@@ -266,8 +262,6 @@ struct SettingsRootView: View {
                 DataManagementView()
             case .export:
                 ExportOptionsView()
-            case .security:
-                SecuritySettingsView()
             case .appearance:
                 AppearanceSettingsView()
             case .accessibility:

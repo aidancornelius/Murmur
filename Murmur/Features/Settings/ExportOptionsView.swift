@@ -8,64 +8,65 @@
 import SwiftUI
 
 struct ExportOptionsView: View {
+    @EnvironmentObject private var appearanceManager: AppearanceManager
+    @Environment(\.colorScheme) private var colorScheme
     @State private var isExporting = false
     @State private var pdfURL: URL?
     @State private var showShareSheet = false
     @State private var errorMessage: String?
     private let pdfExporter = PDFExporter()
 
+    private var palette: ColorPalette {
+        appearanceManager.currentPalette(for: colorScheme)
+    }
+
     var body: some View {
-        VStack(spacing: 20) {
+        Form {
+            Section {
+                Text("Create a PDF document containing all your symptom entries for your records or to share with healthcare providers.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .listRowBackground(Color.clear)
+            }
+
+            Section("Export") {
+                Button {
+                    createPDFExport()
+                } label: {
+                    Label("Export all entries", systemImage: "square.and.arrow.up")
+                }
+                .disabled(isExporting)
+
+                Text("Generates a PDF with your complete symptom history")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .listRowBackground(palette.surfaceColor)
+
             if isExporting {
-                VStack(spacing: 16) {
-                    ProgressView()
-                        .scaleEffect(1.5)
-                    Text("Generating PDF...")
-                        .font(.headline)
-                    Text("Please wait whilst we export your entries")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                VStack(spacing: 12) {
-                    Image(systemName: "doc.richtext")
-                        .font(.system(size: 60))
-                        .foregroundStyle(.blue)
-                        .padding(.top, 40)
-
-                    Text("Export to PDF")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-
-                    Text("Create a PDF document with all your symptom entries")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-
-                    Spacer()
-
-                    Button(action: createPDFExport) {
-                        Label("Export all entries", systemImage: "square.and.arrow.up")
-                            .frame(maxWidth: .infinity)
+                Section {
+                    HStack(spacing: 12) {
+                        ProgressView()
+                        Text("Generating PDF...")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
-                    .padding(.horizontal)
-                    .padding(.bottom, 40)
                 }
+                .listRowBackground(palette.surfaceColor)
+            }
 
-                if let errorMessage {
+            if let errorMessage {
+                Section {
                     Text(errorMessage)
                         .font(.caption)
                         .foregroundStyle(.red)
-                        .padding(.horizontal)
-                        .padding(.bottom, 20)
                 }
+                .listRowBackground(palette.surfaceColor)
             }
         }
-        .navigationTitle("Export your data")
+        .navigationTitle("Export entries")
+        .navigationBarTitleDisplayMode(.large)
+        .themedScrollBackground()
         .sheet(isPresented: $showShareSheet) {
             if let pdfURL {
                 ShareSheet(items: [pdfURL])
