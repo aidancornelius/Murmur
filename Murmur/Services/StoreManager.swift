@@ -30,6 +30,14 @@ class StoreManager: ObservableObject {
             await loadProducts()
             await checkPurchaseHistory()
         }
+
+        // Listen for transaction updates to handle purchases that complete
+        // when the app is backgrounded or killed
+        Task {
+            for await result in Transaction.updates {
+                await handleTransactionUpdate(result)
+            }
+        }
     }
 
     func checkPurchaseHistory() async {
@@ -89,5 +97,29 @@ class StoreManager: ObservableObject {
 
     func resetPurchaseState() {
         purchaseState = .idle
+    }
+
+    private func handleTransactionUpdate(_ result: VerificationResult<StoreKit.Transaction>) async {
+        switch result {
+        case .verified(let transaction):
+            // Only process transactions for our products
+            guard productIDs.contains(transaction.productID) else {
+                return
+            }
+
+            logger.info("Transaction update received - Product: \(transaction.productID), Transaction ID: \(transaction.id)")
+
+            // Finish the transaction
+            await transaction.finish()
+
+            // Update state
+            hasTipped = true
+            purchaseState = .purchased
+
+        case .unverified(let transaction, let error):
+            logger.error("Unverified transaction for \(transaction.productID): \(error.localizedDescription)")
+            // Still finish unverified transactions to prevent them from appearing again
+            await transaction.finish()
+        }
     }
 }

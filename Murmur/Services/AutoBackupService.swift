@@ -353,19 +353,20 @@ final class AutoBackupService {
         // Schedule next backup
         scheduleNextBackup()
 
-        // Set expiration handler
-        task.expirationHandler = {
-            task.setTaskCompleted(success: false)
-        }
-
-        // Perform backup
-        Task {
+        // Create task to perform backup
+        let backupTask = Task {
             do {
                 try await performBackup()
                 task.setTaskCompleted(success: true)
             } catch {
                 task.setTaskCompleted(success: false)
             }
+        }
+
+        // Set expiration handler to cancel if needed
+        task.expirationHandler = {
+            backupTask.cancel()
+            task.setTaskCompleted(success: false)
         }
     }
 

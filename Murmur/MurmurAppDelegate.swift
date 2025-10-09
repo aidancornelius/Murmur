@@ -46,6 +46,14 @@ final class MurmurAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificati
         // Register background task for auto backups (unless in UI test mode)
         if !UITestConfiguration.isUITesting {
             registerBackgroundTasks()
+
+            // Ensure backup is scheduled if enabled
+            Task { @MainActor in
+                if AutoBackupService.shared.isEnabled {
+                    AutoBackupService.shared.scheduleNextBackup()
+                    await AutoBackupService.shared.performBackupIfNeeded()
+                }
+            }
         }
 
         // Configure UIKit appearance for forms
@@ -57,10 +65,11 @@ final class MurmurAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificati
     private func registerBackgroundTasks() {
         BGTaskScheduler.shared.register(
             forTaskWithIdentifier: AutoBackupService.backgroundTaskIdentifier,
-            using: nil
+            using: DispatchQueue.global()
         ) { task in
+            guard let appRefreshTask = task as? BGAppRefreshTask else { return }
             Task { @MainActor in
-                AutoBackupService.shared.handleBackgroundTask(task as! BGAppRefreshTask)
+                AutoBackupService.shared.handleBackgroundTask(appRefreshTask)
             }
         }
     }
