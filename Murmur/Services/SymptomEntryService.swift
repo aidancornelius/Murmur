@@ -67,24 +67,58 @@ struct SymptomEntryService {
         let placemark = includeLocation ? await location.currentPlacemark() : nil
         try Task.checkCancellation()
 
-        // Fetch all HealthKit data in parallel
-        let hrv = await healthKit.recentHRV()
-        try Task.checkCancellation()
+        // Determine if this is a backdated entry (more than 1 hour in the past)
+        let targetDate = timestamp
+        let hourAgo = Date().addingTimeInterval(-3600)
+        let isBackdated = targetDate < hourAgo
 
-        let rhr = await healthKit.recentRestingHR()
-        try Task.checkCancellation()
+        // Fetch HealthKit data - use historical methods for backdated entries
+        let hrv: Double?
+        let rhr: Double?
+        let sleep: Double?
+        let workout: Double?
+        let cycleDay: Int?
+        let flowLevel: String?
 
-        let sleep = await healthKit.recentSleepHours()
-        try Task.checkCancellation()
+        if isBackdated {
+            // Use historical queries for the target date
+            hrv = await healthKit.hrvForDate(targetDate)
+            try Task.checkCancellation()
 
-        let workout = await healthKit.recentWorkoutMinutes()
-        try Task.checkCancellation()
+            rhr = await healthKit.restingHRForDate(targetDate)
+            try Task.checkCancellation()
 
-        let cycleDay = await healthKit.recentCycleDay()
-        try Task.checkCancellation()
+            sleep = await healthKit.sleepHoursForDate(targetDate)
+            try Task.checkCancellation()
 
-        let flowLevel = await healthKit.recentFlowLevel()
-        try Task.checkCancellation()
+            workout = await healthKit.workoutMinutesForDate(targetDate)
+            try Task.checkCancellation()
+
+            cycleDay = await healthKit.cycleDayForDate(targetDate)
+            try Task.checkCancellation()
+
+            flowLevel = await healthKit.flowLevelForDate(targetDate)
+            try Task.checkCancellation()
+        } else {
+            // Use recent queries for current entries
+            hrv = await healthKit.recentHRV()
+            try Task.checkCancellation()
+
+            rhr = await healthKit.recentRestingHR()
+            try Task.checkCancellation()
+
+            sleep = await healthKit.recentSleepHours()
+            try Task.checkCancellation()
+
+            workout = await healthKit.recentWorkoutMinutes()
+            try Task.checkCancellation()
+
+            cycleDay = await healthKit.recentCycleDay()
+            try Task.checkCancellation()
+
+            flowLevel = await healthKit.recentFlowLevel()
+            try Task.checkCancellation()
+        }
 
         // Create entries
         var createdEntries: [SymptomEntry] = []

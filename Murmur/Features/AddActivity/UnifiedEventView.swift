@@ -580,6 +580,10 @@ struct UnifiedEventView: View {
                     showTimeCard = false
                     showSleepQualityCard = true
                     showMealTypeCard = false
+                    // Prepopulate with "Sleep" if the field is empty
+                    if mainInput.trimmingCharacters(in: .whitespaces).isEmpty {
+                        mainInput = "Sleep"
+                    }
                 }
                 HapticFeedback.selection.trigger()
             }) {

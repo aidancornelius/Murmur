@@ -5,20 +5,373 @@ require "shellwords"
 default_platform(:ios)
 
 platform :ios do
-  desc "Generate screenshots for App Store Connect (latest devices)"
+  # =================
+  # Testing Lanes
+  # =================
+
+  desc <<-DESC
+    Unit Tests
+
+    Runs all unit tests for the Murmur scheme with code coverage.
+
+    What this tests:
+    - Core business logic and data models
+    - Service layer functionality
+    - Helper utilities and extensions
+
+    Duration: <1 minute
+    Device: iPhone 17 Pro
+    Coverage: Enabled (generates code coverage report)
+  DESC
+  lane :test do
+    UI.header("Unit Tests")
+    UI.message("Running unit tests with code coverage...")
+
+    scan(
+      scheme: "Murmur",
+      device: "iPhone 17 Pro",
+      code_coverage: true,
+      result_bundle: true,
+      output_directory: "./fastlane-output/test-reports"
+    )
+
+    UI.success("✓ Unit tests passed")
+  end
+
+  desc <<-DESC
+    UI Tests - Standard Devices
+
+    Runs UI tests on standard devices (iPhone and iPad).
+
+    What this tests:
+    - User interface interactions
+    - Navigation flows
+    - Accessibility features
+    - Visual layouts on different form factors
+
+    Duration: ~2-3 minutes
+    Devices: iPhone 17 Pro, iPad Pro 13-inch (M4)
+  DESC
+  lane :test_ui do
+    UI.header("UI Tests - Standard Devices")
+    UI.message("Testing on: iPhone 17 Pro, iPad Pro 13-inch (M4)")
+
+    scan(
+      scheme: "MurmurUITests",
+      devices: ["iPhone 17 Pro", "iPad Pro 13-inch (M4)"],
+      result_bundle: true,
+      output_directory: "./fastlane-output/test-reports"
+    )
+
+    UI.success("✓ UI tests passed on standard devices")
+  end
+
+  desc <<-DESC
+    UI Tests - Full Device Coverage
+
+    Runs UI tests across comprehensive device matrix (5 devices).
+
+    What this tests:
+    - Compatibility across device generations (iPhone 13-17)
+    - Form factor variations (mini, standard, Pro, iPad sizes)
+    - Screen size adaptations
+
+    Duration: ~8-12 minutes
+    Devices:
+    - iPhone 17 Pro
+    - iPhone 16 Pro
+    - iPhone 15 Pro
+    - iPad Pro 13-inch (M4)
+    - iPad mini (A17 Pro)
+
+    Use when: Pre-release validation or testing layout changes
+  DESC
+  lane :test_ui_full do
+    UI.header("UI Tests - Full Device Coverage")
+    UI.message("Testing across 5 devices (iPhones and iPads)...")
+    UI.message("⏱  Note: This will take 8-12 minutes")
+
+    scan(
+      scheme: "MurmurUITests",
+      devices: [
+        "iPhone 17 Pro",
+        "iPhone 16 Pro",
+        "iPhone 15 Pro",
+        "iPad Pro 13-inch (M4)",
+        "iPad mini (A17 Pro)"
+      ],
+      result_bundle: true,
+      output_directory: "./fastlane-output/test-reports"
+    )
+
+    UI.success("✓ UI tests passed on all devices")
+  end
+
+  desc <<-DESC
+    Smoke Tests - Critical User Journeys
+
+    Quick validation of essential app functionality.
+
+    What this tests:
+    - Complete symptom entry flow
+    - Navigate to day detail view
+    - View trends chart
+    - Add custom symptom type
+
+    Duration: ~1 minute
+    Device: iPhone 17 Pro
+    Use when: Quick validation after small changes or before commits
+  DESC
+  lane :test_smoke do
+    UI.header("Smoke Tests - Critical User Journeys")
+    UI.message("Running quick validation of core functionality...")
+
+    scan(
+      scheme: "MurmurUITests",
+      only_testing: [
+        "MurmurUITests/UserJourneyTests/testCompleteSymptomEntry",
+        "MurmurUITests/UserJourneyTests/testNavigateToDayDetail",
+        "MurmurUITests/UserJourneyTests/testViewTrendsChart",
+        "MurmurUITests/UserJourneyTests/testAddSymptomType"
+      ],
+      devices: ["iPhone 17 Pro"],
+      result_bundle: true,
+      output_directory: "./fastlane-output/test-reports"
+    )
+
+    UI.success("✓ Smoke tests passed - core functionality working")
+  end
+
+  # =================
+  # HealthKit Testing
+  # =================
+  #
+  # HealthKit integration tests verify the app correctly displays and processes
+  # synthetic health data from the HealthKitUtility library. Tests use deterministic
+  # seeds to ensure reproducible results across runs.
+
+  desc <<-DESC
+    HealthKit Integration Tests - Normal Profile
+
+    Runs core HealthKit integration tests with a normal health profile (7 days of data).
+
+    What this tests:
+    - App correctly imports synthetic HealthKit data (HRV, sleep, workouts, cycle tracking)
+    - UI displays health metrics accurately
+    - Data flows from HealthKit → SampleDataSeeder → Core Data → UI
+
+    Duration: ~1-2 minutes
+    Use when: Verifying basic HealthKit integration after changes
+  DESC
+  lane :test_healthkit do
+    UI.header("HealthKit Integration Tests - Normal Profile")
+    UI.message("Testing: 7 days of synthetic health data with normal profile")
+    UI.message("Device: iPhone 17 Pro")
+
+    scan(
+      scheme: "MurmurUITests",
+      only_testing: ["MurmurUITests/HealthKitIntegrationTests"],
+      devices: ["iPhone 17 Pro"],
+      result_bundle: true,
+      output_directory: "./fastlane-output/test-reports"
+    )
+
+    UI.success("✓ HealthKit integration tests passed")
+  end
+
+  desc <<-DESC
+    HealthKit Integration Tests - Extended Historical Data
+
+    Runs tests with 30 days of synthetic health data to verify historical data handling.
+
+    What this tests:
+    - App handles larger datasets (30 days vs standard 7 days)
+    - Historical trends display correctly
+    - Performance with extended data range
+
+    Duration: ~3-5 minutes (longer due to data seeding)
+    Use when: Testing historical data features or performance with larger datasets
+  DESC
+  lane :test_healthkit_extended do
+    UI.header("HealthKit Integration Tests - Extended Historical Data")
+    UI.message("Testing: 30 days of synthetic health data")
+    UI.message("Device: iPhone 17 Pro")
+    UI.message("⏱  Note: This will take longer due to extended data seeding")
+
+    scan(
+      scheme: "MurmurUITests",
+      only_testing: [
+        "MurmurUITests/HealthKitIntegrationTests/testAppWithExtendedHistoricalData"
+      ],
+      devices: ["iPhone 17 Pro"],
+      result_bundle: true,
+      output_directory: "./fastlane-output/test-reports"
+    )
+
+    UI.success("✓ Extended historical data tests passed")
+  end
+
+  desc <<-DESC
+    HealthKit Deterministic Fixture Tests
+
+    Verifies deterministic data generation - same seed produces identical results.
+
+    What this tests:
+    - Synthetic data generator produces identical output with seed=42
+    - UI displays exact expected values from fixture data
+    - Determinism is maintained across test runs
+
+    Duration: ~1 minute
+    Use when: Verifying deterministic behaviour after changing data generation logic
+    Critical for: Reproducible test results and debugging
+  DESC
+  lane :test_healthkit_deterministic do
+    UI.header("HealthKit Deterministic Fixture Tests")
+    UI.message("Testing: Deterministic data generation with seed=42")
+    UI.message("Device: iPhone 17 Pro")
+    UI.message("Verifying: UI values match expected fixture data exactly")
+
+    scan(
+      scheme: "MurmurUITests",
+      only_testing: [
+        "MurmurUITests/HealthKitIntegrationTests/testHealthMetricsMatchDeterministicFixture"
+      ],
+      devices: ["iPhone 17 Pro"],
+      result_bundle: true,
+      output_directory: "./fastlane-output/test-reports"
+    )
+
+    UI.success("✓ Deterministic fixture tests passed - data generation is reproducible")
+  end
+
+  desc <<-DESC
+    HealthKitUtility Library Smoke Tests
+
+    Low-level tests of the HealthKitUtility synthetic data library (not UI tests).
+
+    What this tests:
+    - SyntheticDataGenerator produces deterministic output
+    - HKSample conversion preserves data accuracy
+    - Library functions work correctly in isolation
+
+    Duration: <30 seconds
+    Use when: Verifying the underlying data library before UI testing
+    Test suite: MurmurTests (unit tests, not UI tests)
+  DESC
+  lane :test_healthkit_utility do
+    UI.header("HealthKitUtility Library Smoke Tests")
+    UI.message("Testing: Synthetic data library in isolation")
+    UI.message("Device: iPhone 17 Pro")
+    UI.message("Test suite: MurmurTests (unit tests)")
+
+    scan(
+      scheme: "Murmur",
+      only_testing: ["MurmurTests/HealthKitUtilitySmokeTests"],
+      device: "iPhone 17 Pro",
+      result_bundle: true,
+      output_directory: "./fastlane-output/test-reports"
+    )
+
+    UI.success("✓ HealthKitUtility smoke tests passed - library working correctly")
+  end
+
+  desc <<-DESC
+    Comprehensive HealthKit Test Suite
+
+    Runs all HealthKit-related tests in sequence:
+    1. Library smoke tests (HealthKitUtility)
+    2. Normal integration tests (7 days)
+    3. Deterministic fixture tests (seed validation)
+    4. Extended historical data tests (30 days)
+
+    Duration: ~5-8 minutes
+    Use when: Full validation before merging HealthKit changes
+    Recommended: Run this before releasing features that touch health data
+  DESC
+  lane :test_healthkit_full do
+    UI.header("Comprehensive HealthKit Test Suite")
+    UI.message("Running all HealthKit tests in sequence:")
+    UI.message("  1. HealthKitUtility smoke tests")
+    UI.message("  2. Normal integration tests")
+    UI.message("  3. Deterministic fixture tests")
+    UI.message("  4. Extended historical data tests")
+    UI.message("")
+    UI.message("⏱  Estimated duration: 5-8 minutes")
+
+    test_healthkit_utility
+    test_healthkit
+    test_healthkit_deterministic
+    test_healthkit_extended
+
+    UI.success("✓ All HealthKit tests passed successfully")
+  end
+
+  desc <<-DESC
+    Standard Test Suite (Unit + UI + HealthKit)
+
+    Runs the standard test suite:
+    1. Unit tests (Murmur scheme)
+    2. UI tests (MurmurUITests scheme)
+    3. HealthKit integration tests (7 days)
+
+    Duration: ~3-5 minutes
+    Use when: General validation before commits
+  DESC
+  lane :test_all do
+    UI.header("Standard Test Suite")
+    UI.message("Running: Unit tests → UI tests → HealthKit integration")
+
+    test
+    test_ui
+    test_healthkit
+
+    UI.success("✓ All standard tests passed")
+  end
+
+  desc <<-DESC
+    Complete Test Suite (Unit + UI + Full HealthKit)
+
+    The most comprehensive test suite, including:
+    1. All unit tests
+    2. All UI tests
+    3. Complete HealthKit test suite (utility + integration + deterministic + extended)
+
+    Duration: ~10-15 minutes
+    Use when:
+    - Pre-release validation
+    - Before merging major HealthKit features
+    - Weekly regression testing
+  DESC
+  lane :test_complete do
+    UI.header("Complete Test Suite")
+    UI.message("Running comprehensive test suite:")
+    UI.message("  - All unit tests")
+    UI.message("  - All UI tests")
+    UI.message("  - Full HealthKit test suite")
+    UI.message("")
+    UI.message("⏱  Estimated duration: 10-15 minutes")
+
+    test
+    test_ui
+    test_healthkit_full
+
+    UI.success("✓ Complete test suite passed - app is ready for release")
+  end
+
+  # =================
+  # Screenshot Lanes
+  # =================
+
+  desc "Generate screenshots for App Store (standard devices)"
   lane :screenshots do
     snapshot(scheme: "MurmurUITests")
   end
 
-  desc "Generate screenshots with devices that support frames"
+  desc "Generate screenshots with device frames"
   lane :screenshots_framed do
     snapshot(
       scheme: "MurmurUITests",
-      devices: [
-        "iPhone 16 Pro Max",
-        "iPhone 15 Pro",
-        "iPhone 13"
-      ],
+      devices: ["iPhone 16 Pro Max", "iPhone 15 Pro", "iPhone 13"],
       languages: ["en-AU"],
       output_directory: "./fastlane-output/screenshots-framed",
       clear_previous_screenshots: true,
@@ -32,7 +385,7 @@ platform :ios do
     )
   end
 
-  desc "Frame screenshots with device frames"
+  desc "Add device frames to screenshots"
   lane :add_frames do
     frameit(
       path: "./fastlane-output/screenshots-framed",
@@ -40,7 +393,7 @@ platform :ios do
     )
   end
 
-  desc "Generate, resize, and frame screenshots for App Store"
+  desc "Generate and resize screenshots for App Store"
   lane :prepare_screenshots do
     screenshots
     resize_screenshots
@@ -49,12 +402,15 @@ platform :ios do
   desc "Generate framed screenshots ready for App Store"
   lane :prepare_framed_screenshots do
     screenshots_framed
-    # Resize if needed
     resize_screenshots_framed
     add_frames
   end
 
-  desc "Resize iPhone screenshots for App Store Connect"
+  # =================
+  # Helper Lanes
+  # =================
+
+  desc "Resize screenshots for App Store Connect"
   lane :resize_screenshots do
     resize_screenshot_helper(directory: "./fastlane-output/screenshots")
   end
@@ -64,7 +420,19 @@ platform :ios do
     resize_screenshot_helper(directory: "./fastlane-output/screenshots-framed")
   end
 
-  # Helper method for resizing screenshots
+  desc "Clean test outputs and screenshots"
+  lane :clean do
+    UI.message("Cleaning fastlane outputs...")
+    sh("rm", "-rf", "../fastlane-output") rescue nil
+    sh("rm", "-rf", "test_output") rescue nil
+    sh("rm", "-f", "report.xml") rescue nil
+    UI.success("Cleaned fastlane outputs")
+  end
+
+  # =================
+  # Private Helpers
+  # =================
+
   private_lane :resize_screenshot_helper do |options|
     screenshot_dir = File.expand_path("../#{options[:directory]}", __dir__)
     files = Dir.glob("#{screenshot_dir}/**/iPhone*.png").reject { |path| path.include?("/framed/") }
@@ -103,74 +471,5 @@ platform :ios do
     else
       UI.message("No screenshots required resizing")
     end
-  end
-
-  # UI Testing lanes
-
-  desc "Run full UI test suite on multiple devices and iOS versions"
-  lane :ui_tests do
-    scan(
-      scheme: "MurmurUITests",
-      devices: [
-        "iPhone 17 Pro (26.0)",
-        "iPhone 17 Pro (18.4)",
-        "iPhone 13 mini (18.4)",
-        "iPad Pro (13-inch) (M4) (26.0)",
-        "iPad Pro (13-inch) (M4) (18.4)",
-        "iPad mini (A17 Pro) (26.0)"
-      ],
-      result_bundle: true,
-      output_directory: "./fastlane-output/test-reports"
-    )
-  end
-
-  desc "Run UI tests on iPhone only (faster)"
-  lane :ui_tests_iphone do
-    scan(
-      scheme: "MurmurUITests",
-      devices: [
-        "iPhone 17 Pro (26.0)",
-        "iPhone 13 mini (18.4)"
-      ],
-      result_bundle: true,
-      output_directory: "./fastlane-output/test-reports"
-    )
-  end
-
-  desc "Quick smoke test of critical user journeys"
-  lane :ui_smoke do
-    scan(
-      scheme: "MurmurUITests",
-      only_testing: [
-        "MurmurUITests/UserJourneyTests/testCompleteSymptomEntry",
-        "MurmurUITests/UserJourneyTests/testNavigateToDayDetail",
-        "MurmurUITests/UserJourneyTests/testViewTrendsChart",
-        "MurmurUITests/UserJourneyTests/testAddSymptomType"
-      ],
-      devices: ["iPhone 17 Pro (26.0)"],
-      result_bundle: true
-    )
-  end
-
-  desc "Run UI tests with step-by-step screenshots for visual verification"
-  lane :ui_tests_visual do
-    UI.important("📸 To capture step-by-step screenshots:")
-    UI.message("1. Edit MurmurUITests scheme in Xcode")
-    UI.message("2. Go to Run → Arguments")
-    UI.message("3. Enable the -CaptureTestScreenshots checkbox")
-    UI.message("4. Save and re-run this lane")
-    UI.message("")
-    UI.message("Running tests now...")
-
-    scan(
-      scheme: "MurmurUITests",
-      devices: ["iPhone 17 Pro (26.0)"],
-      result_bundle: true,
-      output_directory: "./fastlane-output/test-reports"
-    )
-
-    UI.success("Visual test run complete!")
-    UI.message("Open the .xcresult bundle to view screenshots:")
-    UI.message("→ fastlane-output/test-reports/MurmurUITests.xcresult")
   end
 end

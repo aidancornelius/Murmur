@@ -19,7 +19,7 @@ struct OnboardingView: View {
             imageName: nil,
             iconColor: .green,
             title: "Welcome to Murmur",
-            description: "Your personal symptom tracker that understands chronic conditions. I'll help you track patterns, manage energy, and remember the details when brain fog makes things fuzzy.",
+            description: "Your personal symptom tracker for chronic conditions. Use the app to track patterns, support your energy management, and remember the details when brain fog makes things hazy.",
             benefits: []
         ),
         OnboardingPage(
@@ -28,11 +28,11 @@ struct OnboardingView: View {
             imageName: "hand1",
             iconColor: .green,
             title: "Track what matters",
-            description: "Log symptoms with a tap, track activities with energy ratings, and monitor your cycle. Murmur learns your patterns to help you pace yourself.",
+            description: "Log customisable symptoms, track activities with energy ratings, record sleep and meals, and track the impact of your cycle.",
             benefits: [
                 ("leaf.circle.fill", "Quick symptom logging (customise your own types)"),
                 ("figure.walk.motion", "Activity tracking with physical, cognitive & emotional load"),
-                ("moon.circle.fill", "Optional cycle tracking & reminders"),
+                ("moon.circle.fill", "Optional cycle tracking & check-in reminders"),
                 ("gauge.with.dots.needle.bottom.50percent", "Load score to prevent crashes")
             ]
         ),
@@ -61,7 +61,7 @@ struct OnboardingView: View {
                 ("lock.circle.fill", "No cloud, no accounts, just you"),
                 ("heart.circle.fill", "Optional HealthKit for richer insights"),
                 ("square.and.arrow.up.circle.fill", "Export your data anytime"),
-                ("faceid", "Biometric app lock available")
+                ("externaldrive.fill.badge.timemachine", "Optional on-device backups")
             ]
         )
     ]

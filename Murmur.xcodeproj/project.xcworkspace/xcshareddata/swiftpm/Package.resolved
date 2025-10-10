@@ -1,0 +1,15 @@
+{
+  "originHash" : "d75772c86ff06649847d4581019db3dd3229055527b53d0f7a2a9dbfef627804",
+  "pins" : [
+    {
+      "identity" : "healthkitutility",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/aidancornelius/HealthKitUtility",
+      "state" : {
+        "revision" : "805fc09eda16cbd49307262c6445d59d155be55c",
+        "version" : "1.0.0"
+      }
+    }
+  ],
+  "version" : 3
+}

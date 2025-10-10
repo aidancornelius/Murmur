@@ -25,6 +25,7 @@
 		1501B3A92FD49FE124A07E8A /* VoiceCommandController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DF0E681210D818230BD2AAF /* VoiceCommandController.swift */; };
 		161068365EDF0474BF25D03D /* ManualCycleEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AB0BF441F0BCA340EA54E3E /* ManualCycleEntry.swift */; };
 		1782DE7AB0F55B74BB089F94 /* NaturalLanguageParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D4DDE75DE8293203047402C /* NaturalLanguageParser.swift */; };
+		17CE55C503A2E12B35AC592B /* HealthKitUtilityExampleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F4E189DB005159CCCC3327 /* HealthKitUtilityExampleTests.swift */; };
 		185E9B1D7BB2018C3A60341E /* HapticFeedback.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9E78674330AB63EA905B964 /* HapticFeedback.swift */; };
 		1914E5D8372325E55B794452 /* NotificationSchedulerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E68892057C31AAF10D0F5DD5 /* NotificationSchedulerTests.swift */; };
 		1BD03B2A0DD21B4AAD57918B /* AnalysisScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3370B2041F2835D1ECDD9C3E /* AnalysisScreen.swift */; };
@@ -59,6 +60,7 @@
 		5666FCC40523094DC820D26C /* PerformanceTests.swift.tmp in Resources */ = {isa = PBXBuildFile; fileRef = 598108A710422CAF9B3329DB /* PerformanceTests.swift.tmp */; };
 		5671C8B2BBC8F24EA00B351E /* ExampleUserJourneyTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E495F4516F11F417B1A282 /* ExampleUserJourneyTest.swift */; };
 		5A2E6B833AD5E0131D476814 /* UserDefaultsKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFB1060077D64F9FF44C046D /* UserDefaultsKeys.swift */; };
+		5B88DDD77AD9CCADCE3E5592 /* HealthKitUtilityHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34A09656AE80C4ABC20CBD3 /* HealthKitUtilityHelpers.swift */; };
 		5E911F634E28DD5B277A297F /* EventTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C268BCC0947CB57C3860658A /* EventTests.swift */; };
 		62CA051C184889C641AAFA00 /* ManualCycleSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E25653747AAA5B74069ABAEC /* ManualCycleSettingsView.swift */; };
 		6358B4F73B999533BD84C6E4 /* LocationTestHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A71371609167913D43F646 /* LocationTestHelpers.swift */; };
@@ -68,6 +70,7 @@
 		6D3DA70275513F5E185216DF /* Colors.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = ECFF1F2040D75D3EB5B6F526 /* Colors.xcassets */; };
 		6D8A4F6F8755AC00F981B53A /* EdgeCaseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20D60F584362337A0F8FF47 /* EdgeCaseTests.swift */; };
 		6DA49FB9CCA842FA4B2688C0 /* MurmurApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED35761EBF7EF881FA0E7BB9 /* MurmurApp.swift */; };
+		6F8A4C24F1EA51719641F3CA /* HealthKitTestData in Frameworks */ = {isa = PBXBuildFile; productRef = 17E88283DC041872B555384A /* HealthKitTestData */; };
 		70D95DF681003DCADB6CDCEE /* SeverityScale.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA57016208DFD582014380A6 /* SeverityScale.swift */; };
 		7244E3D614D551C2FABE5745 /* HealthKitSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AA14E2BB88F8F43E9094ED9 /* HealthKitSettingsView.swift */; };
 		73482E08BE908309449F7CCC /* TimelineViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 649B078297BF933A34BA0BFF /* TimelineViewTests.swift */; };
@@ -89,8 +92,11 @@
 		907DE30B0F9BE58B4A7B4A5A /* PlacemarkTransformer.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA0198439F31325F290D02D /* PlacemarkTransformer.swift */; };
 		91F33B26A34D89AD13D70AF2 /* MurmurUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1AE5E8F228CB132A1B85E8E /* MurmurUITests.swift */; };
 		923001C231E3B55267D7AFA7 /* PhysiologicalState.swift in Sources */ = {isa = PBXBuildFile; fileRef = F78ADD7BA1365B0113383AFE /* PhysiologicalState.swift */; };
+		93A2008682D676E818F0BFA3 /* HealthKitDataSeeder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A78884EC22EECC4AC8FC2A6 /* HealthKitDataSeeder.swift */; };
+		94331FF8EF124894CD7D63C6 /* HealthKitUITestCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B919EF5218FC1BD8309DCB /* HealthKitUITestCase.swift */; };
 		95F0AAADCA32F749FD58E7F8 /* AppLaunchState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63E65AB2387BF1F49126F4FF /* AppLaunchState.swift */; };
 		9FCA442F4192AF30509C0754 /* SettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CADF82C648637C33BB871AD /* SettingsScreen.swift */; };
+		A1658A83FF58C84DA63A24DA /* HealthKitIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48FC14F98EBC734A9475043B /* HealthKitIntegrationTests.swift */; };
 		A262E853EFB84B3A7773A926 /* MealEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7EE45975B3D363F8485F311 /* MealEvent.swift */; };
 		A6CF7AAE8B989DDE28A7E638 /* DayDetailScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B9657015EFBC47A5A3F8DE8 /* DayDetailScreen.swift */; };
 		A6EB6A65613E6C9EDB20DEEA /* Configuration.storekit in Resources */ = {isa = PBXBuildFile; fileRef = 3AA22CCB0589BD6116F25DC6 /* Configuration.storekit */; };
@@ -234,7 +240,10 @@
 		47FB126102B438223DF7CED1 /* Color+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Hex.swift"; sourceTree = "<group>"; };
 		4862B5B80467C0291A468B08 /* MurmurUITestsLaunchTests.swift.tmp */ = {isa = PBXFileReference; path = MurmurUITestsLaunchTests.swift.tmp; sourceTree = "<group>"; };
 		48AC1B118B5C221F57B3D2AC /* UITestConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITestConfiguration.swift; sourceTree = "<group>"; };
+		48FC14F98EBC734A9475043B /* HealthKitIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitIntegrationTests.swift; sourceTree = "<group>"; };
 		49D26BA784C08CBEB012420A /* HealthMetricBaselines.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthMetricBaselines.swift; sourceTree = "<group>"; };
+		4A78884EC22EECC4AC8FC2A6 /* HealthKitDataSeeder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitDataSeeder.swift; sourceTree = "<group>"; };
+		55F4E189DB005159CCCC3327 /* HealthKitUtilityExampleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitUtilityExampleTests.swift; sourceTree = "<group>"; };
 		56375E6D20D1F073A85AD691 /* EdgeCaseTests.swift.tmp */ = {isa = PBXFileReference; path = EdgeCaseTests.swift.tmp; sourceTree = "<group>"; };
 		5857C9F87F35BC1CDE1492BA /* DataQueryIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataQueryIntents.swift; sourceTree = "<group>"; };
 		598108A710422CAF9B3329DB /* PerformanceTests.swift.tmp */ = {isa = PBXFileReference; path = PerformanceTests.swift.tmp; sourceTree = "<group>"; };
@@ -311,9 +320,11 @@
 		C16581899754B8FAA1217340 /* CalendarAssistantTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarAssistantTests.swift; sourceTree = "<group>"; };
 		C268BCC0947CB57C3860658A /* EventTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventTests.swift; sourceTree = "<group>"; };
 		C27805056AA84686FE8073A6 /* NaturalLanguageParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NaturalLanguageParserTests.swift; sourceTree = "<group>"; };
+		C34A09656AE80C4ABC20CBD3 /* HealthKitUtilityHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitUtilityHelpers.swift; sourceTree = "<group>"; };
 		C36077676BDF4B8C524C78CD /* LocationAssistant.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationAssistant.swift; sourceTree = "<group>"; };
 		C44C3BEC8D6329D86B18D51B /* AnalysisEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisEngineTests.swift; sourceTree = "<group>"; };
 		C834EC374C4A986C47F46292 /* Murmur.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Murmur.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C9B919EF5218FC1BD8309DCB /* HealthKitUITestCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitUITestCase.swift; sourceTree = "<group>"; };
 		C9E78674330AB63EA905B964 /* HapticFeedback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticFeedback.swift; sourceTree = "<group>"; };
 		CE353696FE7138F48C5EDCA6 /* SymptomEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymptomEntry.swift; sourceTree = "<group>"; };
 		CF356E06DDC7D03CEFB46DEB /* AccessibilityTests.swift.tmp */ = {isa = PBXFileReference; path = AccessibilityTests.swift.tmp; sourceTree = "<group>"; };
@@ -340,6 +351,17 @@
 		F92D162293206BD4D34D95D9 /* SymptomEntryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SymptomEntryService.swift; sourceTree = "<group>"; };
 		FB0A953C0695E50AEB433617 /* Reminder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reminder.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		0420D81AD59851639D7903A7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6F8A4C24F1EA51719641F3CA /* HealthKitTestData in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		001444262D284F2CB5040E1E /* Products */ = {
@@ -477,6 +499,7 @@
 			children = (
 				6B494238D8ACC37C4D4C1716 /* AccessibilityIdentifiers.swift */,
 				63E65AB2387BF1F49126F4FF /* AppLaunchState.swift */,
+				C9B919EF5218FC1BD8309DCB /* HealthKitUITestCase.swift */,
 				A078BE4C03C6D3CF859D62B8 /* TestDataBuilder.swift */,
 				9B31CADE84578C14B7188A7B /* TestDataBuilder.swift.tmp */,
 				99FB7753AED586805E68243A /* XCTestCase+Extensions.swift */,
@@ -557,6 +580,7 @@
 				E444FDCF838F5729035D0BE2 /* DataBackupService.swift */,
 				1A678F7D7B1EE20E267D4FFB /* DataExporter.swift */,
 				73C08AD079C991446B7FFB87 /* HealthKitAssistant.swift */,
+				4A78884EC22EECC4AC8FC2A6 /* HealthKitDataSeeder.swift */,
 				49D26BA784C08CBEB012420A /* HealthMetricBaselines.swift */,
 				0B9792355DDEA111D55D657F /* LoadCapacityManager.swift */,
 				C36077676BDF4B8C524C78CD /* LocationAssistant.swift */,
@@ -625,6 +649,8 @@
 				C268BCC0947CB57C3860658A /* EventTests.swift */,
 				38F9F394C094F031B6E027EA /* HealthKitAssistantTests.swift */,
 				8418E56810422E993FA07328 /* HealthKitTestHelpers.swift */,
+				55F4E189DB005159CCCC3327 /* HealthKitUtilityExampleTests.swift */,
+				C34A09656AE80C4ABC20CBD3 /* HealthKitUtilityHelpers.swift */,
 				7DE0EB5300C852A7CBC67EFB /* Info.plist */,
 				81D8D6ED8FA12B1305C4D8B3 /* LoadScoreTests.swift */,
 				0F8954E2E066F4BD46723E4F /* LocationAssistantTests.swift */,
@@ -652,6 +678,7 @@
 				7608213A307D7592D5D59D66 /* DeviceTests.swift.tmp */,
 				E20D60F584362337A0F8FF47 /* EdgeCaseTests.swift */,
 				56375E6D20D1F073A85AD691 /* EdgeCaseTests.swift.tmp */,
+				48FC14F98EBC734A9475043B /* HealthKitIntegrationTests.swift */,
 				F1AE5E8F228CB132A1B85E8E /* MurmurUITests.swift */,
 				B9FF6FD1099E67EA75B54AE4 /* MurmurUITestsLaunchTests.swift */,
 				4862B5B80467C0291A468B08 /* MurmurUITestsLaunchTests.swift.tmp */,
@@ -703,6 +730,7 @@
 			buildConfigurationList = 5CE6E3D0D13150E1B19FB9EB /* Build configuration list for PBXNativeTarget "MurmurTests" */;
 			buildPhases = (
 				C63D8444FF4AE8568C9D7274 /* Sources */,
+				0420D81AD59851639D7903A7 /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -711,6 +739,7 @@
 			);
 			name = MurmurTests;
 			packageProductDependencies = (
+				17E88283DC041872B555384A /* HealthKitTestData */,
 			);
 			productName = MurmurTests;
 			productReference = 1EC05706BDDF617F2CBF12AD /* MurmurTests.xctest */;
@@ -808,6 +837,9 @@
 			);
 			mainGroup = 55AFDC8326A0474CEB29A9C9;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				24AC9F12C7566CF963CAD186 /* XCRemoteSwiftPackageReference "HealthKitUtility" */,
+			);
 			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
@@ -922,6 +954,7 @@
 				00A2814BD8815E3C667BCC80 /* GetRecentEntriesIntent.swift in Sources */,
 				185E9B1D7BB2018C3A60341E /* HapticFeedback.swift in Sources */,
 				FC241A8AF9EAF254A8576817 /* HealthKitAssistant.swift in Sources */,
+				93A2008682D676E818F0BFA3 /* HealthKitDataSeeder.swift in Sources */,
 				7244E3D614D551C2FABE5745 /* HealthKitSettingsView.swift in Sources */,
 				366572EB0555B4F9E4C1DDF3 /* HealthMetricBaselines.swift in Sources */,
 				488A141EFE998CE6447EE075 /* LoadCapacityManager.swift in Sources */,
@@ -984,6 +1017,8 @@
 				D1C62D4CB1F3680EDCD383A9 /* DeviceTests.swift in Sources */,
 				6D8A4F6F8755AC00F981B53A /* EdgeCaseTests.swift in Sources */,
 				5671C8B2BBC8F24EA00B351E /* ExampleUserJourneyTest.swift in Sources */,
+				A1658A83FF58C84DA63A24DA /* HealthKitIntegrationTests.swift in Sources */,
+				94331FF8EF124894CD7D63C6 /* HealthKitUITestCase.swift in Sources */,
 				91F33B26A34D89AD13D70AF2 /* MurmurUITests.swift in Sources */,
 				44B68C1F3325B9A424E319AF /* MurmurUITestsLaunchTests.swift in Sources */,
 				0C9B2D4F2E6D26B8A6CAE31B /* PerformanceTests.swift in Sources */,
@@ -1023,6 +1058,8 @@
 				5E911F634E28DD5B277A297F /* EventTests.swift in Sources */,
 				C406AC339DC4E085F7B4AD52 /* HealthKitAssistantTests.swift in Sources */,
 				7B34BAD391D510540C6F2D42 /* HealthKitTestHelpers.swift in Sources */,
+				17CE55C503A2E12B35AC592B /* HealthKitUtilityExampleTests.swift in Sources */,
+				5B88DDD77AD9CCADCE3E5592 /* HealthKitUtilityHelpers.swift in Sources */,
 				6390A1FDB0969D3ED19E3B84 /* LoadScoreTests.swift in Sources */,
 				B8C340F45156C4287D1BAF94 /* LocationAssistantTests.swift in Sources */,
 				6358B4F73B999533BD84C6E4 /* LocationTestHelpers.swift in Sources */,
@@ -1373,6 +1410,25 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		24AC9F12C7566CF963CAD186 /* XCRemoteSwiftPackageReference "HealthKitUtility" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/aidancornelius/HealthKitUtility";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		17E88283DC041872B555384A /* HealthKitTestData */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 24AC9F12C7566CF963CAD186 /* XCRemoteSwiftPackageReference "HealthKitUtility" */;
+			productName = HealthKitTestData;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCVersionGroup section */
 		46814C3B41AA145BECBA80CB /* Murmur.xcdatamodeld */ = {
