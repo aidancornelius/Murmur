@@ -140,3 +140,27 @@ final class CalendarAssistant: CalendarAssistantProtocol, ObservableObject {
         recentEvents = events.sorted { ($0.startDate ?? Date.distantPast) < ($1.startDate ?? Date.distantPast) }
     }
 }
+
+// MARK: - ResourceManageable conformance
+
+extension CalendarAssistant: ResourceManageable {
+    nonisolated func start() async throws {
+        // Event store is initialised in init, no additional work required
+    }
+
+    nonisolated func cleanup() {
+        Task { @MainActor in
+            await _cleanup()
+        }
+    }
+
+    @MainActor
+    private func _cleanup() {
+        // Clear cached event data
+        upcomingEvents.removeAll()
+        recentEvents.removeAll()
+
+        // Note: EKEventStore doesn't require explicit cleanup
+        // but we clear references to allow memory reclamation
+    }
+}

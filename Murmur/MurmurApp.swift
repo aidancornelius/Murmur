@@ -72,7 +72,7 @@ private struct RootContainer: View {
             Group {
                 if hasCompletedOnboarding {
                     NavigationStack {
-                        TimelineView()
+                        TimelineView(context: context)
                         .navigationDestination(for: Route.self) { route in
                             switch route {
                             case .settings:
@@ -168,6 +168,23 @@ private struct RootContainer: View {
             }
         }
         .themedSurface()
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            switch newPhase {
+            case .background:
+                // Save Core Data changes when entering background
+                Task {
+                    CoreDataStack.shared.cleanup()
+                }
+            case .inactive:
+                // Prepare for possible termination
+                break
+            case .active:
+                // App returned to foreground
+                break
+            @unknown default:
+                break
+            }
+        }
     }
 
     private func cleanOrphanedEntries(in context: NSManagedObjectContext) {

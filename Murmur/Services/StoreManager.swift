@@ -18,6 +18,9 @@ class StoreManager: ObservableObject {
     private let logger = Logger(subsystem: "app.murmur", category: "StoreKit")
     private let productIDs = ["com.murmur.tip.small", "com.murmur.tip.generous"]
 
+    // Task references for cleanup
+    private var transactionUpdatesTask: Task<Void, Never>?
+
     enum PurchaseState: Equatable {
         case idle
         case purchasing
@@ -33,11 +36,16 @@ class StoreManager: ObservableObject {
 
         // Listen for transaction updates to handle purchases that complete
         // when the app is backgrounded or killed
-        Task {
+        // Store task reference for cleanup
+        transactionUpdatesTask = Task {
             for await result in Transaction.updates {
                 await handleTransactionUpdate(result)
             }
         }
+    }
+
+    deinit {
+        transactionUpdatesTask?.cancel()
     }
 
     func checkPurchaseHistory() async {
@@ -121,5 +129,32 @@ class StoreManager: ObservableObject {
             // Still finish unverified transactions to prevent them from appearing again
             await transaction.finish()
         }
+    }
+}
+
+// MARK: - ResourceManageable conformance
+
+extension StoreManager: ResourceManageable {
+    nonisolated func start() async throws {
+        // Initialisation happens in init, products are loaded there
+    }
+
+    nonisolated func cleanup() {
+        Task { @MainActor in
+            await _cleanup()
+        }
+    }
+
+    @MainActor
+    private func _cleanup() {
+        // Cancel transaction observation
+        transactionUpdatesTask?.cancel()
+        transactionUpdatesTask = nil
+
+        // Clear cached products
+        products.removeAll()
+
+        // Reset purchase state
+        purchaseState = .idle
     }
 }

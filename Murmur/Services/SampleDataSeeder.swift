@@ -3,6 +3,7 @@
 //  Murmur
 //
 //  Created by Aidan Cornelius-Bell on 02/10/2025.
+//  Refactored: 10/10/2025 - Extracted random generation and HealthKit reads into separate services
 //
 
 @preconcurrency import CoreData
@@ -10,322 +11,13 @@ import Foundation
 import HealthKit
 import os.log
 
-/// Deterministic pseudo-random number generator using Linear Congruential Generator (LCG)
-/// Ensures reproducible random values when seeded consistently
-private struct SeededRandom {
-    private var state: UInt64
-
-    init(seed: Int) {
-        // Use non-zero seed (LCG requires non-zero state)
-        self.state = UInt64(max(1, seed))
-    }
-
-    /// Generate next random value in [0, 1) range
-    mutating func next() -> Double {
-        // LCG parameters from Numerical Recipes
-        state = state &* 1664525 &+ 1013904223
-        return Double(state % 1000000) / 1000000.0
-    }
-
-    /// Generate random value in specified Double range
-    mutating func next(in range: ClosedRange<Double>) -> Double {
-        let normalized = next()
-        return range.lowerBound + normalized * (range.upperBound - range.lowerBound)
-    }
-
-    /// Generate random integer in specified range
-    mutating func nextInt(in range: ClosedRange<Int>) -> Int {
-        let normalized = next()
-        let rangeSize = Double(range.upperBound - range.lowerBound + 1)
-        return range.lowerBound + Int(normalized * rangeSize)
-    }
-}
-
-/// Helper struct to hold health metrics queried from HealthKit
-private struct HealthMetrics {
-    let hrv: Double
-    let restingHR: Double
-    let sleepHours: Double?
-    let workoutMinutes: Double?
-    let cycleDay: Int?
-    let flowLevel: String?
-}
-
+/// Seeder focused on orchestrating Core Data writes for sample timeline data
+/// Delegates to: SeededDataGenerator (random values), HealthKitSeedAdapter (HealthKit reads)
 struct SampleDataSeeder {
     private static let logger = Logger(subsystem: "app.murmur", category: "SampleData")
     private static let currentSeedVersion = 4 // Increment this when adding new default symptoms
 
     #if targetEnvironment(simulator)
-
-    // MARK: - HealthKit Integration
-
-    /// Fetch health metrics from HealthKit for a specific date
-    /// - Parameters:
-    ///   - date: The date to query metrics for
-    ///   - dayType: The type of day (for fallback generation)
-    ///   - seed: Deterministic seed for fallback values
-    ///   - dataProvider: Optional HealthKitDataProvider for dependency injection (defaults to RealHealthKitDataProvider)
-    /// - Returns: HealthMetrics containing queried or fallback values
-    private static func fetchHealthKitMetrics(for date: Date, dayType: DayType, seed: Int, dataProvider: HealthKitDataProvider? = nil) async -> HealthMetrics {
-        // Use provided dataProvider or create a new one
-        let provider: HealthKitDataProvider
-        if let dataProvider = dataProvider {
-            provider = dataProvider
-        } else {
-            guard HKHealthStore.isHealthDataAvailable() else {
-                return HealthMetrics(
-                    hrv: getFallbackHRV(for: dayType, seed: seed),
-                    restingHR: getFallbackRestingHR(for: dayType, seed: seed),
-                    sleepHours: nil,
-                    workoutMinutes: nil,
-                    cycleDay: nil,
-                    flowLevel: nil
-                )
-            }
-
-            let newProvider = RealHealthKitDataProvider()
-            let readTypes: Set<HKObjectType> = Set([
-                HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN),
-                HKQuantityType.quantityType(forIdentifier: .restingHeartRate),
-                HKCategoryType.categoryType(forIdentifier: .sleepAnalysis),
-                HKObjectType.workoutType(),
-                HKCategoryType.categoryType(forIdentifier: .menstrualFlow)
-            ].compactMap { $0 })
-
-            do {
-                try await newProvider.requestAuthorization(toShare: [], read: readTypes)
-                provider = newProvider
-            } catch {
-                logger.warning("HealthKit authorization failed: \(error.localizedDescription)")
-                return HealthMetrics(
-                    hrv: getFallbackHRV(for: dayType, seed: seed),
-                    restingHR: getFallbackRestingHR(for: dayType, seed: seed),
-                    sleepHours: nil,
-                    workoutMinutes: nil,
-                    cycleDay: nil,
-                    flowLevel: nil
-                )
-            }
-        }
-
-        // Shared date range for all queries
-        let calendar = Calendar.current
-        let (startOfDay, endOfDay) = DateUtility.dayBounds(for: date, calendar: calendar)
-
-        // Query HRV
-        let hrv: Double? = try? await {
-            guard let hrvType = HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN) else { return nil }
-            let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: endOfDay, options: .strictStartDate)
-            let statistics = try await provider.fetchStatistics(quantityType: hrvType, predicate: predicate, options: .discreteAverage)
-            return statistics?.averageQuantity()?.doubleValue(for: HKUnit.secondUnit(with: .milli))
-        }()
-
-        // Query resting heart rate
-        let restingHR: Double? = try? await {
-            guard let restingHRType = HKQuantityType.quantityType(forIdentifier: .restingHeartRate) else { return nil }
-            let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: endOfDay, options: .strictStartDate)
-            let statistics = try await provider.fetchStatistics(quantityType: restingHRType, predicate: predicate, options: .discreteAverage)
-            return statistics?.averageQuantity()?.doubleValue(for: HKUnit.count().unitDivided(by: .minute()))
-        }()
-
-        // Query sleep hours
-        let sleepHours: Double? = try? await {
-            guard let sleepType = HKCategoryType.categoryType(forIdentifier: .sleepAnalysis) else { return nil }
-            let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: endOfDay, options: .strictStartDate)
-            let categorySamples = try await provider.fetchCategorySamples(type: sleepType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil)
-
-            // Filter for asleep states
-            let asleepSamples = categorySamples.filter { sample in
-                if #available(iOS 16.0, *) {
-                    return [
-                        HKCategoryValueSleepAnalysis.asleepCore.rawValue,
-                        HKCategoryValueSleepAnalysis.asleepDeep.rawValue,
-                        HKCategoryValueSleepAnalysis.asleepREM.rawValue,
-                        HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue
-                    ].contains(sample.value)
-                } else {
-                    return sample.value == HKCategoryValueSleepAnalysis.asleep.rawValue
-                }
-            }
-
-            // Sum total sleep duration in hours
-            let totalSeconds = asleepSamples.reduce(0.0) { total, sample in
-                total + sample.endDate.timeIntervalSince(sample.startDate)
-            }
-
-            let hours = totalSeconds / 3600.0
-            return hours > 0 ? hours : nil
-        }()
-
-        // Query workout minutes
-        let workoutMinutes: Double? = try? await {
-            let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: endOfDay, options: .strictStartDate)
-            let workouts = try await provider.fetchWorkouts(predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil)
-
-            // Sum total workout duration in minutes
-            let totalSeconds = workouts.reduce(0.0) { total, workout in
-                total + workout.duration
-            }
-
-            let minutes = totalSeconds / 60.0
-            return minutes > 0 ? minutes : nil
-        }()
-
-        // Query cycle day (days since last period start)
-        let cycleDay: Int? = try? await {
-            guard let flowType = HKCategoryType.categoryType(forIdentifier: .menstrualFlow) else { return nil }
-
-            // Look back up to 60 days for last period start
-            let lookbackDate = calendar.date(byAdding: .day, value: -60, to: date) ?? date
-            let predicate = HKQuery.predicateForSamples(withStart: lookbackDate, end: date, options: .strictStartDate)
-            let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
-            let flowSamples = try await provider.fetchCategorySamples(type: flowType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: [sortDescriptor])
-
-            // Find most recent period start (flow > none)
-            let periodStarts = flowSamples.filter { sample in
-                if #available(iOS 18.0, *) {
-                    return sample.value > HKCategoryValueVaginalBleeding.none.rawValue
-                } else {
-                    return sample.value > HKCategoryValueMenstrualFlow.none.rawValue
-                }
-            }
-
-            guard let lastPeriodStart = periodStarts.first else {
-                return nil
-            }
-
-            // Calculate days since period start
-            return calendar.dateComponents([.day], from: lastPeriodStart.startDate, to: date).day
-        }()
-
-        // Query flow level for the day
-        let flowLevel: String? = try? await {
-            guard let flowType = HKCategoryType.categoryType(forIdentifier: .menstrualFlow) else { return nil }
-            let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: endOfDay, options: .strictStartDate)
-            let flowSamples = try await provider.fetchCategorySamples(type: flowType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil)
-
-            guard !flowSamples.isEmpty else {
-                return nil
-            }
-
-            // Find highest flow value for the day
-            let maxFlow: Int
-            let flowString: String
-
-            if #available(iOS 18.0, *) {
-                maxFlow = flowSamples.map(\.value).max() ?? HKCategoryValueVaginalBleeding.none.rawValue
-                switch maxFlow {
-                case HKCategoryValueVaginalBleeding.none.rawValue:
-                    flowString = "none"
-                case HKCategoryValueVaginalBleeding.light.rawValue:
-                    flowString = "light"
-                case HKCategoryValueVaginalBleeding.medium.rawValue:
-                    flowString = "medium"
-                case HKCategoryValueVaginalBleeding.heavy.rawValue:
-                    flowString = "heavy"
-                default:
-                    flowString = "unspecified"
-                }
-            } else {
-                maxFlow = flowSamples.map(\.value).max() ?? HKCategoryValueMenstrualFlow.none.rawValue
-                switch maxFlow {
-                case HKCategoryValueMenstrualFlow.none.rawValue:
-                    flowString = "none"
-                case HKCategoryValueMenstrualFlow.light.rawValue:
-                    flowString = "light"
-                case HKCategoryValueMenstrualFlow.medium.rawValue:
-                    flowString = "medium"
-                case HKCategoryValueMenstrualFlow.heavy.rawValue:
-                    flowString = "heavy"
-                default:
-                    flowString = "unspecified"
-                }
-            }
-
-            return flowString
-        }()
-
-        // Return metrics with fallbacks for nil values
-        return HealthMetrics(
-            hrv: hrv ?? getFallbackHRV(for: dayType, seed: seed),
-            restingHR: restingHR ?? getFallbackRestingHR(for: dayType, seed: seed),
-            sleepHours: sleepHours,
-            workoutMinutes: workoutMinutes,
-            cycleDay: cycleDay,
-            flowLevel: flowLevel
-        )
-    }
-
-    /// Day type classification for generating appropriate fallback values
-    private enum DayType {
-        case pem
-        case flare
-        case menstrual
-        case rest
-        case better
-        case normal
-    }
-
-    /// Generate fallback HRV value based on day type
-    private static func getFallbackHRV(for dayType: DayType, seed: Int) -> Double {
-        var rng = SeededRandom(seed: seed)
-
-        switch dayType {
-        case .pem, .flare:
-            return 22.0 + rng.next(in: -5...5)
-        case .better:
-            return 55.0 + rng.next(in: -8...8)
-        case .normal, .menstrual, .rest:
-            return 38.0 + rng.next(in: -8...8)
-        }
-    }
-
-    /// Generate fallback resting heart rate based on day type
-    private static func getFallbackRestingHR(for dayType: DayType, seed: Int) -> Double {
-        var rng = SeededRandom(seed: seed + 1) // Different offset for variety
-
-        switch dayType {
-        case .pem, .flare:
-            return 78.0 + rng.next(in: -4...4)
-        case .better:
-            return 58.0 + rng.next(in: -4...4)
-        case .normal, .menstrual, .rest:
-            return 65.0 + rng.next(in: -4...4)
-        }
-    }
-
-    /// Generate fallback sleep hours based on day type
-    private static func getFallbackSleepHours(for dayType: DayType, seed: Int) -> Double {
-        var rng = SeededRandom(seed: seed + 2)
-
-        switch dayType {
-        case .pem, .flare:
-            return 5.5 + rng.next(in: -1.5...1.5)
-        case .menstrual, .rest:
-            return 6.5 + rng.next(in: -1.0...1.0)
-        case .better:
-            return 8.0 + rng.next(in: -0.5...0.5)
-        case .normal:
-            return 7.5 + rng.next(in: -1.0...1.0)
-        }
-    }
-
-    /// Generate fallback workout minutes based on day type
-    private static func getFallbackWorkoutMinutes(for dayType: DayType, seed: Int) -> Double {
-        var rng = SeededRandom(seed: seed + 3)
-
-        switch dayType {
-        case .pem, .flare:
-            return rng.next(in: 0...10)
-        case .menstrual, .rest:
-            return rng.next(in: 5...20)
-        case .better:
-            return rng.next(in: 25...50)
-        case .normal:
-            return rng.next(in: 15...35)
-        }
-    }
-
 
     /// Generates realistic sample timeline entries for simulator testing
     ///
@@ -343,7 +35,7 @@ struct SampleDataSeeder {
             // Pre-fetch HealthKit metrics for all days and cache them
             var metricsCache: [String: HealthMetrics] = [:]
 
-            // Request HealthKit authorization once before the loop (if not provided)
+            // Request HealthKit authorisation once before the loop (if not provided)
             let provider: HealthKitDataProvider?
             if let dataProvider = dataProvider {
                 provider = dataProvider
@@ -361,7 +53,7 @@ struct SampleDataSeeder {
                     try await newProvider.requestAuthorization(toShare: [], read: readTypes)
                     provider = newProvider
                 } catch {
-                    logger.warning("HealthKit authorization failed: \(error.localizedDescription)")
+                    logger.warning("HealthKit authorisation failed: \(error.localizedDescription)")
                     provider = nil
                 }
             } else {
@@ -394,7 +86,7 @@ struct SampleDataSeeder {
                     dayType = .normal
                 }
 
-                let metrics = await fetchHealthKitMetrics(for: date, dayType: dayType, seed: seed, dataProvider: provider)
+                let metrics = await HealthKitSeedAdapter.fetchHealthKitMetrics(for: date, dayType: dayType, seed: seed, dataProvider: provider)
                 metricsCache[DateUtility.dayKey(for: date)] = metrics
             }
 
@@ -452,7 +144,7 @@ struct SampleDataSeeder {
             let snacks = ["Apple", "Nuts", "Biscuits", "Yoghurt", "Cheese and crackers"]
 
             // Determine if cycle tracking should be enabled (80% chance)
-            var cycleRng = SeededRandom(seed: 5000) // Fixed seed for cycle initialization
+            var cycleRng = SeededRandom(seed: 5000) // Fixed seed for cycle initialisation
             let hasCycleTracking = cycleRng.next() < 0.8
             var currentCycleDay = cycleRng.nextInt(in: 1...28) // Deterministic starting point
             let cycleLength = cycleRng.nextInt(in: 26...32) // Deterministic variation in cycle length
@@ -538,17 +230,11 @@ struct SampleDataSeeder {
                     sleepEvent.hkRestingHR = NSNumber(value: metrics.restingHR)
                 } else {
                     // Fallback if cache miss
-                    var healthRng = SeededRandom(seed: dayOffset * 13 + 400)
-                    if isPEMDay || isFlareDay {
-                        sleepEvent.hkHRV = NSNumber(value: healthRng.next(in: 15...30))
-                        sleepEvent.hkRestingHR = NSNumber(value: healthRng.next(in: 72...85))
-                    } else if isBetterDay {
-                        sleepEvent.hkHRV = NSNumber(value: healthRng.next(in: 50...70))
-                        sleepEvent.hkRestingHR = NSNumber(value: healthRng.next(in: 52...62))
-                    } else {
-                        sleepEvent.hkHRV = NSNumber(value: healthRng.next(in: 30...50))
-                        sleepEvent.hkRestingHR = NSNumber(value: healthRng.next(in: 60...72))
-                    }
+                    let dayType: DayType = isPEMDay || isFlareDay ? .flare : (isBetterDay ? .better : .normal)
+                    let dayOfYear = calendar.ordinality(of: .day, in: .year, for: date) ?? 1
+                    let seed = dayOfYear * 1000 + dayOffset
+                    sleepEvent.hkHRV = NSNumber(value: SeededDataGenerator.getFallbackHRV(for: dayType, seed: seed))
+                    sleepEvent.hkRestingHR = NSNumber(value: SeededDataGenerator.getFallbackRestingHR(for: dayType, seed: seed))
                 }
 
                 // Link common sleep-related symptoms to sleep event
@@ -824,10 +510,12 @@ struct SampleDataSeeder {
                                 entry.hkWorkoutMinutes = NSNumber(value: workoutMinutes)
                             } else {
                                 // Fall back to deterministic generation
+                                let dayOfYear = calendar.ordinality(of: .day, in: .year, for: date) ?? 1
+                                let fallbackSeed = dayOfYear * 1000 + dayOffset
                                 var workoutRng = SeededRandom(seed: dayOffset * 17 + 500)
                                 if workoutRng.next() < 0.25 {
-                                    let baseWorkout = isPEMDay || isFlareDay ? 0.0 : (isBetterDay ? 25.0 : 10.0)
-                                    entry.hkWorkoutMinutes = NSNumber(value: max(0.0, baseWorkout + workoutRng.next(in: -8...8)))
+                                    let dayType: DayType = isPEMDay || isFlareDay ? .flare : (isBetterDay ? .better : .normal)
+                                    entry.hkWorkoutMinutes = NSNumber(value: SeededDataGenerator.getFallbackWorkoutMinutes(for: dayType, seed: fallbackSeed))
                                 }
                             }
 
@@ -858,12 +546,12 @@ struct SampleDataSeeder {
                             }
                         } else {
                             // Fallback if cache miss - use deterministic seeds
-                            var healthRng = SeededRandom(seed: dayOffset * 13 + 400)
-                            let baseHRV = isBetterDay ? 55.0 : (isPEMDay || isFlareDay ? 22.0 : 38.0)
-                            entry.hkHRV = NSNumber(value: baseHRV + healthRng.next(in: -8...8))
+                            let dayType: DayType = isPEMDay || isFlareDay ? .flare : (isBetterDay ? .better : .normal)
+                            let dayOfYear = calendar.ordinality(of: .day, in: .year, for: date) ?? 1
+                            let seed = dayOfYear * 1000 + dayOffset
 
-                            let baseHR = isPEMDay || isFlareDay ? 78.0 : (isBetterDay ? 58.0 : 65.0)
-                            entry.hkRestingHR = NSNumber(value: baseHR + healthRng.next(in: -4...4))
+                            entry.hkHRV = NSNumber(value: SeededDataGenerator.getFallbackHRV(for: dayType, seed: seed))
+                            entry.hkRestingHR = NSNumber(value: SeededDataGenerator.getFallbackRestingHR(for: dayType, seed: seed))
 
                             // Sleep hours from previous night
                             entry.hkSleepHours = NSNumber(value: sleepDuration)
@@ -871,8 +559,7 @@ struct SampleDataSeeder {
                             // Workout: less on bad days, more on better days
                             var workoutRng = SeededRandom(seed: dayOffset * 17 + 500)
                             if workoutRng.next() < 0.25 {
-                                let baseWorkout = isPEMDay || isFlareDay ? 0.0 : (isBetterDay ? 25.0 : 10.0)
-                                entry.hkWorkoutMinutes = NSNumber(value: max(0.0, baseWorkout + workoutRng.next(in: -8...8)))
+                                entry.hkWorkoutMinutes = NSNumber(value: SeededDataGenerator.getFallbackWorkoutMinutes(for: dayType, seed: seed))
                             }
 
                             // Consistent cycle tracking across all entries on this day
@@ -1014,7 +701,7 @@ struct SampleDataSeeder {
             var rng = SeededRandom(seed: 4000)
             let entryCount = rng.nextInt(in: 10...20)
 
-            for entryIndex in 0..<entryCount {
+            for _ in 0..<entryCount {
                 let entry = SymptomEntry(context: context)
                 entry.id = UUID()
 

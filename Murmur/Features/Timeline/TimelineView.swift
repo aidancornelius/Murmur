@@ -16,77 +16,11 @@ struct TimelineView: View {
 
     private let logger = Logger(subsystem: "app.murmur", category: "Timeline")
 
-    // Use dynamic fetch requests that update automatically
-    @FetchRequest private var entries: FetchedResults<SymptomEntry>
-    @FetchRequest private var activities: FetchedResults<ActivityEvent>
-    @FetchRequest private var sleepEvents: FetchedResults<SleepEvent>
-    @FetchRequest private var mealEvents: FetchedResults<MealEvent>
+    // Centralised data controller for efficient fetching and caching
+    @StateObject private var dataController: TimelineDataController
 
-    init() {
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-        let displayStartDate = calendar.date(byAdding: .day, value: -30, to: today) ?? today
-        // Fetch additional 60 days for load score decay calculation
-        let dataStartDate = calendar.date(byAdding: .day, value: -90, to: today) ?? today
-
-        let entriesRequest = SymptomEntry.fetchRequest()
-        entriesRequest.sortDescriptors = [
-            NSSortDescriptor(keyPath: \SymptomEntry.backdatedAt, ascending: false),
-            NSSortDescriptor(keyPath: \SymptomEntry.createdAt, ascending: false)
-        ]
-        entriesRequest.predicate = NSPredicate(
-            format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
-            dataStartDate as NSDate, dataStartDate as NSDate
-        )
-        entriesRequest.relationshipKeyPathsForPrefetching = ["symptomType"]
-        entriesRequest.fetchBatchSize = 50
-        _entries = FetchRequest(fetchRequest: entriesRequest, animation: .default)
-
-        let activitiesRequest = ActivityEvent.fetchRequest()
-        activitiesRequest.sortDescriptors = [
-            NSSortDescriptor(keyPath: \ActivityEvent.backdatedAt, ascending: false),
-            NSSortDescriptor(keyPath: \ActivityEvent.createdAt, ascending: false)
-        ]
-        activitiesRequest.predicate = NSPredicate(
-            format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
-            dataStartDate as NSDate, dataStartDate as NSDate
-        )
-        activitiesRequest.fetchBatchSize = 50
-        _activities = FetchRequest(fetchRequest: activitiesRequest, animation: .default)
-
-        // Sleep and meal events only need display range (not used for load score calculation)
-        let sleepRequest = SleepEvent.fetchRequest()
-        sleepRequest.sortDescriptors = [
-            NSSortDescriptor(keyPath: \SleepEvent.backdatedAt, ascending: false),
-            NSSortDescriptor(keyPath: \SleepEvent.createdAt, ascending: false)
-        ]
-        sleepRequest.predicate = NSPredicate(
-            format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
-            displayStartDate as NSDate, displayStartDate as NSDate
-        )
-        sleepRequest.fetchBatchSize = 20
-        _sleepEvents = FetchRequest(fetchRequest: sleepRequest, animation: .default)
-
-        let mealRequest = MealEvent.fetchRequest()
-        mealRequest.sortDescriptors = [
-            NSSortDescriptor(keyPath: \MealEvent.backdatedAt, ascending: false),
-            NSSortDescriptor(keyPath: \MealEvent.createdAt, ascending: false)
-        ]
-        mealRequest.predicate = NSPredicate(
-            format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
-            displayStartDate as NSDate, displayStartDate as NSDate
-        )
-        mealRequest.fetchBatchSize = 20
-        _mealEvents = FetchRequest(fetchRequest: mealRequest, animation: .default)
-    }
-
-    private var daySections: [DaySection] {
-        DaySection.sectionsFromArrays(
-            entries: Array(entries),
-            activities: Array(activities),
-            sleepEvents: Array(sleepEvents),
-            mealEvents: Array(mealEvents)
-        )
+    init(context: NSManagedObjectContext) {
+        _dataController = StateObject(wrappedValue: TimelineDataController(context: context))
     }
 
     private var palette: ColorPalette {
@@ -95,7 +29,7 @@ struct TimelineView: View {
 
     var body: some View {
         List {
-            ForEach(daySections) { section in
+            ForEach(dataController.daySections) { section in
                 Section(header: sectionHeader(for: section)) {
                     ForEach(section.timelineItems) { item in
                         switch item {
@@ -112,7 +46,7 @@ struct TimelineView: View {
                 }
                 .listRowBackground(palette.surfaceColor)
             }
-            if daySections.isEmpty {
+            if dataController.daySections.isEmpty && !dataController.isLoading {
                 emptyState
             }
         }

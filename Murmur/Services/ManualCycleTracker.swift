@@ -209,3 +209,27 @@ final class ManualCycleTracker: ObservableObject {
         try ManualCycleEntry.fetchAll(in: context)
     }
 }
+
+// MARK: - ResourceManageable conformance
+
+extension ManualCycleTracker: ResourceManageable {
+    nonisolated func start() async throws {
+        // Initialisation happens in init, data is refreshed there
+    }
+
+    nonisolated func cleanup() {
+        Task { @MainActor in
+            await _cleanup()
+        }
+    }
+
+    @MainActor
+    private func _cleanup() {
+        // Clear cached state
+        latestCycleDay = nil
+        latestFlowLevel = nil
+
+        // Note: Don't clear UserDefaults - that's persistent user data
+        // Note: Don't nil out context - it's not owned by this service
+    }
+}

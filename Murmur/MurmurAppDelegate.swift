@@ -15,11 +15,21 @@ final class MurmurAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificati
     let calendarAssistant: CalendarAssistant
     private(set) var manualCycleTracker: ManualCycleTracker?
 
+    // Resource manager for coordinated lifecycle management
+    let resourceManager = ResourceManager()
+
     override init() {
         // Conditionally initialize services based on UI test flags
         self.healthKitAssistant = UITestConfiguration.shouldDisableHealthKit ? HealthKitAssistant() : HealthKitAssistant()
         self.calendarAssistant = UITestConfiguration.shouldDisableCalendar ? CalendarAssistant() : CalendarAssistant()
         super.init()
+
+        // Register services with resource manager
+        Task {
+            try? await resourceManager.register(healthKitAssistant)
+            try? await resourceManager.register(calendarAssistant)
+            try? await resourceManager.register(CoreDataStack.shared)
+        }
     }
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
@@ -30,6 +40,13 @@ final class MurmurAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificati
         let context = CoreDataStack.shared.context
         manualCycleTracker = ManualCycleTracker(context: context)
         healthKitAssistant.manualCycleTracker = manualCycleTracker
+
+        // Register manual cycle tracker with resource manager
+        if let tracker = manualCycleTracker {
+            Task {
+                try? await resourceManager.register(tracker)
+            }
+        }
 
         // Configure notification delegate (unless disabled for UI tests)
         if !UITestConfiguration.shouldDisableNotifications {
@@ -78,6 +95,13 @@ final class MurmurAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificati
         // Attempt backup if needed when entering background
         Task { @MainActor in
             await AutoBackupService.shared.performBackupIfNeeded()
+        }
+    }
+
+    func applicationWillTerminate(_ application: UIApplication) {
+        // Clean up all managed resources before termination
+        Task {
+            await resourceManager.cleanupAll()
         }
     }
 

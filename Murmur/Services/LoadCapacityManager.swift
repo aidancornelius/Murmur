@@ -493,8 +493,10 @@ struct LoadThresholds {
     let critical: Double
 }
 
-struct LoadConfiguration {
+struct LoadConfiguration: Hashable {
     let thresholds: LoadThresholds
     let symptomMultiplier: Double
     let decayRate: Double
 }
+
+extension LoadThresholds: Hashable {}

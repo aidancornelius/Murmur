@@ -13,7 +13,6 @@ import XCTest
 
 /// Mock implementation of HealthKitDataProvider for testing
 /// This properly implements the data provider protocol without trying to access HKQuery internals
-@MainActor
 final class MockHealthKitDataProvider: HealthKitDataProvider {
 
     // MARK: - Mock Configuration
@@ -365,6 +364,289 @@ final class MockHealthKitAssistant: HealthKitAssistantProtocol {
         workoutCallCount = 0
         cycleDayCallCount = 0
         flowLevelCallCount = 0
+    }
+}
+
+// MARK: - Mock Query Service
+
+/// Mock implementation of HealthKitQueryServiceProtocol for testing
+final class MockHealthKitQueryService: HealthKitQueryServiceProtocol {
+
+    // MARK: - HealthKitQueryServiceProtocol Properties
+
+    var dataProvider: HealthKitDataProvider
+    var isHealthDataAvailable: Bool = true
+
+    // MARK: - Mock Configuration
+
+    var mockQuantitySamples: [HKQuantitySample] = []
+    var mockCategorySamples: [HKCategorySample] = []
+    var mockWorkouts: [HKWorkout] = []
+    var mockStatistics: HKStatistics?
+    var shouldThrowError: Error?
+    var authorizationError: Error?
+
+    // MARK: - Call Tracking
+
+    private(set) var fetchQuantityCount = 0
+    private(set) var fetchCategoryCount = 0
+    private(set) var fetchWorkoutsCount = 0
+    private(set) var fetchStatisticsCount = 0
+    private(set) var requestAuthorizationCalled = false
+
+    // MARK: - Init
+
+    init(dataProvider: HealthKitDataProvider? = nil) {
+        self.dataProvider = dataProvider ?? MockHealthKitDataProvider()
+    }
+
+    // MARK: - HealthKitQueryServiceProtocol Implementation
+
+    func fetchQuantitySamples(
+        for quantityType: HKQuantityType,
+        start: Date,
+        end: Date,
+        limit: Int,
+        sortDescriptors: [NSSortDescriptor]?
+    ) async throws -> [HKQuantitySample] {
+        fetchQuantityCount += 1
+
+        if let error = shouldThrowError {
+            throw error
+        }
+
+        var filtered = mockQuantitySamples.filter { $0.startDate >= start && $0.startDate < end }
+
+        if let sortDescriptors = sortDescriptors, !sortDescriptors.isEmpty {
+            filtered = (filtered as NSArray).sortedArray(using: sortDescriptors) as? [HKQuantitySample] ?? filtered
+        }
+
+        if limit != HKObjectQueryNoLimit && limit > 0 {
+            filtered = Array(filtered.prefix(limit))
+        }
+
+        return filtered
+    }
+
+    func fetchCategorySamples(
+        for categoryType: HKCategoryType,
+        start: Date,
+        end: Date,
+        limit: Int,
+        sortDescriptors: [NSSortDescriptor]?
+    ) async throws -> [HKCategorySample] {
+        fetchCategoryCount += 1
+
+        if let error = shouldThrowError {
+            throw error
+        }
+
+        var filtered = mockCategorySamples.filter { $0.startDate >= start && $0.startDate < end }
+
+        if let sortDescriptors = sortDescriptors, !sortDescriptors.isEmpty {
+            filtered = (filtered as NSArray).sortedArray(using: sortDescriptors) as? [HKCategorySample] ?? filtered
+        }
+
+        if limit != HKObjectQueryNoLimit && limit > 0 {
+            filtered = Array(filtered.prefix(limit))
+        }
+
+        return filtered
+    }
+
+    func fetchWorkouts(
+        start: Date,
+        end: Date,
+        limit: Int,
+        sortDescriptors: [NSSortDescriptor]?
+    ) async throws -> [HKWorkout] {
+        fetchWorkoutsCount += 1
+
+        if let error = shouldThrowError {
+            throw error
+        }
+
+        var filtered = mockWorkouts.filter { $0.startDate >= start && $0.startDate < end }
+
+        if let sortDescriptors = sortDescriptors, !sortDescriptors.isEmpty {
+            filtered = (filtered as NSArray).sortedArray(using: sortDescriptors) as? [HKWorkout] ?? filtered
+        }
+
+        if limit != HKObjectQueryNoLimit && limit > 0 {
+            filtered = Array(filtered.prefix(limit))
+        }
+
+        return filtered
+    }
+
+    func fetchStatistics(
+        quantityType: HKQuantityType,
+        start: Date,
+        end: Date,
+        options: HKStatisticsOptions
+    ) async throws -> HKStatistics? {
+        fetchStatisticsCount += 1
+
+        if let error = shouldThrowError {
+            throw error
+        }
+
+        return mockStatistics
+    }
+
+    func requestPermissions() async throws {
+        requestAuthorizationCalled = true
+
+        if let error = authorizationError {
+            throw error
+        }
+    }
+
+    func fetchSleepSamples(
+        start: Date,
+        end: Date
+    ) async throws -> [HKCategorySample] {
+        // Return filtered category samples
+        return mockCategorySamples.filter { $0.startDate >= start && $0.startDate < end }
+    }
+
+    func fetchDetailedSleepData() async -> (bedTime: Date?, wakeTime: Date?, totalHours: Double?)? {
+        // Return nil for tests - override in specific tests if needed
+        return nil
+    }
+
+    // MARK: - Reset
+
+    func reset() {
+        mockQuantitySamples.removeAll()
+        mockCategorySamples.removeAll()
+        mockWorkouts.removeAll()
+        mockStatistics = nil
+        shouldThrowError = nil
+        authorizationError = nil
+        fetchQuantityCount = 0
+        fetchCategoryCount = 0
+        fetchWorkoutsCount = 0
+        fetchStatisticsCount = 0
+        requestAuthorizationCalled = false
+    }
+}
+
+// MARK: - Mock Cache Service
+
+/// Mock implementation of HealthKitCacheServiceProtocol for testing
+final class MockHealthKitCacheService: HealthKitCacheServiceProtocol {
+
+    // MARK: - Storage
+
+    private var lastSampleDates: [HealthMetric: Date] = [:]
+    private var historicalCache: [String: Any] = [:]
+
+    // MARK: - Call Tracking
+
+    private(set) var getLastSampleDateCallCount = 0
+    private(set) var setLastSampleDateCallCount = 0
+    private(set) var shouldRefreshCallCount = 0
+    private(set) var getCachedValueCallCount = 0
+    private(set) var setCachedValueCallCount = 0
+    private(set) var clearCacheCallCount = 0
+
+    // MARK: - HealthKitCacheServiceProtocol Implementation
+
+    func getLastSampleDate(for metric: HealthMetric) -> Date? {
+        getLastSampleDateCallCount += 1
+        return lastSampleDates[metric]
+    }
+
+    func setLastSampleDate(_ date: Date, for metric: HealthMetric) {
+        setLastSampleDateCallCount += 1
+        lastSampleDates[metric] = date
+    }
+
+    func shouldRefresh(metric: HealthMetric, cacheDuration: TimeInterval, force: Bool) -> Bool {
+        shouldRefreshCallCount += 1
+        if force { return true }
+        guard let lastDate = getLastSampleDate(for: metric) else { return true }
+        return Date().timeIntervalSince(lastDate) >= cacheDuration
+    }
+
+    func getCachedValue<T>(for metric: HealthMetric, date: Date) -> T? {
+        getCachedValueCallCount += 1
+        let key = cacheKey(for: metric, date: date)
+        return historicalCache[key] as? T
+    }
+
+    func setCachedValue<T>(_ value: T, for metric: HealthMetric, date: Date) {
+        setCachedValueCallCount += 1
+        let key = cacheKey(for: metric, date: date)
+        historicalCache[key] = value
+    }
+
+    func clearCache() {
+        clearCacheCallCount += 1
+        lastSampleDates.removeAll()
+        historicalCache.removeAll()
+    }
+
+    // MARK: - Helpers
+
+    private func cacheKey(for metric: HealthMetric, date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return "\(metric)-\(formatter.string(from: date))"
+    }
+
+    func reset() {
+        lastSampleDates.removeAll()
+        historicalCache.removeAll()
+        getLastSampleDateCallCount = 0
+        setLastSampleDateCallCount = 0
+        shouldRefreshCallCount = 0
+        getCachedValueCallCount = 0
+        setCachedValueCallCount = 0
+        clearCacheCallCount = 0
+    }
+}
+
+// MARK: - Mock Baseline Calculator
+
+/// Mock implementation of HealthKitBaselineCalculatorProtocol for testing
+@MainActor
+final class MockHealthKitBaselineCalculator: HealthKitBaselineCalculatorProtocol {
+
+    // MARK: - Call Tracking
+
+    private(set) var updateBaselinesCallCount = 0
+    private(set) var updateHRVBaselineCallCount = 0
+    private(set) var updateRestingHRBaselineCallCount = 0
+
+    // MARK: - Mock Configuration
+
+    var shouldThrowError: Error?
+
+    // MARK: - HealthKitBaselineCalculatorProtocol Implementation
+
+    func updateBaselines() async {
+        updateBaselinesCallCount += 1
+        await updateHRVBaseline()
+        await updateRestingHRBaseline()
+    }
+
+    func updateHRVBaseline() async {
+        updateHRVBaselineCallCount += 1
+    }
+
+    func updateRestingHRBaseline() async {
+        updateRestingHRBaselineCallCount += 1
+    }
+
+    // MARK: - Reset
+
+    func reset() {
+        updateBaselinesCallCount = 0
+        updateHRVBaselineCallCount = 0
+        updateRestingHRBaselineCallCount = 0
+        shouldThrowError = nil
     }
 }
 

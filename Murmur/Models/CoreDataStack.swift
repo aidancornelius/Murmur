@@ -85,3 +85,29 @@ final class CoreDataStack {
         }
     }
 }
+
+// MARK: - ResourceManageable conformance
+
+extension CoreDataStack: ResourceManageable {
+    func start() async throws {
+        // Container is initialised in init, nothing more to do
+        if let error = initializationError {
+            throw error
+        }
+    }
+
+    func cleanup() {
+        // Save any pending changes before app termination
+        let context = container.viewContext
+        if context.hasChanges {
+            do {
+                try context.save()
+                logger.info("Saved pending Core Data changes on cleanup")
+            } catch {
+                logger.error("Failed to save Core Data on cleanup: \(error.localizedDescription)")
+            }
+        }
+
+        // Note: Don't destroy container - it's a singleton that may be needed during shutdown
+    }
+}
