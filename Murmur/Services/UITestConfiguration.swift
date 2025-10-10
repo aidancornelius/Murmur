@@ -9,6 +9,10 @@ import Foundation
 import CoreData
 import os.log
 
+#if targetEnvironment(simulator)
+import HealthKitTestData
+#endif
+
 /// Handles launch arguments for UI testing
 struct UITestConfiguration {
     private static let logger = Logger(subsystem: "app.murmur", category: "UITestConfiguration")
@@ -51,6 +55,48 @@ struct UITestConfiguration {
 
     static var shouldSeedRecentOnly: Bool {
         CommandLine.arguments.contains("-RecentOnly")
+    }
+
+    // MARK: - HealthKit Seeding Arguments
+
+    static var shouldSeedHealthKitNormal: Bool {
+        CommandLine.arguments.contains("-SeedHealthKitNormal")
+    }
+
+    static var shouldSeedHealthKitLowerStress: Bool {
+        CommandLine.arguments.contains("-SeedHealthKitLowerStress")
+    }
+
+    static var shouldSeedHealthKitHigherStress: Bool {
+        CommandLine.arguments.contains("-SeedHealthKitHigherStress")
+    }
+
+    static var shouldSeedHealthKitEdgeCases: Bool {
+        CommandLine.arguments.contains("-SeedHealthKitEdgeCases")
+    }
+
+    static var shouldEnableLiveHealthData: Bool {
+        CommandLine.arguments.contains("-EnableLiveHealthData")
+    }
+
+    static var healthKitHistoryDays: Int {
+        // Look for -HealthKitHistoryDays N pattern
+        if let index = CommandLine.arguments.firstIndex(of: "-HealthKitHistoryDays"),
+           index + 1 < CommandLine.arguments.count,
+           let days = Int(CommandLine.arguments[index + 1]) {
+            return days
+        }
+        return 7 // Default to 7 days
+    }
+
+    static var healthKitSeed: Int {
+        // Look for -HealthKitSeed N pattern
+        if let index = CommandLine.arguments.firstIndex(of: "-HealthKitSeed"),
+           index + 1 < CommandLine.arguments.count,
+           let seed = Int(CommandLine.arguments[index + 1]) {
+            return seed
+        }
+        return 42 // Default to deterministic seed
     }
 
     // MARK: - Feature Flags
@@ -105,13 +151,18 @@ struct UITestConfiguration {
 
     /// Configure the app for UI testing based on launch arguments
     /// - Parameter context: The Core Data managed object context
-    static func configure(context: NSManagedObjectContext) {
+    static func configure(context: NSManagedObjectContext) async {
         guard isUITesting else {
             logger.debug("Not in UI test mode, skipping configuration")
             return
         }
 
         logger.info("Configuring app for UI testing")
+
+        // Seed HealthKit data FIRST, before any other configuration
+        #if targetEnvironment(simulator)
+        await configureHealthKitSeeding()
+        #endif
 
         // Always skip onboarding in UI test mode unless explicitly told to show it
         if !shouldShowOnboarding {
@@ -172,6 +223,55 @@ struct UITestConfiguration {
 
         logger.info("UI test configuration complete")
     }
+
+    // MARK: - HealthKit Configuration
+
+    #if targetEnvironment(simulator)
+    private static func configureHealthKitSeeding() async {
+        guard shouldSeedHealthKitNormal || shouldSeedHealthKitLowerStress ||
+              shouldSeedHealthKitHigherStress || shouldSeedHealthKitEdgeCases else {
+            logger.debug("No HealthKit seeding flags detected, skipping HealthKit configuration")
+            return
+        }
+
+        logger.info("Configuring HealthKit data seeding for UI tests")
+
+        // Determine which preset to use
+        let preset: GenerationPreset
+        if shouldSeedHealthKitNormal {
+            preset = .normal
+            logger.info("Using normal health data preset")
+        } else if shouldSeedHealthKitLowerStress {
+            preset = .lowerStress
+            logger.info("Using lower stress preset")
+        } else if shouldSeedHealthKitHigherStress {
+            preset = .higherStress
+            logger.info("Using higher stress preset")
+        } else {
+            preset = .edgeCases
+            logger.info("Using edge cases preset")
+        }
+
+        do {
+            // Seed historical data with explicit seed for determinism
+            let seed = healthKitSeed
+            try await HealthKitDataSeeder.seedDefaultData(
+                preset: preset,
+                daysOfHistory: healthKitHistoryDays,
+                seed: seed
+            )
+            logger.info("Successfully seeded \(healthKitHistoryDays) days of HealthKit data with seed: \(seed)")
+
+            // Start live data stream if requested
+            if shouldEnableLiveHealthData {
+                _ = try await HealthKitDataSeeder.startLiveDataStream(preset: preset)
+                logger.info("Started live HealthKit data streaming")
+            }
+        } catch {
+            logger.error("Failed to seed HealthKit data: \(error.localizedDescription)")
+        }
+    }
+    #endif
 
     // MARK: - Helper Methods
 

@@ -119,7 +119,7 @@ final class MockHealthKitDataProvider: HealthKitDataProvider {
 
     private func sortSamples<T: HKSample>(_ samples: [T], using sortDescriptors: [NSSortDescriptor]?) -> [T] {
         guard let sortDescriptors = sortDescriptors, !sortDescriptors.isEmpty else { return samples }
-        return (samples as NSArray).sortedArray(using: sortDescriptors) as! [T]
+        return (samples as NSArray).sortedArray(using: sortDescriptors) as? [T] ?? samples
     }
 
     // MARK: - Reset

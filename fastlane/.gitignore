@@ -1,0 +1,19 @@
+# Fastlane specific
+*.ipa
+*.dSYM.zip
+*.mobileprovision
+
+# Test outputs
+test_output/
+report.xml
+*.xcresult
+
+# Screenshots (can be regenerated)
+screenshots/
+fastlane-output/
+
+# System files
+.DS_Store
+
+# Deliverables
+Preview.html

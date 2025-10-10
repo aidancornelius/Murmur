@@ -8,6 +8,11 @@ options:
   createIntermediateGroups: true
   groupSortPosition: top
 
+packages:
+  HealthKitTestData:
+    url: https://github.com/aidancornelius/HealthKitUtility
+    from: 1.0.0
+
 settings:
   base:
     SWIFT_VERSION: "5.0"
@@ -33,6 +38,9 @@ targets:
           - "**/*.md"
           - "**/Info.plist"
           - "MurmurTests"
+    dependencies:
+      - package: HealthKitTestData
+        product: HealthKitTestData
     info:
       path: Murmur/Resources/Info.plist
       properties:
@@ -142,6 +150,8 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
     dependencies:
       - target: Murmur
+      - package: HealthKitTestData
+        product: HealthKitTestData
 
   MurmurUITests:
     type: bundle.ui-testing

@@ -42,12 +42,10 @@ struct MurmurApp: App {
                     .environmentObject(appearanceManager)
                     .task {
                         // Configure app for UI testing (data seeding etc)
-                        // Run in background to avoid blocking UI
+                        // Run async to avoid blocking UI
                         if UITestConfiguration.isUITesting {
                             let context = stack.context
-                            Task.detached(priority: .userInitiated) {
-                                UITestConfiguration.configure(context: context)
-                            }
+                            await UITestConfiguration.configure(context: context)
                         }
                     }
             } else {
