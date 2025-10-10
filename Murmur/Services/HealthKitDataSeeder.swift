@@ -131,8 +131,8 @@ final class HealthKitDataSeeder {
 
         // Create live generation config
         let config = LiveGenerationConfig(
-            preset: preset,
-            samplingInterval: samplingInterval
+            samplingInterval: samplingInterval,
+            preset: preset
         )
 
         // Create and start live loop

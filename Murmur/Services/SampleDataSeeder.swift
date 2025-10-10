@@ -64,13 +64,13 @@ struct SampleDataSeeder {
     ///   - date: The date to query metrics for
     ///   - dayType: The type of day (for fallback generation)
     ///   - seed: Deterministic seed for fallback values
-    ///   - healthStore: Optional pre-authorized HKHealthStore (to avoid redundant authorization)
+    ///   - dataProvider: Optional HealthKitDataProvider for dependency injection (defaults to RealHealthKitDataProvider)
     /// - Returns: HealthMetrics containing queried or fallback values
-    private static func fetchHealthKitMetrics(for date: Date, dayType: DayType, seed: Int, healthStore: HKHealthStore? = nil) async -> HealthMetrics {
-        // Use provided healthStore or create and authorize a new one
-        let store: HKHealthStore
-        if let healthStore = healthStore {
-            store = healthStore
+    private static func fetchHealthKitMetrics(for date: Date, dayType: DayType, seed: Int, dataProvider: HealthKitDataProvider? = nil) async -> HealthMetrics {
+        // Use provided dataProvider or create a new one
+        let provider: HealthKitDataProvider
+        if let dataProvider = dataProvider {
+            provider = dataProvider
         } else {
             guard HKHealthStore.isHealthDataAvailable() else {
                 return HealthMetrics(
@@ -83,7 +83,7 @@ struct SampleDataSeeder {
                 )
             }
 
-            let newStore = HKHealthStore()
+            let newProvider = RealHealthKitDataProvider()
             let readTypes: Set<HKObjectType> = Set([
                 HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN),
                 HKQuantityType.quantityType(forIdentifier: .restingHeartRate),
@@ -93,8 +93,8 @@ struct SampleDataSeeder {
             ].compactMap { $0 })
 
             do {
-                try await newStore.requestAuthorization(toShare: [], read: readTypes)
-                store = newStore
+                try await newProvider.requestAuthorization(toShare: [], read: readTypes)
+                provider = newProvider
             } catch {
                 logger.warning("HealthKit authorization failed: \(error.localizedDescription)")
                 return HealthMetrics(
@@ -110,212 +110,140 @@ struct SampleDataSeeder {
 
         // Shared date range for all queries
         let calendar = Calendar.current
-        let startOfDay = calendar.startOfDay(for: date)
-        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) ?? date
+        let (startOfDay, endOfDay) = DateUtility.dayBounds(for: date, calendar: calendar)
 
         // Query HRV
-        let hrv: Double? = try? await withCheckedThrowingContinuation { continuation in
-            let hrvType = HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!
+        let hrv: Double? = try? await {
+            guard let hrvType = HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN) else { return nil }
             let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: endOfDay, options: .strictStartDate)
-
-            let query = HKStatisticsQuery(quantityType: hrvType, quantitySamplePredicate: predicate, options: .discreteAverage) { _, statistics, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                    return
-                }
-
-                let value = statistics?.averageQuantity()?.doubleValue(for: HKUnit.secondUnit(with: .milli))
-                continuation.resume(returning: value)
-            }
-
-            store.execute(query)
-        }
+            let statistics = try await provider.fetchStatistics(quantityType: hrvType, predicate: predicate, options: .discreteAverage)
+            return statistics?.averageQuantity()?.doubleValue(for: HKUnit.secondUnit(with: .milli))
+        }()
 
         // Query resting heart rate
-        let restingHR: Double? = try? await withCheckedThrowingContinuation { continuation in
-            let restingHRType = HKQuantityType.quantityType(forIdentifier: .restingHeartRate)!
+        let restingHR: Double? = try? await {
+            guard let restingHRType = HKQuantityType.quantityType(forIdentifier: .restingHeartRate) else { return nil }
             let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: endOfDay, options: .strictStartDate)
-
-            let query = HKStatisticsQuery(quantityType: restingHRType, quantitySamplePredicate: predicate, options: .discreteAverage) { _, statistics, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                    return
-                }
-
-                let value = statistics?.averageQuantity()?.doubleValue(for: HKUnit.count().unitDivided(by: .minute()))
-                continuation.resume(returning: value)
-            }
-
-            store.execute(query)
-        }
+            let statistics = try await provider.fetchStatistics(quantityType: restingHRType, predicate: predicate, options: .discreteAverage)
+            return statistics?.averageQuantity()?.doubleValue(for: HKUnit.count().unitDivided(by: .minute()))
+        }()
 
         // Query sleep hours
-        let sleepHours: Double? = try? await withCheckedThrowingContinuation { continuation in
-            let sleepType = HKCategoryType.categoryType(forIdentifier: .sleepAnalysis)!
+        let sleepHours: Double? = try? await {
+            guard let sleepType = HKCategoryType.categoryType(forIdentifier: .sleepAnalysis) else { return nil }
             let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: endOfDay, options: .strictStartDate)
+            let categorySamples = try await provider.fetchCategorySamples(type: sleepType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil)
 
-            let query = HKSampleQuery(sampleType: sleepType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, samples, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                    return
+            // Filter for asleep states
+            let asleepSamples = categorySamples.filter { sample in
+                if #available(iOS 16.0, *) {
+                    return [
+                        HKCategoryValueSleepAnalysis.asleepCore.rawValue,
+                        HKCategoryValueSleepAnalysis.asleepDeep.rawValue,
+                        HKCategoryValueSleepAnalysis.asleepREM.rawValue,
+                        HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue
+                    ].contains(sample.value)
+                } else {
+                    return sample.value == HKCategoryValueSleepAnalysis.asleep.rawValue
                 }
-
-                guard let categorySamples = samples as? [HKCategorySample] else {
-                    continuation.resume(returning: nil)
-                    return
-                }
-
-                // Filter for asleep states
-                let asleepSamples = categorySamples.filter { sample in
-                    if #available(iOS 16.0, *) {
-                        return [
-                            HKCategoryValueSleepAnalysis.asleepCore.rawValue,
-                            HKCategoryValueSleepAnalysis.asleepDeep.rawValue,
-                            HKCategoryValueSleepAnalysis.asleepREM.rawValue,
-                            HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue
-                        ].contains(sample.value)
-                    } else {
-                        return sample.value == HKCategoryValueSleepAnalysis.asleep.rawValue
-                    }
-                }
-
-                // Sum total sleep duration in hours
-                let totalSeconds = asleepSamples.reduce(0.0) { total, sample in
-                    total + sample.endDate.timeIntervalSince(sample.startDate)
-                }
-
-                let hours = totalSeconds / 3600.0
-                continuation.resume(returning: hours > 0 ? hours : nil)
             }
 
-            store.execute(query)
-        }
+            // Sum total sleep duration in hours
+            let totalSeconds = asleepSamples.reduce(0.0) { total, sample in
+                total + sample.endDate.timeIntervalSince(sample.startDate)
+            }
+
+            let hours = totalSeconds / 3600.0
+            return hours > 0 ? hours : nil
+        }()
 
         // Query workout minutes
-        let workoutMinutes: Double? = try? await withCheckedThrowingContinuation { continuation in
-            let workoutType = HKObjectType.workoutType()
+        let workoutMinutes: Double? = try? await {
             let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: endOfDay, options: .strictStartDate)
+            let workouts = try await provider.fetchWorkouts(predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil)
 
-            let query = HKSampleQuery(sampleType: workoutType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, samples, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                    return
-                }
-
-                guard let workouts = samples as? [HKWorkout] else {
-                    continuation.resume(returning: nil)
-                    return
-                }
-
-                // Sum total workout duration in minutes
-                let totalSeconds = workouts.reduce(0.0) { total, workout in
-                    total + workout.duration
-                }
-
-                let minutes = totalSeconds / 60.0
-                continuation.resume(returning: minutes > 0 ? minutes : nil)
+            // Sum total workout duration in minutes
+            let totalSeconds = workouts.reduce(0.0) { total, workout in
+                total + workout.duration
             }
 
-            store.execute(query)
-        }
+            let minutes = totalSeconds / 60.0
+            return minutes > 0 ? minutes : nil
+        }()
 
         // Query cycle day (days since last period start)
-        let cycleDay: Int? = try? await withCheckedThrowingContinuation { continuation in
-            let flowType = HKCategoryType.categoryType(forIdentifier: .menstrualFlow)!
+        let cycleDay: Int? = try? await {
+            guard let flowType = HKCategoryType.categoryType(forIdentifier: .menstrualFlow) else { return nil }
 
             // Look back up to 60 days for last period start
             let lookbackDate = calendar.date(byAdding: .day, value: -60, to: date) ?? date
             let predicate = HKQuery.predicateForSamples(withStart: lookbackDate, end: date, options: .strictStartDate)
             let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
+            let flowSamples = try await provider.fetchCategorySamples(type: flowType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: [sortDescriptor])
 
-            let query = HKSampleQuery(sampleType: flowType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: [sortDescriptor]) { _, samples, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                    return
+            // Find most recent period start (flow > none)
+            let periodStarts = flowSamples.filter { sample in
+                if #available(iOS 18.0, *) {
+                    return sample.value > HKCategoryValueVaginalBleeding.none.rawValue
+                } else {
+                    return sample.value > HKCategoryValueMenstrualFlow.none.rawValue
                 }
-
-                guard let flowSamples = samples as? [HKCategorySample] else {
-                    continuation.resume(returning: nil)
-                    return
-                }
-
-                // Find most recent period start (flow > none)
-                let periodStarts = flowSamples.filter { sample in
-                    if #available(iOS 18.0, *) {
-                        return sample.value > HKCategoryValueVaginalBleeding.none.rawValue
-                    } else {
-                        return sample.value > HKCategoryValueMenstrualFlow.none.rawValue
-                    }
-                }
-
-                guard let lastPeriodStart = periodStarts.first else {
-                    continuation.resume(returning: nil)
-                    return
-                }
-
-                // Calculate days since period start
-                let daysSince = calendar.dateComponents([.day], from: lastPeriodStart.startDate, to: date).day
-                continuation.resume(returning: daysSince)
             }
 
-            store.execute(query)
-        }
+            guard let lastPeriodStart = periodStarts.first else {
+                return nil
+            }
+
+            // Calculate days since period start
+            return calendar.dateComponents([.day], from: lastPeriodStart.startDate, to: date).day
+        }()
 
         // Query flow level for the day
-        let flowLevel: String? = try? await withCheckedThrowingContinuation { continuation in
-            let flowType = HKCategoryType.categoryType(forIdentifier: .menstrualFlow)!
+        let flowLevel: String? = try? await {
+            guard let flowType = HKCategoryType.categoryType(forIdentifier: .menstrualFlow) else { return nil }
             let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: endOfDay, options: .strictStartDate)
+            let flowSamples = try await provider.fetchCategorySamples(type: flowType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil)
 
-            let query = HKSampleQuery(sampleType: flowType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, samples, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                    return
-                }
-
-                guard let flowSamples = samples as? [HKCategorySample], !flowSamples.isEmpty else {
-                    continuation.resume(returning: nil)
-                    return
-                }
-
-                // Find highest flow value for the day
-                let maxFlow: Int
-                let flowString: String
-
-                if #available(iOS 18.0, *) {
-                    maxFlow = flowSamples.map(\.value).max() ?? HKCategoryValueVaginalBleeding.none.rawValue
-                    switch maxFlow {
-                    case HKCategoryValueVaginalBleeding.none.rawValue:
-                        flowString = "none"
-                    case HKCategoryValueVaginalBleeding.light.rawValue:
-                        flowString = "light"
-                    case HKCategoryValueVaginalBleeding.medium.rawValue:
-                        flowString = "medium"
-                    case HKCategoryValueVaginalBleeding.heavy.rawValue:
-                        flowString = "heavy"
-                    default:
-                        flowString = "unspecified"
-                    }
-                } else {
-                    maxFlow = flowSamples.map(\.value).max() ?? HKCategoryValueMenstrualFlow.none.rawValue
-                    switch maxFlow {
-                    case HKCategoryValueMenstrualFlow.none.rawValue:
-                        flowString = "none"
-                    case HKCategoryValueMenstrualFlow.light.rawValue:
-                        flowString = "light"
-                    case HKCategoryValueMenstrualFlow.medium.rawValue:
-                        flowString = "medium"
-                    case HKCategoryValueMenstrualFlow.heavy.rawValue:
-                        flowString = "heavy"
-                    default:
-                        flowString = "unspecified"
-                    }
-                }
-
-                continuation.resume(returning: flowString)
+            guard !flowSamples.isEmpty else {
+                return nil
             }
 
-            store.execute(query)
-        }
+            // Find highest flow value for the day
+            let maxFlow: Int
+            let flowString: String
+
+            if #available(iOS 18.0, *) {
+                maxFlow = flowSamples.map(\.value).max() ?? HKCategoryValueVaginalBleeding.none.rawValue
+                switch maxFlow {
+                case HKCategoryValueVaginalBleeding.none.rawValue:
+                    flowString = "none"
+                case HKCategoryValueVaginalBleeding.light.rawValue:
+                    flowString = "light"
+                case HKCategoryValueVaginalBleeding.medium.rawValue:
+                    flowString = "medium"
+                case HKCategoryValueVaginalBleeding.heavy.rawValue:
+                    flowString = "heavy"
+                default:
+                    flowString = "unspecified"
+                }
+            } else {
+                maxFlow = flowSamples.map(\.value).max() ?? HKCategoryValueMenstrualFlow.none.rawValue
+                switch maxFlow {
+                case HKCategoryValueMenstrualFlow.none.rawValue:
+                    flowString = "none"
+                case HKCategoryValueMenstrualFlow.light.rawValue:
+                    flowString = "light"
+                case HKCategoryValueMenstrualFlow.medium.rawValue:
+                    flowString = "medium"
+                case HKCategoryValueMenstrualFlow.heavy.rawValue:
+                    flowString = "heavy"
+                default:
+                    flowString = "unspecified"
+                }
+            }
+
+            return flowString
+        }()
 
         // Return metrics with fallbacks for nil values
         return HealthMetrics(
@@ -398,19 +326,16 @@ struct SampleDataSeeder {
         }
     }
 
-    /// Helper function to generate consistent day keys for caching
-    private static func dayKey(for date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.string(from: date)
-    }
 
     /// Generates realistic sample timeline entries for simulator testing
     ///
     /// This method returns immediately and performs seeding asynchronously.
     /// It does not block the calling context. If you need to wait for completion,
     /// consider making this method async and removing the Task wrapper.
-    static func generateSampleEntries(in context: NSManagedObjectContext) {
+    /// - Parameters:
+    ///   - context: The CoreData context to insert entries into
+    ///   - dataProvider: Optional HealthKitDataProvider for dependency injection (defaults to RealHealthKitDataProvider)
+    static func generateSampleEntries(in context: NSManagedObjectContext, dataProvider: HealthKitDataProvider? = nil) {
         Task {
             let now = Date()
             let calendar = Calendar.current
@@ -418,10 +343,12 @@ struct SampleDataSeeder {
             // Pre-fetch HealthKit metrics for all days and cache them
             var metricsCache: [String: HealthMetrics] = [:]
 
-            // Request HealthKit authorization once before the loop
-            let healthStore: HKHealthStore?
-            if HKHealthStore.isHealthDataAvailable() {
-                let store = HKHealthStore()
+            // Request HealthKit authorization once before the loop (if not provided)
+            let provider: HealthKitDataProvider?
+            if let dataProvider = dataProvider {
+                provider = dataProvider
+            } else if HKHealthStore.isHealthDataAvailable() {
+                let newProvider = RealHealthKitDataProvider()
                 let readTypes: Set<HKObjectType> = Set([
                     HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN),
                     HKQuantityType.quantityType(forIdentifier: .restingHeartRate),
@@ -431,14 +358,14 @@ struct SampleDataSeeder {
                 ].compactMap { $0 })
 
                 do {
-                    try await store.requestAuthorization(toShare: [], read: readTypes)
-                    healthStore = store
+                    try await newProvider.requestAuthorization(toShare: [], read: readTypes)
+                    provider = newProvider
                 } catch {
                     logger.warning("HealthKit authorization failed: \(error.localizedDescription)")
-                    healthStore = nil
+                    provider = nil
                 }
             } else {
-                healthStore = nil
+                provider = nil
             }
 
             for dayOffset in 0..<60 {
@@ -467,8 +394,8 @@ struct SampleDataSeeder {
                     dayType = .normal
                 }
 
-                let metrics = await fetchHealthKitMetrics(for: date, dayType: dayType, seed: seed, healthStore: healthStore)
-                metricsCache[dayKey(for: date)] = metrics
+                let metrics = await fetchHealthKitMetrics(for: date, dayType: dayType, seed: seed, dataProvider: provider)
+                metricsCache[DateUtility.dayKey(for: date)] = metrics
             }
 
             await context.perform {
@@ -584,7 +511,7 @@ struct SampleDataSeeder {
                 sleepEvent.quality = sleepQuality
 
                 // Use cached HealthKit sleep hours if available, otherwise use generated duration
-                let dateKey = dayKey(for: date)
+                let dateKey = DateUtility.dayKey(for: date)
                 if let metrics = metricsCache[dateKey], let actualSleepHours = metrics.sleepHours {
                     sleepEvent.hkSleepHours = NSNumber(value: actualSleepHours)
                 } else {

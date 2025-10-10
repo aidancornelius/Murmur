@@ -54,6 +54,12 @@ protocol HealthKitDataProvider {
         sortDescriptors: [NSSortDescriptor]?
     ) async throws -> [HKWorkout]
 
+    func fetchStatistics(
+        quantityType: HKQuantityType,
+        predicate: NSPredicate?,
+        options: HKStatisticsOptions
+    ) async throws -> HKStatistics?
+
     func requestAuthorization(toShare typesToShare: Set<HKSampleType>, read typesToRead: Set<HKObjectType>) async throws
 }
 
@@ -67,30 +73,49 @@ final class RealHealthKitDataProvider: HealthKitDataProvider, @unchecked Sendabl
         activeQueries.forEach { store.stop($0) }
     }
 
-    func fetchQuantitySamples(
-        type: HKQuantityType,
-        predicate: NSPredicate?,
-        limit: Int,
-        sortDescriptors: [NSSortDescriptor]?
-    ) async throws -> [HKQuantitySample] {
+    // MARK: - Generic Query Execution Helper
+
+    /// Generic helper to execute any HKQuery with continuation-based async handling
+    /// Encapsulates query lifecycle management (tracking, cleanup) and error handling
+    /// Returns optional result - callers handle nil as appropriate (e.g., empty array)
+    private func executeQuery<ResultType>(
+        _ queryBuilder: @escaping (@escaping (ResultType?, Error?) -> Void) -> HKQuery
+    ) async throws -> ResultType? {
         try await withCheckedThrowingContinuation { continuation in
-            let query = HKSampleQuery(sampleType: type, predicate: predicate, limit: limit, sortDescriptors: sortDescriptors) { [weak self] query, samples, error in
-                Task { @MainActor in
-                    if let self, let index = self.activeQueries.firstIndex(where: { $0 === query }) {
+            var queryRef: HKQuery?
+            let query = queryBuilder { [weak self] result, error in
+                Task { @MainActor [weak self] in
+                    guard let self, let queryRef else { return }
+                    if let index = self.activeQueries.firstIndex(where: { $0 === queryRef }) {
                         self.activeQueries.remove(at: index)
                     }
                 }
                 if let error {
                     continuation.resume(throwing: error)
                 } else {
-                    continuation.resume(returning: (samples as? [HKQuantitySample]) ?? [])
+                    continuation.resume(returning: result)
                 }
             }
+            queryRef = query
             Task { @MainActor in
                 self.activeQueries.append(query)
             }
             store.execute(query)
         }
+    }
+
+    func fetchQuantitySamples(
+        type: HKQuantityType,
+        predicate: NSPredicate?,
+        limit: Int,
+        sortDescriptors: [NSSortDescriptor]?
+    ) async throws -> [HKQuantitySample] {
+        let samples: [HKSample]? = try await executeQuery { completion in
+            HKSampleQuery(sampleType: type, predicate: predicate, limit: limit, sortDescriptors: sortDescriptors) { _, samples, error in
+                completion(samples, error)
+            }
+        }
+        return samples as? [HKQuantitySample] ?? []
     }
 
     func fetchCategorySamples(
@@ -99,24 +124,12 @@ final class RealHealthKitDataProvider: HealthKitDataProvider, @unchecked Sendabl
         limit: Int,
         sortDescriptors: [NSSortDescriptor]?
     ) async throws -> [HKCategorySample] {
-        try await withCheckedThrowingContinuation { continuation in
-            let query = HKSampleQuery(sampleType: type, predicate: predicate, limit: limit, sortDescriptors: sortDescriptors) { [weak self] query, samples, error in
-                Task { @MainActor in
-                    if let self, let index = self.activeQueries.firstIndex(where: { $0 === query }) {
-                        self.activeQueries.remove(at: index)
-                    }
-                }
-                if let error {
-                    continuation.resume(throwing: error)
-                } else {
-                    continuation.resume(returning: (samples as? [HKCategorySample]) ?? [])
-                }
+        let samples: [HKSample]? = try await executeQuery { completion in
+            HKSampleQuery(sampleType: type, predicate: predicate, limit: limit, sortDescriptors: sortDescriptors) { _, samples, error in
+                completion(samples, error)
             }
-            Task { @MainActor in
-                self.activeQueries.append(query)
-            }
-            store.execute(query)
         }
+        return samples as? [HKCategorySample] ?? []
     }
 
     func fetchWorkouts(
@@ -124,23 +137,23 @@ final class RealHealthKitDataProvider: HealthKitDataProvider, @unchecked Sendabl
         limit: Int,
         sortDescriptors: [NSSortDescriptor]?
     ) async throws -> [HKWorkout] {
-        try await withCheckedThrowingContinuation { continuation in
-            let query = HKSampleQuery(sampleType: .workoutType(), predicate: predicate, limit: limit, sortDescriptors: sortDescriptors) { [weak self] query, samples, error in
-                Task { @MainActor in
-                    if let self, let index = self.activeQueries.firstIndex(where: { $0 === query }) {
-                        self.activeQueries.remove(at: index)
-                    }
-                }
-                if let error {
-                    continuation.resume(throwing: error)
-                } else {
-                    continuation.resume(returning: (samples as? [HKWorkout]) ?? [])
-                }
+        let samples: [HKSample]? = try await executeQuery { completion in
+            HKSampleQuery(sampleType: .workoutType(), predicate: predicate, limit: limit, sortDescriptors: sortDescriptors) { _, samples, error in
+                completion(samples, error)
             }
-            Task { @MainActor in
-                self.activeQueries.append(query)
+        }
+        return samples as? [HKWorkout] ?? []
+    }
+
+    func fetchStatistics(
+        quantityType: HKQuantityType,
+        predicate: NSPredicate?,
+        options: HKStatisticsOptions
+    ) async throws -> HKStatistics? {
+        try await executeQuery { completion in
+            HKStatisticsQuery(quantityType: quantityType, quantitySamplePredicate: predicate, options: options) { _, statistics, error in
+                completion(statistics, error)
             }
-            store.execute(query)
         }
     }
 
@@ -543,8 +556,7 @@ final class HealthKitAssistant: HealthKitAssistantProtocol, ObservableObject {
         do {
             // Look for sleep that ended on this day (sleep from night before)
             let calendar = Calendar.current
-            let dayStart = calendar.startOfDay(for: date)
-            let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) ?? date
+            let (dayStart, dayEnd) = DateUtility.dayBounds(for: date, calendar: calendar)
 
             // Extend backwards to catch sleep that started the night before
             let searchStart = calendar.date(byAdding: .hour, value: -12, to: dayStart) ?? dayStart
@@ -755,18 +767,12 @@ final class HealthKitAssistant: HealthKitAssistantProtocol, ObservableObject {
 
     /// Generate a cache key for a specific day (format: "YYYY-MM-DD")
     private func dayKey(for date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = TimeZone.current
-        return formatter.string(from: date)
+        DateUtility.dayKey(for: date, timeZone: .current)
     }
 
     /// Get the start and end of a calendar day for a given date
     private func dayBounds(for date: Date) -> (start: Date, end: Date) {
-        let calendar = Calendar.current
-        let start = calendar.startOfDay(for: date)
-        let end = calendar.date(byAdding: .day, value: 1, to: start) ?? date
-        return (start, end)
+        DateUtility.dayBounds(for: date, calendar: .current)
     }
 
     func refreshContext() async {
@@ -966,8 +972,7 @@ final class HealthKitAssistant: HealthKitAssistantProtocol, ObservableObject {
             }
 
             // Get today's flow level
-            let todayStart = Calendar.current.startOfDay(for: Date())
-            let todayEnd = Calendar.current.date(byAdding: .day, value: 1, to: todayStart) ?? Date()
+            let (todayStart, todayEnd) = DateUtility.dayBounds(for: Date(), calendar: Calendar.current)
             let todaySamples = samples.filter { $0.startDate >= todayStart && $0.startDate < todayEnd }
 
             if let todayFlow = todaySamples.first {

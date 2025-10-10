@@ -9,9 +9,9 @@ options:
   groupSortPosition: top
 
 packages:
-  HealthKitTestData:
+  HealthKitUtility:
     url: https://github.com/aidancornelius/HealthKitUtility
-    from: 1.0.0
+    from: 1.0.7
 
 settings:
   base:
@@ -38,9 +38,6 @@ targets:
           - "**/*.md"
           - "**/Info.plist"
           - "MurmurTests"
-    dependencies:
-      - package: HealthKitTestData
-        product: HealthKitTestData
     info:
       path: Murmur/Resources/Info.plist
       properties:
@@ -94,6 +91,8 @@ targets:
         ENABLE_PREVIEWS: YES
         LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks"
     dependencies:
+      - package: HealthKitUtility
+        product: HealthKitTestData
       - target: MurmurWidgetsExtension
     preBuildScripts:
       - script: |
@@ -150,7 +149,7 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
     dependencies:
       - target: Murmur
-      - package: HealthKitTestData
+      - package: HealthKitUtility
         product: HealthKitTestData
 
   MurmurUITests:
@@ -168,6 +167,8 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
     dependencies:
       - target: Murmur
+      - package: HealthKitUtility
+        product: HealthKitTestData
 
 schemes:
   Murmur:

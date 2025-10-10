@@ -21,6 +21,7 @@ final class MockHealthKitDataProvider: HealthKitDataProvider {
     var mockQuantitySamples: [HKQuantitySample] = []
     var mockCategorySamples: [HKCategorySample] = []
     var mockWorkouts: [HKWorkout] = []
+    var mockStatistics: HKStatistics?
     var shouldThrowError: Error?
     var authorizationError: Error?
 
@@ -29,6 +30,7 @@ final class MockHealthKitDataProvider: HealthKitDataProvider {
     private(set) var fetchQuantityCount = 0
     private(set) var fetchCategoryCount = 0
     private(set) var fetchWorkoutsCount = 0
+    private(set) var fetchStatisticsCount = 0
     private(set) var requestAuthorizationCalled = false
     private(set) var requestedReadTypes: Set<HKObjectType>?
     private(set) var requestedShareTypes: Set<HKSampleType>?
@@ -100,6 +102,20 @@ final class MockHealthKitDataProvider: HealthKitDataProvider {
         return filtered
     }
 
+    func fetchStatistics(
+        quantityType: HKQuantityType,
+        predicate: NSPredicate?,
+        options: HKStatisticsOptions
+    ) async throws -> HKStatistics? {
+        fetchStatisticsCount += 1
+
+        if let error = shouldThrowError {
+            throw error
+        }
+
+        return mockStatistics
+    }
+
     func requestAuthorization(toShare typesToShare: Set<HKSampleType>, read typesToRead: Set<HKObjectType>) async throws {
         requestAuthorizationCalled = true
         requestedShareTypes = typesToShare
@@ -128,11 +144,13 @@ final class MockHealthKitDataProvider: HealthKitDataProvider {
         mockQuantitySamples.removeAll()
         mockCategorySamples.removeAll()
         mockWorkouts.removeAll()
+        mockStatistics = nil
         shouldThrowError = nil
         authorizationError = nil
         fetchQuantityCount = 0
         fetchCategoryCount = 0
         fetchWorkoutsCount = 0
+        fetchStatisticsCount = 0
         requestAuthorizationCalled = false
         requestedReadTypes = nil
         requestedShareTypes = nil
@@ -140,7 +158,7 @@ final class MockHealthKitDataProvider: HealthKitDataProvider {
 
     /// Property for backwards compatibility with existing tests
     var executeCount: Int {
-        fetchQuantityCount + fetchCategoryCount + fetchWorkoutsCount
+        fetchQuantityCount + fetchCategoryCount + fetchWorkoutsCount + fetchStatisticsCount
     }
 }
 
@@ -278,6 +296,38 @@ final class MockHealthKitAssistant: HealthKitAssistantProtocol {
     }
 
     func recentFlowLevel() async -> String? {
+        flowLevelCallCount += 1
+        return mockFlowLevel
+    }
+
+    // MARK: - Historical Data (ForDate Methods)
+
+    func hrvForDate(_ date: Date) async -> Double? {
+        hrvCallCount += 1
+        return mockHRV
+    }
+
+    func restingHRForDate(_ date: Date) async -> Double? {
+        restingHRCallCount += 1
+        return mockRestingHR
+    }
+
+    func sleepHoursForDate(_ date: Date) async -> Double? {
+        sleepCallCount += 1
+        return mockSleepHours
+    }
+
+    func workoutMinutesForDate(_ date: Date) async -> Double? {
+        workoutCallCount += 1
+        return mockWorkoutMinutes
+    }
+
+    func cycleDayForDate(_ date: Date) async -> Int? {
+        cycleDayCallCount += 1
+        return mockCycleDay
+    }
+
+    func flowLevelForDate(_ date: Date) async -> String? {
         flowLevelCallCount += 1
         return mockFlowLevel
     }

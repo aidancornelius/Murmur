@@ -148,9 +148,7 @@ final class DataBackupService {
         let encryptedData = try encrypt(data: jsonData, password: password)
 
         // Save to file
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd_HHmm"
-        let timestamp = dateFormatter.string(from: Date())
+        let timestamp = DateUtility.backupTimestamp(for: Date())
         let filename = "Murmur_Backup_\(timestamp).murmurbackup"
 
         let tempURL = FileManager.default.temporaryDirectory

@@ -10,7 +10,6 @@ import HealthKitTestData
 
 /// Provides expected HealthKit values for UI test assertions
 /// Uses the same deterministic seeds as UITestConfiguration for reproducible results
-@MainActor
 struct HealthKitExpectedValues {
 
     // MARK: - Fixture Presets
@@ -64,8 +63,8 @@ struct HealthKitExpectedValues {
         let dayStart = calendar.startOfDay(for: date)
         let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) ?? date
 
-        let samplesForDay = bundle.heartRateVariability.filter { sample in
-            sample.timestamp >= dayStart && sample.timestamp < dayEnd
+        let samplesForDay = bundle.hrv.filter { sample in
+            sample.date >= dayStart && sample.date < dayEnd
         }
 
         // Return the first (or average) value for the day
@@ -84,7 +83,7 @@ struct HealthKitExpectedValues {
         let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) ?? date
 
         let samplesForDay = bundle.restingHeartRate.filter { sample in
-            sample.timestamp >= dayStart && sample.timestamp < dayEnd
+            sample.date >= dayStart && sample.date < dayEnd
         }
 
         return samplesForDay.first?.value
@@ -102,7 +101,7 @@ struct HealthKitExpectedValues {
         let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) ?? date
 
         // Sum all sleep samples for this day
-        let samplesForDay = bundle.sleepAnalysis.filter { sample in
+        let samplesForDay = bundle.sleep.filter { sample in
             sample.endDate >= dayStart && sample.endDate < dayEnd
         }
 
@@ -128,8 +127,8 @@ struct HealthKitExpectedValues {
             workout.startDate >= dayStart && workout.startDate < dayEnd
         }
 
-        let totalMinutes = workoutsForDay.reduce(0.0) { total, workout in
-            total + workout.duration / 60.0
+        let totalMinutes = workoutsForDay.reduce(into: 0.0) { total, workout in
+            total += workout.endDate.timeIntervalSince(workout.startDate) / 60.0
         }
 
         return totalMinutes > 0 ? totalMinutes : nil
@@ -174,10 +173,10 @@ struct HealthKitExpectedValues {
     /// Useful for verifying displayed values are in expected range
     func averageHRV() -> Double? {
         let bundle = generateBundle()
-        guard !bundle.heartRateVariability.isEmpty else { return nil }
+        guard !bundle.hrv.isEmpty else { return nil }
 
-        let total = bundle.heartRateVariability.reduce(0.0) { $0 + $1.value }
-        return total / Double(bundle.heartRateVariability.count)
+        let total = bundle.hrv.reduce(0.0) { $0 + $1.value }
+        return total / Double(bundle.hrv.count)
     }
 
     /// Get average resting HR across the entire fixture period

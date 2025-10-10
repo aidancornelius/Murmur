@@ -31,14 +31,14 @@ final class HealthKitUtilityTestHelper {
         var workouts: [HKWorkout] = []
 
         // Convert heart rate variability
-        for item in bundle.heartRateVariability {
+        for item in bundle.hrv {
             guard let type = HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN) else { continue }
             let quantity = HKQuantity(unit: HKUnit.secondUnit(with: .milli), doubleValue: item.value)
             let sample = HKQuantitySample(
                 type: type,
                 quantity: quantity,
-                start: item.timestamp,
-                end: item.timestamp
+                start: item.date,
+                end: item.date
             )
             quantitySamples.append(sample)
         }
@@ -51,18 +51,26 @@ final class HealthKitUtilityTestHelper {
             let sample = HKQuantitySample(
                 type: type,
                 quantity: quantity,
-                start: item.timestamp,
-                end: item.timestamp
+                start: item.date,
+                end: item.date
             )
             quantitySamples.append(sample)
         }
 
         // Convert sleep analysis
-        for item in bundle.sleepAnalysis {
+        for item in bundle.sleep {
             guard let type = HKCategoryType.categoryType(forIdentifier: .sleepAnalysis) else { continue }
+            let value: HKCategoryValueSleepAnalysis
+            switch item.stage {
+            case .awake: value = .awake
+            case .light: value = .asleepCore
+            case .deep: value = .asleepDeep
+            case .rem: value = .asleepREM
+            case .unknown: value = .asleepUnspecified
+            }
             let sample = HKCategorySample(
                 type: type,
-                value: item.value.rawValue,
+                value: value.rawValue,
                 start: item.startDate,
                 end: item.endDate
             )
@@ -71,19 +79,42 @@ final class HealthKitUtilityTestHelper {
 
         // Convert workouts
         for item in bundle.workouts {
+            let activityType = workoutActivityType(from: item.type)
+            let duration = item.endDate.timeIntervalSince(item.startDate)
             let workout = HKWorkout(
-                activityType: item.activityType,
+                activityType: activityType,
                 start: item.startDate,
                 end: item.endDate,
-                duration: item.duration,
-                totalEnergyBurned: item.totalEnergyBurned.map { HKQuantity(unit: .kilocalorie(), doubleValue: $0) },
-                totalDistance: item.totalDistance.map { HKQuantity(unit: .meter(), doubleValue: $0) },
+                duration: duration,
+                totalEnergyBurned: item.calories.map { HKQuantity(unit: .kilocalorie(), doubleValue: $0) },
+                totalDistance: item.distance.map { HKQuantity(unit: .meter(), doubleValue: $0) },
                 metadata: nil
             )
             workouts.append(workout)
         }
 
         return (quantitySamples, categorySamples, workouts)
+    }
+
+    // MARK: - Helper Methods
+
+    private static func workoutActivityType(from name: String) -> HKWorkoutActivityType {
+        switch name.lowercased() {
+        case "running": return .running
+        case "walking": return .walking
+        case "cycling": return .cycling
+        case "swimming": return .swimming
+        case "yoga": return .yoga
+        case "strength training", "weight training": return .functionalStrengthTraining
+        case "hiit": return .highIntensityIntervalTraining
+        case "hiking": return .hiking
+        case "elliptical": return .elliptical
+        case "rowing": return .rowing
+        case "dance": return .socialDance
+        case "pilates": return .pilates
+        case "boxing": return .boxing
+        default: return .other
+        }
     }
 
     // MARK: - Data Generation Presets

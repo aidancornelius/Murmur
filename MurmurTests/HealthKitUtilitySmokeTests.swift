@@ -36,11 +36,11 @@ final class HealthKitUtilitySmokeTests: XCTestCase {
         )
 
         // Verify determinism
-        XCTAssertEqual(bundle1.heartRateVariability.count, bundle2.heartRateVariability.count,
+        XCTAssertEqual(bundle1.hrv.count, bundle2.hrv.count,
             "Same seed should produce same number of HRV samples")
 
-        if let first1 = bundle1.heartRateVariability.first,
-           let first2 = bundle2.heartRateVariability.first {
+        if let first1 = bundle1.hrv.first,
+           let first2 = bundle2.hrv.first {
             XCTAssertEqual(first1.value, first2.value, accuracy: 0.001,
                 "Same seed should produce identical HRV values")
         }
@@ -61,7 +61,7 @@ final class HealthKitUtilitySmokeTests: XCTestCase {
             $0.quantityType == HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN)
         }
 
-        XCTAssertEqual(hrvSamples.count, bundle.heartRateVariability.count,
+        XCTAssertEqual(hrvSamples.count, bundle.hrv.count,
             "Conversion should preserve number of HRV samples")
     }
 }

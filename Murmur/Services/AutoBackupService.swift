@@ -211,9 +211,7 @@ final class AutoBackupService {
         let backupURL = try await backupService.createBackup(password: password)
 
         // Move to auto backups directory with proper naming
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        let dateString = formatter.string(from: date)
+        let dateString = DateUtility.dayKey(for: date)
         let filename = "AutoBackup_daily_\(dateString).murmurbackup"
 
         let destinationURL = try autoBackupsDirectory.appendingPathComponent(filename)
@@ -230,9 +228,7 @@ final class AutoBackupService {
         let backupURL = try await backupService.createBackup(password: password)
 
         // Move to auto backups directory with proper naming
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM"
-        let dateString = formatter.string(from: date)
+        let dateString = DateUtility.monthlyKey(for: date)
         let filename = "AutoBackup_monthly_\(dateString).murmurbackup"
 
         let destinationURL = try autoBackupsDirectory.appendingPathComponent(filename)
