@@ -14,12 +14,21 @@ import os.log
 /// Protocol for HealthKit services to enable dependency injection and testing
 @MainActor
 protocol HealthKitAssistantProtocol: AnyObject {
+    // Recent data (last 24-48 hours)
     func recentHRV() async -> Double?
     func recentRestingHR() async -> Double?
     func recentSleepHours() async -> Double?
     func recentWorkoutMinutes() async -> Double?
     func recentCycleDay() async -> Int?
     func recentFlowLevel() async -> String?
+
+    // Historical data for specific dates (for backdating and seeding)
+    func hrvForDate(_ date: Date) async -> Double?
+    func restingHRForDate(_ date: Date) async -> Double?
+    func sleepHoursForDate(_ date: Date) async -> Double?
+    func workoutMinutesForDate(_ date: Date) async -> Double?
+    func cycleDayForDate(_ date: Date) async -> Int?
+    func flowLevelForDate(_ date: Date) async -> String?
 }
 
 /// Protocol abstraction for HealthKit data access to enable testing with mock implementations
@@ -52,6 +61,11 @@ protocol HealthKitDataProvider {
 final class RealHealthKitDataProvider: HealthKitDataProvider, @unchecked Sendable {
     private let store = HKHealthStore()
     private var activeQueries: [HKQuery] = []
+
+    deinit {
+        // Clean up any remaining queries as safety net
+        activeQueries.forEach { store.stop($0) }
+    }
 
     func fetchQuantitySamples(
         type: HKQuantityType,
@@ -168,6 +182,16 @@ final class HealthKitAssistant: HealthKitAssistantProtocol, ObservableObject {
     private var lastSleepSampleDate: Date?
     private var lastWorkoutSampleDate: Date?
     private var lastCycleSampleDate: Date?
+
+    // MARK: - Historical Data Cache
+    // Cache historical queries by calendar day to avoid repeated HealthKit queries
+    // Key format: "YYYY-MM-DD"
+    private var historicalHRVCache: [String: Double] = [:]
+    private var historicalRestingHRCache: [String: Double] = [:]
+    private var historicalSleepCache: [String: Double] = [:]
+    private var historicalWorkoutCache: [String: Double] = [:]
+    private var historicalCycleDayCache: [String: Int] = [:]
+    private var historicalFlowLevelCache: [String: String] = [:]
 
     var isHealthDataAvailable: Bool { HKHealthStore.isHealthDataAvailable() }
 
@@ -412,6 +436,339 @@ final class HealthKitAssistant: HealthKitAssistantProtocol, ObservableObject {
         return latestFlowLevel
     }
 
+    // MARK: - Historical Data Queries
+
+    /// Get HRV for a specific date (cached per calendar day)
+    func hrvForDate(_ date: Date) async -> Double? {
+        let cacheKey = dayKey(for: date)
+        if let cached = historicalHRVCache[cacheKey] {
+            return cached
+        }
+
+        guard let hrvType else {
+            logger.warning("HRV type not available on this device")
+            return nil
+        }
+
+        do {
+            let (start, end) = dayBounds(for: date)
+            let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
+            let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
+
+            let samples = try await withTimeout { [weak self] in
+                guard let self else {
+                    throw NSError(
+                        domain: "HealthKitAssistant",
+                        code: -3,
+                        userInfo: [NSLocalizedDescriptionKey: "HealthKitAssistant deallocated during operation"]
+                    )
+                }
+                return try await self.dataProvider.fetchQuantitySamples(
+                    type: hrvType,
+                    predicate: predicate,
+                    limit: HKObjectQueryNoLimit,
+                    sortDescriptors: [sort]
+                )
+            }
+
+            if let sample = samples.first {
+                let value = sample.quantity.doubleValue(for: HKUnit.secondUnit(with: .milli))
+                historicalHRVCache[cacheKey] = value
+                return value
+            }
+        } catch {
+            logger.error("Failed to fetch HRV for date \(date): \(error.localizedDescription)")
+        }
+        return nil
+    }
+
+    /// Get resting heart rate for a specific date (cached per calendar day)
+    func restingHRForDate(_ date: Date) async -> Double? {
+        let cacheKey = dayKey(for: date)
+        if let cached = historicalRestingHRCache[cacheKey] {
+            return cached
+        }
+
+        guard let restingHeartType else {
+            logger.warning("Resting heart rate type not available on this device")
+            return nil
+        }
+
+        do {
+            let (start, end) = dayBounds(for: date)
+            let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
+            let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
+
+            let samples = try await withTimeout { [weak self] in
+                guard let self else {
+                    throw NSError(
+                        domain: "HealthKitAssistant",
+                        code: -3,
+                        userInfo: [NSLocalizedDescriptionKey: "HealthKitAssistant deallocated during operation"]
+                    )
+                }
+                return try await self.dataProvider.fetchQuantitySamples(
+                    type: restingHeartType,
+                    predicate: predicate,
+                    limit: HKObjectQueryNoLimit,
+                    sortDescriptors: [sort]
+                )
+            }
+
+            if let sample = samples.first {
+                let unit = HKUnit.count().unitDivided(by: HKUnit.minute())
+                let value = sample.quantity.doubleValue(for: unit)
+                historicalRestingHRCache[cacheKey] = value
+                return value
+            }
+        } catch {
+            logger.error("Failed to fetch resting HR for date \(date): \(error.localizedDescription)")
+        }
+        return nil
+    }
+
+    /// Get sleep hours for a specific date (cached per calendar day)
+    /// Looks for sleep ending on the given date (i.e., sleep from the night before)
+    func sleepHoursForDate(_ date: Date) async -> Double? {
+        let cacheKey = dayKey(for: date)
+        if let cached = historicalSleepCache[cacheKey] {
+            return cached
+        }
+
+        guard let sleepType else {
+            logger.warning("Sleep type not available on this device")
+            return nil
+        }
+
+        do {
+            // Look for sleep that ended on this day (sleep from night before)
+            let calendar = Calendar.current
+            let dayStart = calendar.startOfDay(for: date)
+            let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) ?? date
+
+            // Extend backwards to catch sleep that started the night before
+            let searchStart = calendar.date(byAdding: .hour, value: -12, to: dayStart) ?? dayStart
+
+            let predicate = HKQuery.predicateForSamples(withStart: searchStart, end: dayEnd)
+
+            // Include all "asleep" categories
+            let sleepValues: [Int] = [
+                HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue,
+                HKCategoryValueSleepAnalysis.asleepCore.rawValue,
+                HKCategoryValueSleepAnalysis.asleepDeep.rawValue,
+                HKCategoryValueSleepAnalysis.asleepREM.rawValue
+            ]
+            let sleepPredicates = sleepValues.map { value in
+                HKQuery.predicateForCategorySamples(with: .equalTo, value: value)
+            }
+            let sleepPredicate = NSCompoundPredicate(orPredicateWithSubpredicates: sleepPredicates)
+            let combinedPredicate = NSCompoundPredicate(andPredicateWithSubpredicates: [predicate, sleepPredicate])
+
+            let samples = try await withTimeout { [weak self] in
+                guard let self else {
+                    throw NSError(
+                        domain: "HealthKitAssistant",
+                        code: -3,
+                        userInfo: [NSLocalizedDescriptionKey: "HealthKitAssistant deallocated during operation"]
+                    )
+                }
+                return try await self.dataProvider.fetchCategorySamples(
+                    type: sleepType,
+                    predicate: combinedPredicate,
+                    limit: HKObjectQueryNoLimit,
+                    sortDescriptors: nil
+                )
+            }
+
+            // Sum all sleep samples for this day
+            let totalSeconds = samples.reduce(0.0) { total, sample in
+                total + sample.endDate.timeIntervalSince(sample.startDate)
+            }
+
+            let hours = totalSeconds / 3600.0
+            if hours > 0 {
+                historicalSleepCache[cacheKey] = hours
+                return hours
+            }
+        } catch {
+            logger.error("Failed to fetch sleep for date \(date): \(error.localizedDescription)")
+        }
+        return nil
+    }
+
+    /// Get workout minutes for a specific date (cached per calendar day)
+    func workoutMinutesForDate(_ date: Date) async -> Double? {
+        let cacheKey = dayKey(for: date)
+        if let cached = historicalWorkoutCache[cacheKey] {
+            return cached
+        }
+
+        do {
+            let (start, end) = dayBounds(for: date)
+            let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
+
+            let samples = try await withTimeout { [weak self] in
+                guard let self else {
+                    throw NSError(
+                        domain: "HealthKitAssistant",
+                        code: -3,
+                        userInfo: [NSLocalizedDescriptionKey: "HealthKitAssistant deallocated during operation"]
+                    )
+                }
+                return try await self.dataProvider.fetchWorkouts(
+                    predicate: predicate,
+                    limit: HKObjectQueryNoLimit,
+                    sortDescriptors: nil
+                )
+            }
+
+            let totalSeconds = samples.reduce(0.0) { total, workout in
+                total + workout.duration
+            }
+
+            let minutes = totalSeconds / 60.0
+            if minutes > 0 {
+                historicalWorkoutCache[cacheKey] = minutes
+                return minutes
+            }
+        } catch {
+            logger.error("Failed to fetch workouts for date \(date): \(error.localizedDescription)")
+        }
+        return nil
+    }
+
+    /// Get cycle day for a specific date (cached per calendar day)
+    func cycleDayForDate(_ date: Date) async -> Int? {
+        let cacheKey = dayKey(for: date)
+        if let cached = historicalCycleDayCache[cacheKey] {
+            return cached
+        }
+
+        guard let menstrualFlowType else {
+            logger.warning("Menstrual flow type not available on this device")
+            return nil
+        }
+
+        do {
+            // Look back 45 days to find the most recent period start before this date
+            let calendar = Calendar.current
+            let searchEnd = calendar.date(byAdding: .day, value: 1, to: date) ?? date
+            let searchStart = calendar.date(byAdding: .day, value: -45, to: date) ?? date
+
+            let predicate = HKQuery.predicateForSamples(withStart: searchStart, end: searchEnd)
+            let sort = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
+
+            let samples = try await withTimeout { [weak self] in
+                guard let self else {
+                    throw NSError(
+                        domain: "HealthKitAssistant",
+                        code: -3,
+                        userInfo: [NSLocalizedDescriptionKey: "HealthKitAssistant deallocated during operation"]
+                    )
+                }
+                return try await self.dataProvider.fetchCategorySamples(
+                    type: menstrualFlowType,
+                    predicate: predicate,
+                    limit: HKObjectQueryNoLimit,
+                    sortDescriptors: [sort]
+                )
+            }
+
+            // Find most recent period start before or on this date
+            let periodStarts = samples.filter { sample in
+                let value = HKCategoryValueVaginalBleeding(rawValue: sample.value)
+                return value != .unspecified && value != Optional<HKCategoryValueVaginalBleeding>.none &&
+                       sample.startDate <= searchEnd
+            }
+
+            if let mostRecentPeriodStart = periodStarts.first {
+                let daysSinceStart = calendar.dateComponents(
+                    [.day],
+                    from: calendar.startOfDay(for: mostRecentPeriodStart.startDate),
+                    to: calendar.startOfDay(for: date)
+                ).day ?? 0
+                let cycleDay = daysSinceStart + 1
+                historicalCycleDayCache[cacheKey] = cycleDay
+                return cycleDay
+            }
+        } catch {
+            logger.error("Failed to fetch cycle day for date \(date): \(error.localizedDescription)")
+        }
+        return nil
+    }
+
+    /// Get menstrual flow level for a specific date (cached per calendar day)
+    func flowLevelForDate(_ date: Date) async -> String? {
+        let cacheKey = dayKey(for: date)
+        if let cached = historicalFlowLevelCache[cacheKey] {
+            return cached
+        }
+
+        guard let menstrualFlowType else {
+            logger.warning("Menstrual flow type not available on this device")
+            return nil
+        }
+
+        do {
+            let (start, end) = dayBounds(for: date)
+            let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
+
+            let samples = try await withTimeout { [weak self] in
+                guard let self else {
+                    throw NSError(
+                        domain: "HealthKitAssistant",
+                        code: -3,
+                        userInfo: [NSLocalizedDescriptionKey: "HealthKitAssistant deallocated during operation"]
+                    )
+                }
+                return try await self.dataProvider.fetchCategorySamples(
+                    type: menstrualFlowType,
+                    predicate: predicate,
+                    limit: HKObjectQueryNoLimit,
+                    sortDescriptors: nil
+                )
+            }
+
+            if let sample = samples.first {
+                let flowValue = HKCategoryValueVaginalBleeding(rawValue: sample.value)
+                let flowLevel: String?
+                switch flowValue {
+                case .light: flowLevel = "light"
+                case .medium: flowLevel = "medium"
+                case .heavy: flowLevel = "heavy"
+                case .unspecified: flowLevel = "spotting"
+                default: flowLevel = nil
+                }
+
+                if let flowLevel {
+                    historicalFlowLevelCache[cacheKey] = flowLevel
+                    return flowLevel
+                }
+            }
+        } catch {
+            logger.error("Failed to fetch flow level for date \(date): \(error.localizedDescription)")
+        }
+        return nil
+    }
+
+    // MARK: - Historical Query Helpers
+
+    /// Generate a cache key for a specific day (format: "YYYY-MM-DD")
+    private func dayKey(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone.current
+        return formatter.string(from: date)
+    }
+
+    /// Get the start and end of a calendar day for a given date
+    private func dayBounds(for date: Date) -> (start: Date, end: Date) {
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: date)
+        let end = calendar.date(byAdding: .day, value: 1, to: start) ?? date
+        return (start, end)
+    }
+
     func refreshContext() async {
         guard isHealthDataAvailable else { return }
         await withTaskGroup(of: Void.self) { group in
@@ -502,8 +859,15 @@ final class HealthKitAssistant: HealthKitAssistantProtocol, ObservableObject {
             let sleepPredicate = NSCompoundPredicate(orPredicateWithSubpredicates: sleepPredicates)
             let combinedPredicate = NSCompoundPredicate(andPredicateWithSubpredicates: [predicate, sleepPredicate])
 
-            let samples = try await withTimeout { [self] in
-                try await self.dataProvider.fetchCategorySamples(
+            let samples = try await withTimeout { [weak self] in
+                guard let self else {
+                    throw NSError(
+                        domain: "HealthKitAssistant",
+                        code: -3,
+                        userInfo: [NSLocalizedDescriptionKey: "HealthKitAssistant deallocated during operation"]
+                    )
+                }
+                return try await self.dataProvider.fetchCategorySamples(
                     type: sleepType,
                     predicate: combinedPredicate,
                     limit: HKObjectQueryNoLimit,
@@ -531,8 +895,15 @@ final class HealthKitAssistant: HealthKitAssistantProtocol, ObservableObject {
             let start = end.addingTimeInterval(-AppConstants.HealthKit.dailyMetricsLookback)
             let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
 
-            let samples = try await withTimeout { [self] in
-                try await self.dataProvider.fetchWorkouts(
+            let samples = try await withTimeout { [weak self] in
+                guard let self else {
+                    throw NSError(
+                        domain: "HealthKitAssistant",
+                        code: -3,
+                        userInfo: [NSLocalizedDescriptionKey: "HealthKitAssistant deallocated during operation"]
+                    )
+                }
+                return try await self.dataProvider.fetchWorkouts(
                     predicate: predicate,
                     limit: HKObjectQueryNoLimit,
                     sortDescriptors: nil
@@ -564,8 +935,15 @@ final class HealthKitAssistant: HealthKitAssistantProtocol, ObservableObject {
             let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
             let sort = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
 
-            let samples = try await withTimeout { [self] in
-                try await self.dataProvider.fetchCategorySamples(
+            let samples = try await withTimeout { [weak self] in
+                guard let self else {
+                    throw NSError(
+                        domain: "HealthKitAssistant",
+                        code: -3,
+                        userInfo: [NSLocalizedDescriptionKey: "HealthKitAssistant deallocated during operation"]
+                    )
+                }
+                return try await self.dataProvider.fetchCategorySamples(
                     type: menstrualFlowType,
                     predicate: predicate,
                     limit: HKObjectQueryNoLimit,
@@ -615,8 +993,15 @@ final class HealthKitAssistant: HealthKitAssistantProtocol, ObservableObject {
         let start = Date().addingTimeInterval(-AppConstants.HealthKit.quantitySampleLookback)
         let predicate = HKQuery.predicateForSamples(withStart: start, end: Date())
         let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
-        return try await withTimeout { [self] in
-            try await self.dataProvider.fetchQuantitySamples(
+        return try await withTimeout { [weak self] in
+            guard let self else {
+                throw NSError(
+                    domain: "HealthKitAssistant",
+                    code: -3,
+                    userInfo: [NSLocalizedDescriptionKey: "HealthKitAssistant deallocated during operation"]
+                )
+            }
+            return try await self.dataProvider.fetchQuantitySamples(
                 type: type,
                 predicate: predicate,
                 limit: limit,
@@ -647,8 +1032,15 @@ final class HealthKitAssistant: HealthKitAssistantProtocol, ObservableObject {
             let predicate = HKQuery.predicateForSamples(withStart: start, end: Date())
             let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
 
-            let samples = try await withTimeout { [self] in
-                try await self.dataProvider.fetchQuantitySamples(
+            let samples = try await withTimeout { [weak self] in
+                guard let self else {
+                    throw NSError(
+                        domain: "HealthKitAssistant",
+                        code: -3,
+                        userInfo: [NSLocalizedDescriptionKey: "HealthKitAssistant deallocated during operation"]
+                    )
+                }
+                return try await self.dataProvider.fetchQuantitySamples(
                     type: hrvType,
                     predicate: predicate,
                     limit: HKObjectQueryNoLimit,
@@ -680,8 +1072,15 @@ final class HealthKitAssistant: HealthKitAssistantProtocol, ObservableObject {
             let predicate = HKQuery.predicateForSamples(withStart: start, end: Date())
             let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
 
-            let samples = try await withTimeout { [self] in
-                try await self.dataProvider.fetchQuantitySamples(
+            let samples = try await withTimeout { [weak self] in
+                guard let self else {
+                    throw NSError(
+                        domain: "HealthKitAssistant",
+                        code: -3,
+                        userInfo: [NSLocalizedDescriptionKey: "HealthKitAssistant deallocated during operation"]
+                    )
+                }
+                return try await self.dataProvider.fetchQuantitySamples(
                     type: restingHeartType,
                     predicate: predicate,
                     limit: HKObjectQueryNoLimit,
