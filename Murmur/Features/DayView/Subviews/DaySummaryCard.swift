@@ -58,9 +58,6 @@ struct DaySummaryCard: View {
                             MetricTile(title: "Heart rate", value: String(format: "%.0f bpm", resting))
                         }
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(.ultraThinMaterial, in: Capsule())
 
                     if let location = metrics.primaryLocation {
                         Label(location, systemImage: "location.circle")

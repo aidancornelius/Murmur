@@ -14,6 +14,7 @@ struct DayDetailView: View {
     @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject private var appearanceManager: AppearanceManager
     @EnvironmentObject private var healthKit: HealthKitAssistant
+    @ObservedObject private var loadManager = LoadCapacityManager.shared
 
     private let date: Date
     @FetchRequest private var symptomTypes: FetchedResults<SymptomType>
@@ -61,6 +62,43 @@ struct DayDetailView: View {
                     DaySummaryCard(summary: summary, comparison: previousSummary, metrics: metrics)
                 }
                 .listRowBackground(summary.dominantColor(for: colorScheme).opacity(0.1))
+            }
+
+            // Calibration section
+            if loadManager.isCalibrating, let summary {
+                Section {
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Image(systemName: "chart.line.uptrend.xyaxis")
+                                .foregroundStyle(palette.accentColor)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Calibration in progress")
+                                    .font(.headline)
+                                Text("\(loadManager.calibrationDays.count) of 3 good days recorded")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+
+                        Button {
+                            markGoodDay()
+                        } label: {
+                            HStack {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundStyle(.green)
+                                Text("Mark as good day")
+                                    .font(.headline)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(Color.green.opacity(0.1))
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.vertical, 8)
+                }
+                .listRowBackground(palette.surfaceColor)
             }
 
             if !dayEntries.isEmpty {
@@ -444,6 +482,12 @@ struct DayDetailView: View {
             errorMessage = error.localizedDescription
             context.rollback()
         }
+    }
+
+    private func markGoodDay() {
+        guard let loadScore = summary?.loadScore else { return }
+        // Use decayedLoad as it represents the actual load impact on this day
+        loadManager.recordGoodDay(load: loadScore.decayedLoad)
     }
 }
 

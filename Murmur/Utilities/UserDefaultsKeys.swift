@@ -20,6 +20,8 @@ enum UserDefaultsKeys {
     static let sensitivityProfile = "sensitivityProfile"
     static let recoveryWindow = "recoveryWindow"
     static let personalBaseline = "personalBaseline"
+    static let isCalibrating = "isCalibrating"
+    static let calibrationDays = "calibrationDays"
 
     // MARK: - Manual Cycle Tracking
     static let manualCycleTrackingEnabled = "ManualCycleTrackingEnabled"

@@ -76,9 +76,12 @@ struct HealthKitSettingsView: View {
                                 .font(.subheadline.weight(.medium))
                             Spacer()
                             if hrvBaseline.isCalibrated {
-                                Label("Calibrated", systemImage: "checkmark.seal.fill")
-                                    .font(.caption)
-                                    .foregroundStyle(palette.accentColor)
+                                HStack(spacing: 4) {
+                                    Image(systemName: "checkmark.seal.fill")
+                                    Text("Calibrated")
+                                }
+                                .font(.caption)
+                                .foregroundStyle(palette.accentColor)
                             }
                         }
 
@@ -128,9 +131,12 @@ struct HealthKitSettingsView: View {
                                 .font(.subheadline.weight(.medium))
                             Spacer()
                             if hrBaseline.isCalibrated {
-                                Label("Calibrated", systemImage: "checkmark.seal.fill")
-                                    .font(.caption)
-                                    .foregroundStyle(palette.accentColor)
+                                HStack(spacing: 4) {
+                                    Image(systemName: "checkmark.seal.fill")
+                                    Text("Calibrated")
+                                }
+                                .font(.caption)
+                                .foregroundStyle(palette.accentColor)
                             }
                         }
 

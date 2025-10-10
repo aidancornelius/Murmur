@@ -347,8 +347,17 @@ class LoadCapacityManager: ObservableObject {
         }
     }
 
-    @Published var isCalibrating: Bool = false
-    @Published var calibrationDays: [Double] = []
+    @Published var isCalibrating: Bool = false {
+        didSet {
+            UserDefaults.standard.set(isCalibrating, forKey: UserDefaultsKeys.isCalibrating)
+        }
+    }
+
+    @Published var calibrationDays: [Double] = [] {
+        didSet {
+            UserDefaults.standard.set(calibrationDays, forKey: UserDefaultsKeys.calibrationDays)
+        }
+    }
 
     // MARK: - Initialization
 
@@ -374,6 +383,10 @@ class LoadCapacityManager: ObservableObject {
            let savedBaseline = try? JSONDecoder().decode(PersonalBaseline.self, from: baselineData) {
             self.baseline = savedBaseline
         }
+
+        // Load calibration state
+        self.isCalibrating = UserDefaults.standard.bool(forKey: UserDefaultsKeys.isCalibrating)
+        self.calibrationDays = UserDefaults.standard.array(forKey: UserDefaultsKeys.calibrationDays) as? [Double] ?? []
     }
 
     // Check if current settings match a preset
