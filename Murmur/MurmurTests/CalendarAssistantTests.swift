@@ -12,12 +12,12 @@ import XCTest
 @MainActor
 final class CalendarAssistantTests: XCTestCase {
 
-    var assistant: CalendarAssistant!
-    var mockStore: MockCalendarStore!
+    var assistant: CalendarAssistant?
+    var mockStore: MockCalendarStore?
 
     override func setUp() async throws {
         mockStore = MockCalendarStore()
-        assistant = CalendarAssistant(eventStore: mockStore)
+        assistant = CalendarAssistant(eventStore: mockStore!)
     }
 
     override func tearDown() {
@@ -31,49 +31,49 @@ final class CalendarAssistantTests: XCTestCase {
         // Given: Newly created assistant
         // When: Check authorization status
         // Then: Should reflect current system status (not determined for tests)
-        XCTAssertNotNil(assistant.authorizationStatus)
+        XCTAssertNotNil(assistant!.authorizationStatus)
     }
 
     func testInitialEventsAreEmpty() {
         // Given: Newly created assistant
         // When: Check events
         // Then: Should have no events
-        XCTAssertTrue(assistant.upcomingEvents.isEmpty)
-        XCTAssertTrue(assistant.recentEvents.isEmpty)
+        XCTAssertTrue(assistant!.upcomingEvents.isEmpty)
+        XCTAssertTrue(assistant!.recentEvents.isEmpty)
     }
 
     // MARK: - Permission Handling Tests
 
     func testRequestAccessGranted() async {
         // Given: Mock configured to grant access
-        mockStore.shouldGrantAccess = true
+        mockStore!.shouldGrantAccess = true
 
         // When: Request access
-        let granted = await assistant.requestAccess()
+        let granted = await assistant!.requestAccess()
 
         // Then: Should return true and update status
         XCTAssertTrue(granted)
-        XCTAssertEqual(mockStore.requestAccessCallCount, 1)
+        XCTAssertEqual(mockStore!.requestAccessCallCount, 1)
     }
 
     func testRequestAccessDenied() async {
         // Given: Mock configured to deny access
-        mockStore.shouldGrantAccess = false
+        mockStore!.shouldGrantAccess = false
 
         // When: Request access
-        let granted = await assistant.requestAccess()
+        let granted = await assistant!.requestAccess()
 
         // Then: Should return false
         XCTAssertFalse(granted)
-        XCTAssertEqual(mockStore.requestAccessCallCount, 1)
+        XCTAssertEqual(mockStore!.requestAccessCallCount, 1)
     }
 
     func testRequestAccessWithError() async {
         // Given: Mock configured to throw error
-        mockStore.accessError = NSError(domain: "TestError", code: 1)
+        mockStore!.accessError = NSError(domain: "TestError", code: 1)
 
         // When: Request access
-        let granted = await assistant.requestAccess()
+        let granted = await assistant!.requestAccess()
 
         // Then: Should return false and handle error gracefully
         XCTAssertFalse(granted)
@@ -83,8 +83,8 @@ final class CalendarAssistantTests: XCTestCase {
 
     func testFetchTodaysEvents() async {
         // Given: Mock store with events for today
-        mockStore.shouldGrantAccess = true
-        _ = await assistant.requestAccess()
+        mockStore!.shouldGrantAccess = true
+        _ = await assistant!.requestAccess()
 
         let calendar = Calendar.current
         let now = Date()
@@ -98,55 +98,55 @@ final class CalendarAssistantTests: XCTestCase {
             start: calendar.date(byAdding: .hour, value: 1, to: now)!,
             duration: 3600
         )
-        mockStore.mockEvents = [event1, event2]
+        mockStore!.mockEvents = [event1, event2]
 
         // When: Fetch today's events
-        await assistant.fetchTodaysEvents()
+        await assistant!.fetchTodaysEvents()
 
         // Then: Should have events
-        XCTAssertEqual(mockStore.eventsCallCount, 1)
+        XCTAssertEqual(mockStore!.eventsCallCount, 1)
         // Note: The actual events array might be filtered by the predicate
     }
 
     func testFetchRecentEvents() async {
         // Given: Mock store with recent events
-        mockStore.shouldGrantAccess = true
-        _ = await assistant.requestAccess()
+        mockStore!.shouldGrantAccess = true
+        _ = await assistant!.requestAccess()
 
         let yesterday = Date().addingTimeInterval(-24 * 3600)
         let event = EKEvent.mockMeeting(start: yesterday)
-        mockStore.mockEvents = [event]
+        mockStore!.mockEvents = [event]
 
         // When: Fetch recent events
-        await assistant.fetchRecentEvents(daysBack: 7)
+        await assistant!.fetchRecentEvents(daysBack: 7)
 
         // Then: Should query store
-        XCTAssertEqual(mockStore.eventsCallCount, 1)
+        XCTAssertEqual(mockStore!.eventsCallCount, 1)
     }
 
     func testFetchUpcomingEvents() async {
         // Given: Mock store with upcoming events
-        mockStore.shouldGrantAccess = true
-        _ = await assistant.requestAccess()
+        mockStore!.shouldGrantAccess = true
+        _ = await assistant!.requestAccess()
 
         let tomorrow = Date().addingTimeInterval(24 * 3600)
         let event = EKEvent.mockMeeting(start: tomorrow)
-        mockStore.mockEvents = [event]
+        mockStore!.mockEvents = [event]
 
         // When: Fetch upcoming events
-        await assistant.fetchUpcomingEvents(daysAhead: 7)
+        await assistant!.fetchUpcomingEvents(daysAhead: 7)
 
         // Then: Should query store
-        XCTAssertEqual(mockStore.eventsCallCount, 1)
+        XCTAssertEqual(mockStore!.eventsCallCount, 1)
     }
 
     func testFetchEventsWithoutAccess() async {
         // Given: Mock store without access granted
-        mockStore.shouldGrantAccess = false
-        _ = await assistant.requestAccess()
+        mockStore!.shouldGrantAccess = false
+        _ = await assistant!.requestAccess()
 
         // When: Try to fetch events
-        await assistant.fetchTodaysEvents()
+        await assistant!.fetchTodaysEvents()
 
         // Then: Should not query store (access check should fail)
         // The implementation should check hasCalendarAccess first
@@ -156,15 +156,15 @@ final class CalendarAssistantTests: XCTestCase {
 
     func testFetchEventsExcludesAllDayEvents() async {
         // Given: Mix of all-day and regular events
-        mockStore.shouldGrantAccess = true
-        _ = await assistant.requestAccess()
+        mockStore!.shouldGrantAccess = true
+        _ = await assistant!.requestAccess()
 
         let regularEvent = EKEvent.mockMeeting()
         let allDayEvent = EKEvent.mockAllDayEvent()
-        mockStore.mockEvents = [regularEvent, allDayEvent]
+        mockStore!.mockEvents = [regularEvent, allDayEvent]
 
         // When: Fetch events
-        await assistant.fetchTodaysEvents()
+        await assistant!.fetchTodaysEvents()
 
         // Then: All-day events should be filtered out
         // (Implementation filters isAllDay events)
@@ -172,16 +172,16 @@ final class CalendarAssistantTests: XCTestCase {
 
     func testEventsSortedByDate() async {
         // Given: Events in random order
-        mockStore.shouldGrantAccess = true
-        _ = await assistant.requestAccess()
+        mockStore!.shouldGrantAccess = true
+        _ = await assistant!.requestAccess()
 
         let now = Date()
         let event1 = EKEvent.mockMeeting(title: "Later", start: now.addingTimeInterval(7200))
         let event2 = EKEvent.mockMeeting(title: "Earlier", start: now.addingTimeInterval(3600))
-        mockStore.mockEvents = [event1, event2]
+        mockStore!.mockEvents = [event1, event2]
 
         // When: Fetch upcoming events
-        await assistant.fetchUpcomingEvents(daysAhead: 1)
+        await assistant!.fetchUpcomingEvents(daysAhead: 1)
 
         // Then: Events should be sorted
         // (Implementation sorts by startDate)
@@ -198,40 +198,40 @@ final class CalendarAssistantTests: XCTestCase {
         let event1 = EKEvent.mockMeeting(title: "Yesterday", start: yesterday)
         let event2 = EKEvent.mockMeeting(title: "Today", start: today)
         let event3 = EKEvent.mockMeeting(title: "Tomorrow", start: tomorrow)
-        mockStore.mockEvents = [event1, event2, event3]
+        mockStore!.mockEvents = [event1, event2, event3]
 
         // When: Create predicate for today only
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: today)
         let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
 
-        let predicate = mockStore.predicateForEvents(
+        let predicate = mockStore!.predicateForEvents(
             withStart: startOfDay,
             end: endOfDay,
             calendars: nil
         )
 
         // When: Filter events
-        let filtered = mockStore.events(matching: predicate)
+        let filtered = mockStore!.events(matching: predicate)
 
         // Then: Should only include today's event
-        XCTAssertEqual(mockStore.eventsCallCount, 1)
+        XCTAssertEqual(mockStore!.eventsCallCount, 1)
         XCTAssertTrue(filtered.contains { $0.title == "Today" })
     }
 
     func testMockStoreReset() {
         // Given: Mock store with configured state
-        mockStore.mockEvents = [EKEvent.mockMeeting()]
-        mockStore.shouldGrantAccess = false
-        _ = mockStore.events(matching: NSPredicate(value: true))
+        mockStore!.mockEvents = [EKEvent.mockMeeting()]
+        mockStore!.shouldGrantAccess = false
+        _ = mockStore!.events(matching: NSPredicate(value: true))
 
         // When: Reset
-        mockStore.reset()
+        mockStore!.reset()
 
         // Then: Should return to initial state
-        XCTAssertTrue(mockStore.mockEvents.isEmpty)
-        XCTAssertTrue(mockStore.shouldGrantAccess)
-        XCTAssertEqual(mockStore.eventsCallCount, 0)
+        XCTAssertTrue(mockStore!.mockEvents.isEmpty)
+        XCTAssertTrue(mockStore!.shouldGrantAccess)
+        XCTAssertEqual(mockStore!.eventsCallCount, 0)
     }
 
     // MARK: - Mock Assistant Tests
@@ -416,12 +416,12 @@ final class CalendarAssistantTests: XCTestCase {
 
     func testFetchEventsWithEmptyStore() async {
         // Given: Mock store with no events
-        mockStore.shouldGrantAccess = true
-        _ = await assistant.requestAccess()
-        mockStore.mockEvents = []
+        mockStore!.shouldGrantAccess = true
+        _ = await assistant!.requestAccess()
+        mockStore!.mockEvents = []
 
         // When: Fetch events
-        await assistant.fetchTodaysEvents()
+        await assistant!.fetchTodaysEvents()
 
         // Then: Should handle empty result gracefully
         // No assertion needed - verify no crash
@@ -429,16 +429,16 @@ final class CalendarAssistantTests: XCTestCase {
 
     func testMultipleFetchCalls() async {
         // Given: Assistant with access
-        mockStore.shouldGrantAccess = true
-        _ = await assistant.requestAccess()
+        mockStore!.shouldGrantAccess = true
+        _ = await assistant!.requestAccess()
 
         // When: Fetch events multiple times
-        await assistant.fetchTodaysEvents()
-        await assistant.fetchRecentEvents(daysBack: 7)
-        await assistant.fetchUpcomingEvents(daysAhead: 7)
+        await assistant!.fetchTodaysEvents()
+        await assistant!.fetchRecentEvents(daysBack: 7)
+        await assistant!.fetchUpcomingEvents(daysAhead: 7)
 
         // Then: Should handle multiple calls
-        XCTAssertEqual(mockStore.eventsCallCount, 3)
+        XCTAssertEqual(mockStore!.eventsCallCount, 3)
     }
 
     func testEventWithNilDates() {

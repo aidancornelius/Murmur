@@ -10,13 +10,13 @@ import XCTest
 @testable import Murmur
 
 final class SymptomHistoryTests: XCTestCase {
-    var testStack: InMemoryCoreDataStack!
+    var testStack: InMemoryCoreDataStack?
     let calendar = Calendar.current
 
     override func setUp() {
         super.setUp()
         testStack = InMemoryCoreDataStack()
-        SampleDataSeeder.seedIfNeeded(in: testStack.context, forceSeed: true)
+        SampleDataSeeder.seedIfNeeded(in: testStack!.context, forceSeed: true)
     }
 
     override func tearDown() {
@@ -29,25 +29,25 @@ final class SymptomHistoryTests: XCTestCase {
     func testLoadSymptomCountsFetchesAllSymptomTypes() throws {
         // Get all symptom types that have entries
         let typeRequest = SymptomType.fetchRequest()
-        let allTypes = try testStack.context.fetch(typeRequest)
+        let allTypes = try testStack!.context.fetch(typeRequest)
 
         // Create entries for 3 different symptom types
         let types = Array(allTypes.prefix(3))
         for symptomType in types {
-            let entry = SymptomEntry(context: testStack.context)
+            let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
             entry.createdAt = Date()
             entry.symptomType = symptomType
             entry.severity = 3
         }
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         // Simulate SymptomHistoryView's loadSymptomCounts logic
         let symptomTypesRequest = SymptomType.fetchRequest()
         symptomTypesRequest.sortDescriptors = [NSSortDescriptor(keyPath: \SymptomType.name, ascending: true)]
 
-        let symptomTypes = try testStack.context.fetch(symptomTypesRequest)
+        let symptomTypes = try testStack!.context.fetch(symptomTypesRequest)
 
         let counts = symptomTypes.compactMap { symptomType -> Int? in
             guard let entries = symptomType.entries as? Set<SymptomEntry>, !entries.isEmpty else { return nil }
@@ -59,21 +59,21 @@ final class SymptomHistoryTests: XCTestCase {
     }
 
     func testSymptomCountsCalculateCorrectFrequency() throws {
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
 
         // Create 5 entries for this symptom type
         for i in 0..<5 {
-            let entry = SymptomEntry(context: testStack.context)
+            let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
             entry.createdAt = calendar.date(byAdding: .day, value: -i, to: Date())
             entry.symptomType = symptomType
             entry.severity = 3
         }
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         // Fetch the symptom type with its entries
-        testStack.context.refresh(symptomType, mergeChanges: true)
+        testStack!.context.refresh(symptomType, mergeChanges: true)
 
         guard let entries = symptomType.entries as? Set<SymptomEntry> else {
             XCTFail("Could not get entries")
@@ -84,7 +84,7 @@ final class SymptomHistoryTests: XCTestCase {
     }
 
     func testSymptomCountsIdentifyLastOccurrence() throws {
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
         let now = Date()
 
         // Create entries at different times
@@ -95,17 +95,17 @@ final class SymptomHistoryTests: XCTestCase {
         ]
 
         for date in dates {
-            let entry = SymptomEntry(context: testStack.context)
+            let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
             entry.createdAt = date
             entry.symptomType = symptomType
             entry.severity = 3
         }
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         // Refresh to get updated relationships
-        testStack.context.refresh(symptomType, mergeChanges: true)
+        testStack!.context.refresh(symptomType, mergeChanges: true)
 
         guard let entries = symptomType.entries as? Set<SymptomEntry> else {
             XCTFail("Could not get entries")
@@ -129,22 +129,22 @@ final class SymptomHistoryTests: XCTestCase {
     }
 
     func testSymptomCountsCalculateAverageSeverity() throws {
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
 
         // Create entries with known severities
         let severities: [Int16] = [1, 2, 3, 4, 5]
         for severity in severities {
-            let entry = SymptomEntry(context: testStack.context)
+            let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
             entry.createdAt = Date()
             entry.symptomType = symptomType
             entry.severity = severity
         }
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         // Refresh to get updated relationships
-        testStack.context.refresh(symptomType, mergeChanges: true)
+        testStack!.context.refresh(symptomType, mergeChanges: true)
 
         guard let entries = symptomType.entries as? Set<SymptomEntry> else {
             XCTFail("Could not get entries")
@@ -163,7 +163,7 @@ final class SymptomHistoryTests: XCTestCase {
 
     func testSymptomCountsHandleEmptySymptomTypes() throws {
         let typeRequest = SymptomType.fetchRequest()
-        let allTypes = try testStack.context.fetch(typeRequest)
+        let allTypes = try testStack!.context.fetch(typeRequest)
 
         // Don't create any entries for any symptom types
         let symptomCounts = allTypes.compactMap { symptomType -> Int? in
@@ -177,13 +177,13 @@ final class SymptomHistoryTests: XCTestCase {
 
     func testSymptomCountsSortedByFrequency() throws {
         let typeRequest = SymptomType.fetchRequest()
-        let allTypes = try testStack.context.fetch(typeRequest)
+        let allTypes = try testStack!.context.fetch(typeRequest)
 
         // Create different numbers of entries for different types
         let types = Array(allTypes.prefix(3))
 
         // Type 1: 1 entry
-        let entry1 = SymptomEntry(context: testStack.context)
+        let entry1 = SymptomEntry(context: testStack!.context)
         entry1.id = UUID()
         entry1.createdAt = Date()
         entry1.symptomType = types[0]
@@ -191,7 +191,7 @@ final class SymptomHistoryTests: XCTestCase {
 
         // Type 2: 5 entries
         for _ in 0..<5 {
-            let entry = SymptomEntry(context: testStack.context)
+            let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
             entry.createdAt = Date()
             entry.symptomType = types[1]
@@ -200,14 +200,14 @@ final class SymptomHistoryTests: XCTestCase {
 
         // Type 3: 3 entries
         for _ in 0..<3 {
-            let entry = SymptomEntry(context: testStack.context)
+            let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
             entry.createdAt = Date()
             entry.symptomType = types[2]
             entry.severity = 3
         }
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         // Fetch and sort symptom counts
         struct SymptomCount {
@@ -216,7 +216,7 @@ final class SymptomHistoryTests: XCTestCase {
         }
 
         let symptomTypesRequest = SymptomType.fetchRequest()
-        let symptomTypes = try testStack.context.fetch(symptomTypesRequest)
+        let symptomTypes = try testStack!.context.fetch(symptomTypesRequest)
 
         let counts = symptomTypes.compactMap { symptomType -> SymptomCount? in
             guard let entries = symptomType.entries as? Set<SymptomEntry>, !entries.isEmpty else { return nil }
@@ -234,18 +234,18 @@ final class SymptomHistoryTests: XCTestCase {
     // MARK: - Symptom Detail Entry Loading Tests
 
     func testLoadEntriesForSymptomType() throws {
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
 
         // Create 10 entries for this symptom type
         for i in 0..<10 {
-            let entry = SymptomEntry(context: testStack.context)
+            let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
             entry.createdAt = calendar.date(byAdding: .day, value: -i, to: Date())
             entry.symptomType = symptomType
             entry.severity = 3
         }
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         // Simulate SymptomHistoryView's loadMoreEntries
         let request = SymptomEntry.fetchRequest()
@@ -255,7 +255,7 @@ final class SymptomHistoryTests: XCTestCase {
             NSSortDescriptor(keyPath: \SymptomEntry.createdAt, ascending: false)
         ]
 
-        let results = try testStack.context.fetch(request)
+        let results = try testStack!.context.fetch(request)
 
         XCTAssertEqual(results.count, 10)
 
@@ -266,7 +266,7 @@ final class SymptomHistoryTests: XCTestCase {
     }
 
     func testLoadEntriesSortedByDate() throws {
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
         let now = Date()
 
         // Create entries in random order
@@ -278,14 +278,14 @@ final class SymptomHistoryTests: XCTestCase {
         ]
 
         for date in dates {
-            let entry = SymptomEntry(context: testStack.context)
+            let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
             entry.createdAt = date
             entry.symptomType = symptomType
             entry.severity = 3
         }
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         // Fetch with sorting
         let request = SymptomEntry.fetchRequest()
@@ -295,7 +295,7 @@ final class SymptomHistoryTests: XCTestCase {
             NSSortDescriptor(keyPath: \SymptomEntry.createdAt, ascending: false)
         ]
 
-        let results = try testStack.context.fetch(request)
+        let results = try testStack!.context.fetch(request)
 
         // Results should be sorted by date descending (most recent first)
         for i in 0..<results.count - 1 {
@@ -306,18 +306,18 @@ final class SymptomHistoryTests: XCTestCase {
     }
 
     func testLoadEntriesPagination() throws {
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
 
         // Create 50 entries
         for i in 0..<50 {
-            let entry = SymptomEntry(context: testStack.context)
+            let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
             entry.createdAt = calendar.date(byAdding: .hour, value: -i, to: Date())
             entry.symptomType = symptomType
             entry.severity = 3
         }
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         let pageSize = 20
 
@@ -331,7 +331,7 @@ final class SymptomHistoryTests: XCTestCase {
         request1.fetchLimit = pageSize
         request1.fetchOffset = 0
 
-        let page1 = try testStack.context.fetch(request1)
+        let page1 = try testStack!.context.fetch(request1)
         XCTAssertEqual(page1.count, pageSize)
 
         // Fetch second page
@@ -344,7 +344,7 @@ final class SymptomHistoryTests: XCTestCase {
         request2.fetchLimit = pageSize
         request2.fetchOffset = pageSize
 
-        let page2 = try testStack.context.fetch(request2)
+        let page2 = try testStack!.context.fetch(request2)
         XCTAssertEqual(page2.count, pageSize)
 
         // Fetch third page
@@ -357,7 +357,7 @@ final class SymptomHistoryTests: XCTestCase {
         request3.fetchLimit = pageSize
         request3.fetchOffset = pageSize * 2
 
-        let page3 = try testStack.context.fetch(request3)
+        let page3 = try testStack!.context.fetch(request3)
         XCTAssertEqual(page3.count, 10) // Remaining 10 entries
 
         // Pages should not contain duplicate entries
@@ -371,7 +371,7 @@ final class SymptomHistoryTests: XCTestCase {
     }
 
     func testLoadEntriesHandlesNoEntries() throws {
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
 
         // Don't create any entries
 
@@ -382,7 +382,7 @@ final class SymptomHistoryTests: XCTestCase {
             NSSortDescriptor(keyPath: \SymptomEntry.createdAt, ascending: false)
         ]
 
-        let results = try testStack.context.fetch(request)
+        let results = try testStack!.context.fetch(request)
 
         XCTAssertTrue(results.isEmpty)
     }
@@ -390,18 +390,18 @@ final class SymptomHistoryTests: XCTestCase {
     // MARK: - Backdated Entry Tests
 
     func testHistoryHandlesBackdatedEntries() throws {
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
         let now = Date()
 
         // Create entry with backdatedAt
-        let entry = SymptomEntry(context: testStack.context)
+        let entry = SymptomEntry(context: testStack!.context)
         entry.id = UUID()
         entry.createdAt = now
         entry.backdatedAt = calendar.date(byAdding: .day, value: -5, to: now)
         entry.symptomType = symptomType
         entry.severity = 3
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         // Fetch and verify sorting uses backdatedAt
         let request = SymptomEntry.fetchRequest()
@@ -411,18 +411,18 @@ final class SymptomHistoryTests: XCTestCase {
             NSSortDescriptor(keyPath: \SymptomEntry.createdAt, ascending: false)
         ]
 
-        let results = try testStack.context.fetch(request)
+        let results = try testStack!.context.fetch(request)
 
         XCTAssertTrue(results.contains(entry))
     }
 
     func testHistoryGroupsEntriesByDate() throws {
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
         let baseDate = calendar.startOfDay(for: Date())
 
         // Create multiple entries on the same day
         for i in 0..<3 {
-            let entry = SymptomEntry(context: testStack.context)
+            let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
             entry.createdAt = calendar.date(byAdding: .hour, value: i, to: baseDate)
             entry.symptomType = symptomType
@@ -431,18 +431,18 @@ final class SymptomHistoryTests: XCTestCase {
 
         // Create entry on different day
         let differentDay = calendar.date(byAdding: .day, value: -1, to: baseDate)!
-        let entry = SymptomEntry(context: testStack.context)
+        let entry = SymptomEntry(context: testStack!.context)
         entry.id = UUID()
         entry.createdAt = differentDay
         entry.symptomType = symptomType
         entry.severity = 3
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         let request = SymptomEntry.fetchRequest()
         request.predicate = NSPredicate(format: "symptomType == %@", symptomType)
 
-        let results = try testStack.context.fetch(request)
+        let results = try testStack!.context.fetch(request)
 
         // Group by date
         let groupedByDate = Dictionary(grouping: results) { entry in
@@ -463,12 +463,12 @@ final class SymptomHistoryTests: XCTestCase {
 
     func testHistoryDistinguishesPositiveSymptoms() throws {
         let typeRequest = SymptomType.fetchRequest()
-        let allTypes = try testStack.context.fetch(typeRequest)
+        let allTypes = try testStack!.context.fetch(typeRequest)
 
         // Find or create positive symptom
         var positiveType = allTypes.first { $0.isPositive }
         if positiveType == nil {
-            positiveType = SymptomType(context: testStack.context)
+            positiveType = SymptomType(context: testStack!.context)
             positiveType?.id = UUID()
             positiveType?.name = "Test Positive"
             positiveType?.isPositive = true
@@ -480,13 +480,13 @@ final class SymptomHistoryTests: XCTestCase {
         }
 
         // Create entry
-        let entry = SymptomEntry(context: testStack.context)
+        let entry = SymptomEntry(context: testStack!.context)
         entry.id = UUID()
         entry.createdAt = Date()
         entry.symptomType = positiveType
         entry.severity = 4
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         // Verify the symptom type is marked as positive
         XCTAssertTrue(positiveType.isPositive)

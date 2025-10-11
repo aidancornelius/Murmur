@@ -12,7 +12,7 @@ import os.log
 // MARK: - Protocols
 
 /// Service responsible for querying historical health data for specific dates
-protocol HealthKitHistoricalServiceProtocol {
+protocol HealthKitHistoricalServiceProtocol: Sendable {
     /// Get HRV for a specific date (cached per calendar day)
     func hrvForDate(_ date: Date) async -> Double?
 
@@ -36,7 +36,7 @@ protocol HealthKitHistoricalServiceProtocol {
 
 /// Handles historical health data queries for specific dates
 /// Uses caching to avoid redundant HealthKit queries for same-day lookups
-final class HealthKitHistoricalService: HealthKitHistoricalServiceProtocol {
+final class HealthKitHistoricalService: HealthKitHistoricalServiceProtocol, @unchecked Sendable {
     private let logger = Logger(subsystem: "app.murmur", category: "HealthKitHistorical")
 
     private let queryService: HealthKitQueryServiceProtocol

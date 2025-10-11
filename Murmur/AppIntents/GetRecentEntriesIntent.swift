@@ -12,9 +12,9 @@ import SwiftUI
 
 @available(iOS 16.0, *)
 struct GetRecentEntriesIntent: AppIntent {
-    static var title: LocalizedStringResource = "Get recent entries"
-    static var description = IntentDescription("Get a summary of your recent symptom entries")
-    static var openAppWhenRun: Bool = false
+    static let title: LocalizedStringResource = "Get recent entries"
+    static let description = IntentDescription("Get a summary of your recent symptom entries")
+    static let openAppWhenRun: Bool = false
 
     @Parameter(title: "Number of entries", description: "How many recent entries to fetch", default: 5)
     var count: Int

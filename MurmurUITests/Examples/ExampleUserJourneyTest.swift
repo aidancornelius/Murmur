@@ -11,7 +11,7 @@
 import XCTest
 
 final class ExampleUserJourneyTest: XCTestCase {
-    var app: XCUIApplication!
+    var app: XCUIApplication?
 
     override func setUpWithError() throws {
         continueAfterFailure = false
@@ -25,6 +25,10 @@ final class ExampleUserJourneyTest: XCTestCase {
     // MARK: - Example: Basic symptom entry using Page Objects
 
     func testCompleteSymptomEntryFlow() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         // Launch app with sample data
         app.launchWithData()
 
@@ -61,6 +65,10 @@ final class ExampleUserJourneyTest: XCTestCase {
     // MARK: - Example: Navigation flow with multiple screens
 
     func testNavigateToAnalysis() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         // Launch with data
         app.launchWithData()
 
@@ -95,6 +103,10 @@ final class ExampleUserJourneyTest: XCTestCase {
     // MARK: - Example: Settings workflow
 
     func testAddAndDeleteCustomSymptom() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         // Launch with data
         app.launchWithData()
 
@@ -128,6 +140,10 @@ final class ExampleUserJourneyTest: XCTestCase {
     // MARK: - Example: Using test helpers and assertions
 
     func testUsingHelpers() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -159,6 +175,10 @@ final class ExampleUserJourneyTest: XCTestCase {
     // MARK: - Example: Different launch states
 
     func testEmptyState() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         // Launch with empty state
         app.launchEmpty()
 
@@ -174,6 +194,10 @@ final class ExampleUserJourneyTest: XCTestCase {
     }
 
     func testDarkMode() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         // Launch in dark mode
         app.launchDarkMode()
 
@@ -185,6 +209,10 @@ final class ExampleUserJourneyTest: XCTestCase {
     }
 
     func testAccessibilityLargeText() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         // Launch with large accessibility text
         app.launchForAccessibility(contentSize: .accessibilityExtraLarge)
 
@@ -201,6 +229,10 @@ final class ExampleUserJourneyTest: XCTestCase {
     // MARK: - Example: Custom launch configuration
 
     func testCustomConfiguration() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         // Launch with custom settings
         app.launch(
             scenario: .activeUser,
@@ -218,6 +250,10 @@ final class ExampleUserJourneyTest: XCTestCase {
     // MARK: - Example: Retry mechanism
 
     func testWithRetry() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -233,6 +269,10 @@ final class ExampleUserJourneyTest: XCTestCase {
     // MARK: - Example: Day detail navigation
 
     func testDayDetailNavigation() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -262,6 +302,10 @@ final class ExampleUserJourneyTest: XCTestCase {
     // MARK: - Example: Pull to refresh
 
     func testPullToRefresh() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -280,6 +324,10 @@ final class ExampleUserJourneyTest: XCTestCase {
     // MARK: - Example: Using XCUIElement extensions
 
     func testElementExtensions() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)

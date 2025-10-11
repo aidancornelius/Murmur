@@ -13,8 +13,8 @@ import Foundation
 
 @available(iOS 16.0, *)
 struct SymptomEntryEntity: AppEntity, Identifiable {
-    static var typeDisplayRepresentation: TypeDisplayRepresentation = "Symptom Entry"
-    static var defaultQuery = SymptomEntryQuery()
+    static let typeDisplayRepresentation: TypeDisplayRepresentation = "Symptom Entry"
+    static let defaultQuery = SymptomEntryQuery()
 
     var id: UUID
     var displayRepresentation: DisplayRepresentation {
@@ -78,8 +78,8 @@ struct SymptomEntryQuery: EntityQuery {
 
 @available(iOS 16.0, *)
 struct ActivityEventEntity: AppEntity, Identifiable {
-    static var typeDisplayRepresentation: TypeDisplayRepresentation = "Activity Event"
-    static var defaultQuery = ActivityEventQuery()
+    static let typeDisplayRepresentation: TypeDisplayRepresentation = "Activity Event"
+    static let defaultQuery = ActivityEventQuery()
 
     var id: UUID
     var displayRepresentation: DisplayRepresentation {
@@ -148,8 +148,8 @@ struct ActivityEventQuery: EntityQuery {
 
 @available(iOS 16.0, *)
 struct SymptomTypeEntity: AppEntity, Identifiable {
-    static var typeDisplayRepresentation: TypeDisplayRepresentation = "Symptom Type"
-    static var defaultQuery = SymptomTypeQuery()
+    static let typeDisplayRepresentation: TypeDisplayRepresentation = "Symptom Type"
+    static let defaultQuery = SymptomTypeQuery()
 
     var id: UUID
     var displayRepresentation: DisplayRepresentation {

@@ -12,8 +12,8 @@ import XCTest
 @MainActor
 final class LocationAssistantTests: XCTestCase {
 
-    var assistant: LocationAssistant!
-    var mockManager: MockCLLocationManager!
+    var assistant: LocationAssistant?
+    var mockManager: MockCLLocationManager?
 
     override func setUp() async throws {
         mockManager = MockCLLocationManager()
@@ -30,10 +30,10 @@ final class LocationAssistantTests: XCTestCase {
     // MARK: - Initial State Tests
 
     func testInitialState() {
-        if case .idle = assistant.state {
+        if case .idle = assistant!.state {
             // Success
         } else {
-            XCTFail("LocationAssistant should start in idle state, but was \(assistant.state)")
+            XCTFail("LocationAssistant should start in idle state, but was \(assistant!.state)")
         }
     }
 
@@ -42,7 +42,7 @@ final class LocationAssistantTests: XCTestCase {
     func testRequestLocationWithUndeterminedPermission() async throws {
         // Given: Permission not yet determined
         // When: Request location
-        assistant.requestLocation()
+        assistant!.requestLocation()
 
         // Then: Should trigger permission prompt (state remains idle until user responds)
         // In real usage, delegate callbacks would update state
@@ -108,7 +108,7 @@ final class LocationAssistantTests: XCTestCase {
         // Given: New assistant
         // When: No action taken
         // Then: State is idle
-        if case .idle = assistant.state {
+        if case .idle = assistant!.state {
             // Success
         } else {
             XCTFail("State should be idle")
@@ -120,7 +120,7 @@ final class LocationAssistantTests: XCTestCase {
     func testCurrentPlacemarkReturnsNilInitially() async {
         // Given: Fresh assistant with no location data
         // When: Request current placemark
-        let placemark = await assistant.currentPlacemark()
+        let placemark = await assistant!.currentPlacemark()
 
         // Then: Should return nil (no location available yet)
         XCTAssertNil(placemark, "Should return nil when no location is available")
@@ -130,7 +130,7 @@ final class LocationAssistantTests: XCTestCase {
         // This test would require the assistant to be in a resolved state
         // In practice, this happens after successful location fetch
         // For now, we test the method doesn't crash
-        let placemark = await assistant.currentPlacemark()
+        let placemark = await assistant!.currentPlacemark()
         // No assertion needed - just verify it completes
     }
 

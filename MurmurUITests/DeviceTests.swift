@@ -10,8 +10,8 @@ import XCTest
 /// Cross-device and orientation testing
 /// Note: Run these tests on different simulators to verify device-specific layouts
 final class DeviceTests: XCTestCase {
-    var app: XCUIApplication!
-    var initialOrientation: UIDeviceOrientation!
+    var app: XCUIApplication?
+    var initialOrientation: UIDeviceOrientation?
 
     override func setUpWithError() throws {
         continueAfterFailure = false
@@ -21,7 +21,7 @@ final class DeviceTests: XCTestCase {
 
     override func tearDownWithError() throws {
         // Restore original orientation
-        if initialOrientation != .unknown {
+        if let initialOrientation = initialOrientation, initialOrientation != .unknown {
             XCUIDevice.shared.orientation = initialOrientation
         }
         app = nil
@@ -31,6 +31,10 @@ final class DeviceTests: XCTestCase {
 
     /// Tests timeline on iPhone SE (smallest supported device)
     func testTimelineOnIPhoneSE() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         // This test should be run on iPhone SE simulator
         let screenWidth = app.windows.firstMatch.frame.width
 
@@ -69,6 +73,10 @@ final class DeviceTests: XCTestCase {
 
     /// Tests timeline on iPhone Pro (standard size)
     func testTimelineOnIPhonePro() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         let screenWidth = app.windows.firstMatch.frame.width
 
         // iPhone Pro is typically 393pt wide
@@ -90,6 +98,10 @@ final class DeviceTests: XCTestCase {
 
     /// Tests timeline on iPhone Pro Max (largest iPhone)
     func testTimelineOnIPhoneProMax() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         let screenWidth = app.windows.firstMatch.frame.width
 
         // iPhone Pro Max is typically 430pt wide
@@ -115,6 +127,10 @@ final class DeviceTests: XCTestCase {
 
     /// Tests timeline on iPad (standard size)
     func testTimelineOnIPad() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         guard UIDevice.current.userInterfaceIdiom == .pad else {
             throw XCTSkip("This test should run on iPad")
         }
@@ -137,6 +153,10 @@ final class DeviceTests: XCTestCase {
 
     /// Tests timeline on iPad Pro (largest iPad)
     func testTimelineOnIPadPro() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         guard UIDevice.current.userInterfaceIdiom == .pad else {
             throw XCTSkip("This test should run on iPad Pro")
         }
@@ -164,6 +184,10 @@ final class DeviceTests: XCTestCase {
 
     /// Tests iPhone in landscape orientation
     func testIPhoneLandscape() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         guard UIDevice.current.userInterfaceIdiom == .phone else {
             throw XCTSkip("This test should run on iPhone")
         }
@@ -198,6 +222,10 @@ final class DeviceTests: XCTestCase {
 
     /// Tests iPad in portrait orientation
     func testIPadPortrait() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         guard UIDevice.current.userInterfaceIdiom == .pad else {
             throw XCTSkip("This test should run on iPad")
         }
@@ -219,6 +247,10 @@ final class DeviceTests: XCTestCase {
 
     /// Tests iPad in landscape orientation
     func testIPadLandscape() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         guard UIDevice.current.userInterfaceIdiom == .pad else {
             throw XCTSkip("This test should run on iPad")
         }
@@ -246,6 +278,10 @@ final class DeviceTests: XCTestCase {
 
     /// Tests orientation change while using the app
     func testOrientationChange() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -288,6 +324,10 @@ final class DeviceTests: XCTestCase {
 
     /// Verifies layout adapts to different screen widths
     func testLayoutAdaptsToScreenWidth() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -324,6 +364,10 @@ final class DeviceTests: XCTestCase {
 
     /// Verifies charts are readable on small screens
     func testChartsReadableOnSmallScreens() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         let screenWidth = app.windows.firstMatch.frame.width
 
         // Focus on smaller screens
@@ -360,6 +404,10 @@ final class DeviceTests: XCTestCase {
 
     /// Verifies forms are not cut off on any screen size
     func testFormsNotCutOff() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -395,6 +443,10 @@ final class DeviceTests: XCTestCase {
 
     /// Verifies all buttons remain accessible on all screen sizes
     func testButtonsAccessible() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)

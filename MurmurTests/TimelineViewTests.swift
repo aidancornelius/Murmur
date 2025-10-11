@@ -10,13 +10,13 @@ import XCTest
 @testable import Murmur
 
 final class TimelineViewTests: XCTestCase {
-    var testStack: InMemoryCoreDataStack!
+    var testStack: InMemoryCoreDataStack?
     let calendar = Calendar.current
 
     override func setUp() {
         super.setUp()
         testStack = InMemoryCoreDataStack()
-        SampleDataSeeder.seedIfNeeded(in: testStack.context, forceSeed: true)
+        SampleDataSeeder.seedIfNeeded(in: testStack!.context, forceSeed: true)
     }
 
     override func tearDown() {
@@ -28,11 +28,11 @@ final class TimelineViewTests: XCTestCase {
 
     func testFetchRequestPredicateFiltersLast30Days() throws {
         let now = Date()
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
 
         // Create entries within 30-day window
         for i in 0..<10 {
-            let entry = SymptomEntry(context: testStack.context)
+            let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
             entry.createdAt = calendar.date(byAdding: .day, value: -i, to: now)
             entry.symptomType = symptomType
@@ -41,14 +41,14 @@ final class TimelineViewTests: XCTestCase {
 
         // Create entries outside 30-day window
         for i in 31..<35 {
-            let entry = SymptomEntry(context: testStack.context)
+            let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
             entry.createdAt = calendar.date(byAdding: .day, value: -i, to: now)
             entry.symptomType = symptomType
             entry.severity = 3
         }
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         // Simulate the TimelineView predicate
         let today = calendar.startOfDay(for: now)
@@ -60,7 +60,7 @@ final class TimelineViewTests: XCTestCase {
             startDate as NSDate, startDate as NSDate
         )
 
-        let results = try testStack.context.fetch(request)
+        let results = try testStack!.context.fetch(request)
 
         // Should only include entries within 30-day window (10 entries)
         XCTAssertEqual(results.count, 10)
@@ -74,13 +74,13 @@ final class TimelineViewTests: XCTestCase {
 
     func testFetchRequestHandlesBackdatedAtCorrectly() throws {
         let now = Date()
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
 
         let today = calendar.startOfDay(for: now)
         let startDate = calendar.date(byAdding: .day, value: -30, to: today) ?? today
 
         // Create entry with backdatedAt within window
-        let entry1 = SymptomEntry(context: testStack.context)
+        let entry1 = SymptomEntry(context: testStack!.context)
         entry1.id = UUID()
         entry1.createdAt = calendar.date(byAdding: .day, value: -40, to: now) // Outside window
         entry1.backdatedAt = calendar.date(byAdding: .day, value: -10, to: now) // Inside window
@@ -88,14 +88,14 @@ final class TimelineViewTests: XCTestCase {
         entry1.severity = 3
 
         // Create entry with backdatedAt outside window
-        let entry2 = SymptomEntry(context: testStack.context)
+        let entry2 = SymptomEntry(context: testStack!.context)
         entry2.id = UUID()
         entry2.createdAt = calendar.date(byAdding: .day, value: -5, to: now) // Inside window
         entry2.backdatedAt = calendar.date(byAdding: .day, value: -40, to: now) // Outside window
         entry2.symptomType = symptomType
         entry2.severity = 3
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         let request = SymptomEntry.fetchRequest()
         request.predicate = NSPredicate(
@@ -103,7 +103,7 @@ final class TimelineViewTests: XCTestCase {
             startDate as NSDate, startDate as NSDate
         )
 
-        let results = try testStack.context.fetch(request)
+        let results = try testStack!.context.fetch(request)
 
         // Should include entry1 (backdatedAt in window) but not entry2 (backdatedAt outside window)
         XCTAssertTrue(results.contains(entry1))
@@ -112,13 +112,13 @@ final class TimelineViewTests: XCTestCase {
 
     func testFetchRequestHandlesNilBackdatedAt() throws {
         let now = Date()
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
 
         let today = calendar.startOfDay(for: now)
         let startDate = calendar.date(byAdding: .day, value: -30, to: today) ?? today
 
         // Create entry with nil backdatedAt, createdAt within window
-        let entry1 = SymptomEntry(context: testStack.context)
+        let entry1 = SymptomEntry(context: testStack!.context)
         entry1.id = UUID()
         entry1.createdAt = calendar.date(byAdding: .day, value: -10, to: now)
         entry1.backdatedAt = nil
@@ -126,14 +126,14 @@ final class TimelineViewTests: XCTestCase {
         entry1.severity = 3
 
         // Create entry with nil backdatedAt, createdAt outside window
-        let entry2 = SymptomEntry(context: testStack.context)
+        let entry2 = SymptomEntry(context: testStack!.context)
         entry2.id = UUID()
         entry2.createdAt = calendar.date(byAdding: .day, value: -40, to: now)
         entry2.backdatedAt = nil
         entry2.symptomType = symptomType
         entry2.severity = 3
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         let request = SymptomEntry.fetchRequest()
         request.predicate = NSPredicate(
@@ -141,7 +141,7 @@ final class TimelineViewTests: XCTestCase {
             startDate as NSDate, startDate as NSDate
         )
 
-        let results = try testStack.context.fetch(request)
+        let results = try testStack!.context.fetch(request)
 
         // Should include entry1 but not entry2
         XCTAssertTrue(results.contains(entry1))
@@ -150,20 +150,20 @@ final class TimelineViewTests: XCTestCase {
 
     func testFetchRequestIncludesAllEventTypes() throws {
         let now = Date()
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
 
         let today = calendar.startOfDay(for: now)
         let startDate = calendar.date(byAdding: .day, value: -30, to: today) ?? today
         let recentDate = calendar.date(byAdding: .day, value: -5, to: now)!
 
         // Create one of each event type
-        let symptomEntry = SymptomEntry(context: testStack.context)
+        let symptomEntry = SymptomEntry(context: testStack!.context)
         symptomEntry.id = UUID()
         symptomEntry.createdAt = recentDate
         symptomEntry.symptomType = symptomType
         symptomEntry.severity = 3
 
-        let activity = ActivityEvent(context: testStack.context)
+        let activity = ActivityEvent(context: testStack!.context)
         activity.id = UUID()
         activity.createdAt = recentDate
         activity.name = "Test Activity"
@@ -171,20 +171,20 @@ final class TimelineViewTests: XCTestCase {
         activity.cognitiveExertion = 1
         activity.emotionalLoad = 1
 
-        let sleep = SleepEvent(context: testStack.context)
+        let sleep = SleepEvent(context: testStack!.context)
         sleep.id = UUID()
         sleep.createdAt = recentDate
         sleep.bedTime = calendar.date(byAdding: .hour, value: -8, to: recentDate)
         sleep.wakeTime = recentDate
         sleep.quality = 3
 
-        let meal = MealEvent(context: testStack.context)
+        let meal = MealEvent(context: testStack!.context)
         meal.id = UUID()
         meal.createdAt = recentDate
         meal.mealType = "Breakfast"
         meal.mealDescription = "Toast and eggs"
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         // Test each event type's fetch request
         let entriesRequest = SymptomEntry.fetchRequest()
@@ -192,7 +192,7 @@ final class TimelineViewTests: XCTestCase {
             format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
             startDate as NSDate, startDate as NSDate
         )
-        let entries = try testStack.context.fetch(entriesRequest)
+        let entries = try testStack!.context.fetch(entriesRequest)
         XCTAssertGreaterThan(entries.count, 0)
 
         let activitiesRequest = ActivityEvent.fetchRequest()
@@ -200,7 +200,7 @@ final class TimelineViewTests: XCTestCase {
             format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
             startDate as NSDate, startDate as NSDate
         )
-        let activities = try testStack.context.fetch(activitiesRequest)
+        let activities = try testStack!.context.fetch(activitiesRequest)
         XCTAssertGreaterThan(activities.count, 0)
 
         let sleepRequest = SleepEvent.fetchRequest()
@@ -208,7 +208,7 @@ final class TimelineViewTests: XCTestCase {
             format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
             startDate as NSDate, startDate as NSDate
         )
-        let sleepEvents = try testStack.context.fetch(sleepRequest)
+        let sleepEvents = try testStack!.context.fetch(sleepRequest)
         XCTAssertGreaterThan(sleepEvents.count, 0)
 
         let mealsRequest = MealEvent.fetchRequest()
@@ -216,7 +216,7 @@ final class TimelineViewTests: XCTestCase {
             format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
             startDate as NSDate, startDate as NSDate
         )
-        let meals = try testStack.context.fetch(mealsRequest)
+        let meals = try testStack!.context.fetch(mealsRequest)
         XCTAssertGreaterThan(meals.count, 0)
     }
 
@@ -224,29 +224,29 @@ final class TimelineViewTests: XCTestCase {
 
     @MainActor
     func testDaySectionGroupsByDate() throws {
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
         let now = Date()
 
         // Create entries on different days
-        let entry1 = SymptomEntry(context: testStack.context)
+        let entry1 = SymptomEntry(context: testStack!.context)
         entry1.id = UUID()
         entry1.createdAt = calendar.date(byAdding: .day, value: -1, to: now)
         entry1.symptomType = symptomType
         entry1.severity = 3
 
-        let entry2 = SymptomEntry(context: testStack.context)
+        let entry2 = SymptomEntry(context: testStack!.context)
         entry2.id = UUID()
         entry2.createdAt = calendar.date(byAdding: .day, value: -1, to: now)! // Same day as entry1
         entry2.symptomType = symptomType
         entry2.severity = 4
 
-        let entry3 = SymptomEntry(context: testStack.context)
+        let entry3 = SymptomEntry(context: testStack!.context)
         entry3.id = UUID()
         entry3.createdAt = calendar.date(byAdding: .day, value: -2, to: now)
         entry3.symptomType = symptomType
         entry3.severity = 2
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         let sections = DaySection.sectionsFromArrays(
             entries: [entry1, entry2, entry3],
@@ -269,18 +269,18 @@ final class TimelineViewTests: XCTestCase {
 
     @MainActor
     func testDaySectionHandlesBackdatedEntries() throws {
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
         let now = Date()
 
         // Create entry backdated to different day
-        let entry = SymptomEntry(context: testStack.context)
+        let entry = SymptomEntry(context: testStack!.context)
         entry.id = UUID()
         entry.createdAt = now // Created today
         entry.backdatedAt = calendar.date(byAdding: .day, value: -3, to: now) // But backdated to 3 days ago
         entry.symptomType = symptomType
         entry.severity = 3
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         let sections = DaySection.sectionsFromArrays(
             entries: [entry],
@@ -299,17 +299,17 @@ final class TimelineViewTests: XCTestCase {
 
     @MainActor
     func testDaySectionGroupsMixedEventTypes() throws {
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
         let testDate = calendar.date(byAdding: .day, value: -5, to: Date())!
 
         // Create all event types on the same day
-        let symptomEntry = SymptomEntry(context: testStack.context)
+        let symptomEntry = SymptomEntry(context: testStack!.context)
         symptomEntry.id = UUID()
         symptomEntry.createdAt = testDate
         symptomEntry.symptomType = symptomType
         symptomEntry.severity = 3
 
-        let activity = ActivityEvent(context: testStack.context)
+        let activity = ActivityEvent(context: testStack!.context)
         activity.id = UUID()
         activity.createdAt = testDate
         activity.name = "Test Activity"
@@ -317,20 +317,20 @@ final class TimelineViewTests: XCTestCase {
         activity.cognitiveExertion = 1
         activity.emotionalLoad = 1
 
-        let sleep = SleepEvent(context: testStack.context)
+        let sleep = SleepEvent(context: testStack!.context)
         sleep.id = UUID()
         sleep.createdAt = testDate
         sleep.bedTime = calendar.date(byAdding: .hour, value: -8, to: testDate)
         sleep.wakeTime = testDate
         sleep.quality = 4
 
-        let meal = MealEvent(context: testStack.context)
+        let meal = MealEvent(context: testStack!.context)
         meal.id = UUID()
         meal.createdAt = testDate
         meal.mealType = "Lunch"
         meal.mealDescription = "Salad with chicken"
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         let sections = DaySection.sectionsFromArrays(
             entries: [symptomEntry],
@@ -353,7 +353,7 @@ final class TimelineViewTests: XCTestCase {
 
     @MainActor
     func testDaySectionsSortedChronologically() throws {
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
         let now = Date()
 
         // Create entries in random order
@@ -366,7 +366,7 @@ final class TimelineViewTests: XCTestCase {
 
         var entries: [SymptomEntry] = []
         for date in dates {
-            let entry = SymptomEntry(context: testStack.context)
+            let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
             entry.createdAt = date
             entry.symptomType = symptomType
@@ -374,7 +374,7 @@ final class TimelineViewTests: XCTestCase {
             entries.append(entry)
         }
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         let sections = DaySection.sectionsFromArrays(
             entries: entries,
@@ -405,29 +405,29 @@ final class TimelineViewTests: XCTestCase {
 
     @MainActor
     func testTimelineItemsWithinDaySortedByTime() throws {
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
         let baseDate = calendar.startOfDay(for: Date())
 
         // Create entries at different times on the same day
-        let entry1 = SymptomEntry(context: testStack.context)
+        let entry1 = SymptomEntry(context: testStack!.context)
         entry1.id = UUID()
         entry1.createdAt = calendar.date(bySettingHour: 9, minute: 0, second: 0, of: baseDate)
         entry1.symptomType = symptomType
         entry1.severity = 3
 
-        let entry2 = SymptomEntry(context: testStack.context)
+        let entry2 = SymptomEntry(context: testStack!.context)
         entry2.id = UUID()
         entry2.createdAt = calendar.date(bySettingHour: 14, minute: 30, second: 0, of: baseDate)
         entry2.symptomType = symptomType
         entry2.severity = 4
 
-        let entry3 = SymptomEntry(context: testStack.context)
+        let entry3 = SymptomEntry(context: testStack!.context)
         entry3.id = UUID()
         entry3.createdAt = calendar.date(bySettingHour: 11, minute: 15, second: 0, of: baseDate)
         entry3.symptomType = symptomType
         entry3.severity = 2
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         let sections = DaySection.sectionsFromArrays(
             entries: [entry1, entry2, entry3],
@@ -450,24 +450,24 @@ final class TimelineViewTests: XCTestCase {
 
     @MainActor
     func testMidnightEntriesBelongToCorrectDay() throws {
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
         let baseDate = calendar.startOfDay(for: Date())
 
         // Create entry at midnight (start of day)
-        let midnightEntry = SymptomEntry(context: testStack.context)
+        let midnightEntry = SymptomEntry(context: testStack!.context)
         midnightEntry.id = UUID()
         midnightEntry.createdAt = baseDate // Exactly midnight
         midnightEntry.symptomType = symptomType
         midnightEntry.severity = 3
 
         // Create entry one second before midnight (end of previous day)
-        let previousDayEntry = SymptomEntry(context: testStack.context)
+        let previousDayEntry = SymptomEntry(context: testStack!.context)
         previousDayEntry.id = UUID()
         previousDayEntry.createdAt = calendar.date(byAdding: .second, value: -1, to: baseDate)
         previousDayEntry.symptomType = symptomType
         previousDayEntry.severity = 4
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         let sections = DaySection.sectionsFromArrays(
             entries: [midnightEntry, previousDayEntry],
@@ -490,19 +490,19 @@ final class TimelineViewTests: XCTestCase {
 
     @MainActor
     func testDaySectionIncludesDaySummary() throws {
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
         let testDate = calendar.date(byAdding: .day, value: -5, to: Date())!
 
         // Create multiple entries on the same day
         for severity in [2, 3, 4] {
-            let entry = SymptomEntry(context: testStack.context)
+            let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
             entry.createdAt = testDate
             entry.symptomType = symptomType
             entry.severity = Int16(severity)
         }
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         let request = SymptomEntry.fetchRequest()
         request.predicate = NSPredicate(
@@ -510,7 +510,7 @@ final class TimelineViewTests: XCTestCase {
             calendar.startOfDay(for: testDate) as NSDate,
             calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: testDate))! as NSDate
         )
-        let entries = try testStack.context.fetch(request)
+        let entries = try testStack!.context.fetch(request)
 
         let sections = DaySection.sectionsFromArrays(
             entries: entries,

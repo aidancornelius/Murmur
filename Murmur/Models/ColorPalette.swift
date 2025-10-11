@@ -128,6 +128,7 @@ struct ColorPalette: Identifiable, Hashable, Codable {
     var accentColor: Color { color(for: "accent") }
 }
 
+@MainActor
 class AppearanceManager: ObservableObject {
     static let shared = AppearanceManager()
 
@@ -161,7 +162,7 @@ class AppearanceManager: ObservableObject {
     }
 
     // Static helper that doesn't require MainActor
-    static func palette(for colorScheme: ColorScheme) -> ColorPalette {
+    nonisolated static func palette(for colorScheme: ColorScheme) -> ColorPalette {
         let lightId = UserDefaults.standard.string(forKey: UserDefaultsKeys.lightPaletteId) ?? "warm"
         let darkId = UserDefaults.standard.string(forKey: UserDefaultsKeys.darkPaletteId) ?? "oled"
 

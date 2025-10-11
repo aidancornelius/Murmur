@@ -10,7 +10,7 @@ import XCTest
 /// Performance and responsiveness tests
 /// Tests app performance with various data sizes and interaction patterns
 final class PerformanceTests: XCTestCase {
-    var app: XCUIApplication!
+    var app: XCUIApplication?
 
     override func setUpWithError() throws {
         continueAfterFailure = false
@@ -25,6 +25,10 @@ final class PerformanceTests: XCTestCase {
 
     /// Tests timeline scroll performance with normal data
     func testTimelineScrollPerformance() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -47,6 +51,10 @@ final class PerformanceTests: XCTestCase {
 
     /// Tests timeline performance with large data set (1000+ entries)
     func testTimelineWithLargeDataSet() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithLargeData()
 
         // Measure time to first interactive frame
@@ -74,6 +82,10 @@ final class PerformanceTests: XCTestCase {
 
     /// Tests day detail load time
     func testDayDetailLoadTime() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -103,6 +115,10 @@ final class PerformanceTests: XCTestCase {
 
     /// Tests view transition smoothness
     func testViewTransitionSmooth() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -129,6 +145,10 @@ final class PerformanceTests: XCTestCase {
 
     /// Tests chart animation completion
     func testChartAnimationComplete() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         app.buttons[AccessibilityIdentifiers.analysisButton].tap()
@@ -158,6 +178,10 @@ final class PerformanceTests: XCTestCase {
 
     /// Tests sheet presentation smoothness
     func testSheetPresentationSmooth() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -182,6 +206,10 @@ final class PerformanceTests: XCTestCase {
 
     /// Tests cold launch performance
     func testColdLaunchPerformance() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         measure(metrics: [XCTApplicationLaunchMetric()]) {
             app.launchWithData()
 
@@ -195,6 +223,10 @@ final class PerformanceTests: XCTestCase {
 
     /// Tests warm launch performance (app already in memory)
     func testWarmLaunchPerformance() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         // First launch to warm up
         app.launchWithData()
         Thread.sleep(forTimeInterval: 2.0)
@@ -221,6 +253,10 @@ final class PerformanceTests: XCTestCase {
 
     /// Tests analysis with 90 days of data
     func testAnalysisWithNinetyDays() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launch(scenario: .heavyUser)
 
         app.buttons[AccessibilityIdentifiers.analysisButton].tap()
@@ -250,6 +286,10 @@ final class PerformanceTests: XCTestCase {
 
     /// Tests calendar with full year of data
     func testCalendarWithFullYear() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launch(scenario: .heavyUser)
 
         app.buttons[AccessibilityIdentifiers.analysisButton].tap()
@@ -279,6 +319,10 @@ final class PerformanceTests: XCTestCase {
 
     /// Tests symptom history with 1000+ entries
     func testSymptomHistoryWithThousandEntries() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithLargeData()
 
         app.buttons[AccessibilityIdentifiers.analysisButton].tap()
@@ -325,6 +369,10 @@ final class PerformanceTests: XCTestCase {
 
     /// Tests memory usage doesn't cause issues with large data
     func testMemoryWithLargeData() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithLargeData()
 
         let timeline = TimelineScreen(app: app)
@@ -356,6 +404,10 @@ final class PerformanceTests: XCTestCase {
 
     /// Tests rapid interactions don't cause UI freezing
     func testRapidInteractions() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)

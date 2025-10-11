@@ -9,19 +9,20 @@ import XCTest
 import CoreGraphics
 
 final class MurmurUITests: XCTestCase {
-    var app: XCUIApplication!
+    var app: XCUIApplication?
     private var systemAlertMonitor: NSObjectProtocol?
 
     @MainActor
     override func setUpWithError() throws {
         continueAfterFailure = false
-        app = XCUIApplication()
-        setupSnapshot(app)
+        let newApp = XCUIApplication()
+        app = newApp
+        setupSnapshot(newApp)
         systemAlertMonitor = registerSystemAlertMonitor()
 
         // Launch with sample data flag
-        app.launchArguments = ["-UITestMode", "-SeedSampleData"]
-        app.launch()
+        newApp.launchArguments = ["-UITestMode", "-SeedSampleData"]
+        newApp.launch()
 
         // Skip HealthKit authorization in UI test mode (app skips it via -UITestMode flag)
         // allowHealthKitIfNeeded() is not needed since app won't show HealthKit dialog
@@ -116,7 +117,7 @@ final class MurmurUITests: XCTestCase {
         }
 
         // Return focus to the app under test
-        app.activate()
+        app?.activate()
     }
 
     private func handleSpringboardAlertsIfNeeded(timeout: TimeInterval = 5) {
@@ -124,7 +125,7 @@ final class MurmurUITests: XCTestCase {
         let allowButton = springboard.buttons["Allow"]
         if allowButton.waitForExistence(timeout: timeout) {
             allowButton.tap()
-            app.activate()
+            app?.activate()
         }
     }
 
@@ -132,6 +133,10 @@ final class MurmurUITests: XCTestCase {
 
     @MainActor
     func testAppLaunches() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         // Simple test to verify app launches
         XCTAssertTrue(app.exists, "App should launch")
 
@@ -142,6 +147,10 @@ final class MurmurUITests: XCTestCase {
 
     @MainActor
     func testNegativeSymptomShowsCrisis() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         // Test that negative symptoms show "Crisis" at level 5 (opposite of positive)
         let logButton = app.buttons.matching(identifier: "log-symptom-button").firstMatch
         XCTAssertTrue(logButton.waitForExistence(timeout: 5), "Log button should exist")
@@ -186,6 +195,10 @@ final class MurmurUITests: XCTestCase {
 
     @MainActor
     func testMixedSymptomEntry() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         // Test entering multiple symptoms with mixed positive/negative
         let logButton = require(app.buttons["Log symptom"], timeout: 5)
         logButton.tap()
@@ -218,6 +231,10 @@ final class MurmurUITests: XCTestCase {
 
     @MainActor
     func testSeveritySliderBehavior() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         // Test that severity slider works correctly
         let logButton = app.buttons.matching(identifier: "log-symptom-button").firstMatch
         XCTAssertTrue(logButton.waitForExistence(timeout: 5), "Log button should exist")
@@ -264,6 +281,10 @@ final class MurmurUITests: XCTestCase {
 
     @MainActor
     func testAddAndRemoveCustomSymptom() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         // Wait for app to load
         // Navigate to settings
         let settingsButton = require(app.navigationBars.buttons.matching(NSPredicate(format: "identifier CONTAINS[c] 'gear' OR label CONTAINS[c] 'settings'")).firstMatch,
@@ -318,6 +339,10 @@ final class MurmurUITests: XCTestCase {
 
     @MainActor
     func testNotificationPermission() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         // Wait for app to load
         // Navigate to settings
         let settingsButton = require(app.navigationBars.buttons.matching(NSPredicate(format: "identifier CONTAINS[c] 'gear' OR label CONTAINS[c] 'settings'")).firstMatch,
@@ -358,6 +383,10 @@ final class MurmurUITests: XCTestCase {
 
     @MainActor
     func testPositiveSymptomEntry() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         // Tap the "Log symptom" button
         let logSymptomButton = app.buttons.matching(identifier: "log-symptom-button").firstMatch
         XCTAssertTrue(logSymptomButton.waitForExistence(timeout: 5), "Log symptom button should exist")
@@ -402,6 +431,10 @@ final class MurmurUITests: XCTestCase {
 
     @MainActor
     func testPositiveSymptomAnalysis() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         // This test verifies analysis views handle positive symptoms correctly
         // Navigate to analysis
         let analysisButton = require(app.buttons[AccessibilityIdentifiers.analysisButton], timeout: 5)
@@ -431,6 +464,10 @@ final class MurmurUITests: XCTestCase {
 
     @MainActor
     func testGenerateScreenshots() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         // Track expected screenshots
         var capturedScreenshots: Set<String> = []
         let expectedScreenshots: Set<String> = [
@@ -568,6 +605,7 @@ final class MurmurUITests: XCTestCase {
     }
 
     private func findSettingsButton(timeout: TimeInterval) -> XCUIElement? {
+        guard let app = app else { return nil }
         let identifierMatch = app.buttons[AccessibilityIdentifiers.settingsButton]
         if identifierMatch.waitForExistence(timeout: timeout) {
             return identifierMatch
@@ -589,6 +627,7 @@ final class MurmurUITests: XCTestCase {
     }
 
     private func findLoadCapacityButton(timeout: TimeInterval) -> XCUIElement? {
+        guard let app = app else { return nil }
         let button = app.buttons[AccessibilityIdentifiers.loadCapacityButton]
         if button.waitForExistence(timeout: timeout) {
             return button

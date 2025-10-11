@@ -81,7 +81,7 @@ class HealthKitAssistantTestCase: XCTestCase {
         flowEntries: [Date: String] = [:]
     ) -> ManualCycleTracker {
         let testStack = InMemoryCoreDataStack()
-        let tracker = ManualCycleTracker(context: testStack.context)
+        let tracker = ManualCycleTracker(context: testStack!.context)
 
         tracker.setEnabled(enabled)
 

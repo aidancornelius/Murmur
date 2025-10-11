@@ -11,7 +11,7 @@ import CoreData
 
 @MainActor
 final class LoadScoreCacheTests: XCTestCase {
-    var testStack: InMemoryCoreDataStack!
+    var testStack: InMemoryCoreDataStack?
     var cache: LoadScoreCache!
     let calendar = Calendar.current
 
@@ -19,7 +19,7 @@ final class LoadScoreCacheTests: XCTestCase {
         try await super.setUp()
         testStack = InMemoryCoreDataStack()
         cache = LoadScoreCache()
-        SampleDataSeeder.seedIfNeeded(in: testStack.context, forceSeed: true)
+        SampleDataSeeder.seedIfNeeded(in: testStack!.context, forceSeed: true)
     }
 
     override func tearDown() {
@@ -32,16 +32,16 @@ final class LoadScoreCacheTests: XCTestCase {
 
     func testCacheHitReturnsStoredValue() throws {
         let today = calendar.startOfDay(for: Date())
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
 
         // Create test data
-        let entry = SymptomEntry(context: testStack.context)
+        let entry = SymptomEntry(context: testStack!.context)
         entry.id = UUID()
         entry.createdAt = today
         entry.symptomType = symptomType
         entry.severity = 3
 
-        let activity = ActivityEvent(context: testStack.context)
+        let activity = ActivityEvent(context: testStack!.context)
         activity.id = UUID()
         activity.createdAt = today
         activity.name = "Test"
@@ -49,7 +49,7 @@ final class LoadScoreCacheTests: XCTestCase {
         activity.cognitiveExertion = 2
         activity.emotionalLoad = 2
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         let config = LoadCapacityManager.shared.configuration
 
@@ -90,15 +90,15 @@ final class LoadScoreCacheTests: XCTestCase {
 
     func testCacheMissWhenDataChanges() throws {
         let today = calendar.startOfDay(for: Date())
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
 
-        let entry1 = SymptomEntry(context: testStack.context)
+        let entry1 = SymptomEntry(context: testStack!.context)
         entry1.id = UUID()
         entry1.createdAt = today
         entry1.symptomType = symptomType
         entry1.severity = 3
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         let config = LoadCapacityManager.shared.configuration
 
@@ -109,13 +109,13 @@ final class LoadScoreCacheTests: XCTestCase {
                  previousLoad: 0.0, config: config)
 
         // Try to get with different entry
-        let entry2 = SymptomEntry(context: testStack.context)
+        let entry2 = SymptomEntry(context: testStack!.context)
         entry2.id = UUID()
         entry2.createdAt = today
         entry2.symptomType = symptomType
         entry2.severity = 4
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         let cachedScore = cache.get(for: today, activities: [], symptoms: [entry2],
                                     previousLoad: 0.0, config: config)
@@ -173,13 +173,13 @@ final class LoadScoreCacheTests: XCTestCase {
     }
 
     func testCalculateRangeMaintainsDecayChain() throws {
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
         let day1 = calendar.date(byAdding: .day, value: -2, to: Date())!
         let day2 = calendar.date(byAdding: .day, value: -1, to: Date())!
         let day3 = Date()
 
         // Create high load activity on day 1
-        let activity = ActivityEvent(context: testStack.context)
+        let activity = ActivityEvent(context: testStack!.context)
         activity.id = UUID()
         activity.createdAt = day1
         activity.name = "Intense activity"
@@ -188,7 +188,7 @@ final class LoadScoreCacheTests: XCTestCase {
         activity.emotionalLoad = 5
         activity.durationMinutes = 120
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         let activitiesByDate: [Date: [ActivityEvent]] = [
             calendar.startOfDay(for: day1): [activity]

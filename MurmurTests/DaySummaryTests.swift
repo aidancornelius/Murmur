@@ -11,7 +11,7 @@ import XCTest
 
 @MainActor
 final class DaySummaryTests: XCTestCase {
-    var testStack: InMemoryCoreDataStack!
+    var testStack: InMemoryCoreDataStack?
 
     override func setUp() {
         super.setUp()
@@ -45,16 +45,16 @@ final class DaySummaryTests: XCTestCase {
     }
 
     func testDaySummaryFromEntries() throws {
-        SampleDataSeeder.seedIfNeeded(in: testStack.context, forceSeed: true)
+        SampleDataSeeder.seedIfNeeded(in: testStack!.context, forceSeed: true)
 
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
         let today = Date()
 
         // Create entries for today
         var entries: [SymptomEntry] = []
         let severities: [Int16] = [1, 3, 5, 2, 4]
         for severity in severities {
-            let entry = SymptomEntry(context: testStack.context)
+            let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
             entry.createdAt = today
             entry.severity = severity
@@ -62,7 +62,7 @@ final class DaySummaryTests: XCTestCase {
             entries.append(entry)
         }
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         // Create summary from entries using the static make method
         let summary = DaySummary.make(for: today, entries: entries)
@@ -111,15 +111,15 @@ final class DaySummaryTests: XCTestCase {
     }
 
     func testDaySummaryMakeWithLoadScore() throws {
-        SampleDataSeeder.seedIfNeeded(in: testStack.context, forceSeed: true)
+        SampleDataSeeder.seedIfNeeded(in: testStack!.context, forceSeed: true)
 
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
         let today = Date()
 
         // Create entries
         var entries: [SymptomEntry] = []
         for i in 1...3 {
-            let entry = SymptomEntry(context: testStack.context)
+            let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
             entry.createdAt = today
             entry.severity = Int16(i)

@@ -11,17 +11,17 @@ import XCTest
 
 @MainActor
 final class HealthKitAssistantTests: XCTestCase {
-    var mockStore: MockHealthKitStore!
-    var healthKit: HealthKitAssistant!
+    var mockStore: MockHealthKitStore?
+    var healthKit: HealthKitAssistant?
 
     override func setUp() async throws {
         try await super.setUp()
         mockStore = MockHealthKitStore()
-        healthKit = HealthKitAssistant(store: mockStore)
+        healthKit = HealthKitAssistant(store: mockStore!)
     }
 
     override func tearDown() async throws {
-        mockStore.reset()
+        mockStore?.reset()
         mockStore = nil
         healthKit = nil
         try await super.tearDown()
@@ -33,22 +33,22 @@ final class HealthKitAssistantTests: XCTestCase {
         // Arrange: Create two HRV samples, most recent should be returned
         let olderSample = HKQuantitySample.mockHRV(value: 45.0, date: .hoursAgo(2))
         let newerSample = HKQuantitySample.mockHRV(value: 50.0, date: .minutesAgo(5))
-        mockStore.mockQuantitySamples = [newerSample, olderSample]
+        mockStore!.mockQuantitySamples =[newerSample, olderSample]
 
         // Act
-        let hrv = await healthKit.recentHRV()
+        let hrv = await healthKit!.recentHRV()
 
         // Assert
         XCTAssertEqual(hrv, 50.0, accuracy: 0.01)
-        XCTAssertEqual(mockStore.executeCount, 1)
+        XCTAssertEqual(mockStore!.executeCount,1)
     }
 
     func testRecentHRVConvertsUnitCorrectly() async throws {
         // Arrange: HRV should be in milliseconds
-        mockStore.mockQuantitySamples = [HKQuantitySample.mockHRV(value: 42.5, date: Date())]
+        mockStore!.mockQuantitySamples =[HKQuantitySample.mockHRV(value: 42.5, date: Date())]
 
         // Act
-        let hrv = await healthKit.recentHRV()
+        let hrv = await healthKit!.recentHRV()
 
         // Assert: Value should be preserved in ms
         XCTAssertEqual(hrv, 42.5, accuracy: 0.01)
@@ -56,47 +56,47 @@ final class HealthKitAssistantTests: XCTestCase {
 
     func testRecentHRVUsesCacheWhenValid() async throws {
         // Arrange: First call populates cache
-        mockStore.mockQuantitySamples = [HKQuantitySample.mockHRV(value: 45.0, date: Date())]
+        mockStore!.mockQuantitySamples =[HKQuantitySample.mockHRV(value: 45.0, date: Date())]
         let firstResult = await healthKit.recentHRV()
 
         // Clear mock samples to verify cache is used
-        mockStore.mockQuantitySamples = []
-        mockStore.reset()
+        mockStore!.mockQuantitySamples =[]
+        mockStore?.reset()
 
         // Act: Second call within cache window (30 minutes)
         let secondResult = await healthKit.recentHRV()
 
         // Assert: Cache was used, no new query executed
         XCTAssertEqual(firstResult, secondResult)
-        XCTAssertEqual(mockStore.executeCount, 0) // No new query
+        XCTAssertEqual(mockStore!.executeCount,0) // No new query
     }
 
     func testRecentHRVBypassesStaleCache() async throws {
         // Arrange: First call populates cache
-        mockStore.mockQuantitySamples = [HKQuantitySample.mockHRV(value: 45.0, date: Date())]
+        mockStore!.mockQuantitySamples =[HKQuantitySample.mockHRV(value: 45.0, date: Date())]
         _ = await healthKit.recentHRV()
 
         // Simulate cache expiration (31 minutes ago)
         healthKit._setCacheTimestamp(.minutesAgo(31), for: "hrv")
 
         // New data available
-        mockStore.reset()
-        mockStore.mockQuantitySamples = [HKQuantitySample.mockHRV(value: 52.0, date: Date())]
+        mockStore?.reset()
+        mockStore!.mockQuantitySamples =[HKQuantitySample.mockHRV(value: 52.0, date: Date())]
 
         // Act: Second call after cache expiry
         let result = await healthKit.recentHRV()
 
         // Assert: Cache was refreshed
         XCTAssertEqual(result, 52.0, accuracy: 0.01)
-        XCTAssertEqual(mockStore.executeCount, 1) // New query executed
+        XCTAssertEqual(mockStore!.executeCount,1) // New query executed
     }
 
     func testRecentHRVReturnsNilWhenNoData() async throws {
         // Arrange: No samples available
-        mockStore.mockQuantitySamples = []
+        mockStore!.mockQuantitySamples =[]
 
         // Act
-        let hrv = await healthKit.recentHRV()
+        let hrv = await healthKit!.recentHRV()
 
         // Assert
         XCTAssertNil(hrv)
@@ -104,10 +104,10 @@ final class HealthKitAssistantTests: XCTestCase {
 
     func testRecentHRVHandlesQueryError() async throws {
         // Arrange: Simulate query error
-        mockStore.shouldThrowError = NSError(domain: HKErrorDomain, code: HKError.errorDatabaseInaccessible.rawValue)
+        mockStore!.shouldThrowError =NSError(domain: HKErrorDomain, code: HKError.errorDatabaseInaccessible.rawValue)
 
         // Act
-        let hrv = await healthKit.recentHRV()
+        let hrv = await healthKit!.recentHRV()
 
         // Assert: Should return nil on error
         XCTAssertNil(hrv)
@@ -119,10 +119,10 @@ final class HealthKitAssistantTests: XCTestCase {
         // Arrange
         let olderSample = HKQuantitySample.mockRestingHR(value: 65.0, date: .hoursAgo(2))
         let newerSample = HKQuantitySample.mockRestingHR(value: 62.0, date: .minutesAgo(10))
-        mockStore.mockQuantitySamples = [newerSample, olderSample]
+        mockStore!.mockQuantitySamples =[newerSample, olderSample]
 
         // Act
-        let restingHR = await healthKit.recentRestingHR()
+        let restingHR = await healthKit!.recentRestingHR()
 
         // Assert
         XCTAssertEqual(restingHR, 62.0, accuracy: 0.01)
@@ -130,10 +130,10 @@ final class HealthKitAssistantTests: XCTestCase {
 
     func testRecentRestingHRConvertsToBPM() async throws {
         // Arrange
-        mockStore.mockQuantitySamples = [HKQuantitySample.mockRestingHR(value: 68.5, date: Date())]
+        mockStore!.mockQuantitySamples =[HKQuantitySample.mockRestingHR(value: 68.5, date: Date())]
 
         // Act
-        let restingHR = await healthKit.recentRestingHR()
+        let restingHR = await healthKit!.recentRestingHR()
 
         // Assert: Should be in beats per minute
         XCTAssertEqual(restingHR, 68.5, accuracy: 0.01)
@@ -141,23 +141,23 @@ final class HealthKitAssistantTests: XCTestCase {
 
     func testRecentRestingHRUsesCacheWhenValid() async throws {
         // Arrange: Populate cache
-        mockStore.mockQuantitySamples = [HKQuantitySample.mockRestingHR(value: 65.0, date: Date())]
+        mockStore!.mockQuantitySamples =[HKQuantitySample.mockRestingHR(value: 65.0, date: Date())]
         _ = await healthKit.recentRestingHR()
 
-        mockStore.reset()
-        mockStore.mockQuantitySamples = []
+        mockStore?.reset()
+        mockStore!.mockQuantitySamples =[]
 
         // Act: Query within cache window (60 minutes)
         let result = await healthKit.recentRestingHR()
 
         // Assert: Cache used
         XCTAssertEqual(result, 65.0, accuracy: 0.01)
-        XCTAssertEqual(mockStore.executeCount, 0)
+        XCTAssertEqual(mockStore!.executeCount,0)
     }
 
     func testRecentRestingHRReturnsNilWhenNoData() async throws {
         // Arrange
-        mockStore.mockQuantitySamples = []
+        mockStore!.mockQuantitySamples =[]
 
         // Act
         let result = await healthKit.recentRestingHR()
@@ -168,7 +168,7 @@ final class HealthKitAssistantTests: XCTestCase {
 
     func testRecentRestingHRHandlesError() async throws {
         // Arrange
-        mockStore.shouldThrowError = NSError(domain: HKErrorDomain, code: HKError.errorAuthorizationDenied.rawValue)
+        mockStore!.shouldThrowError =NSError(domain: HKErrorDomain, code: HKError.errorAuthorizationDenied.rawValue)
 
         // Act
         let result = await healthKit.recentRestingHR()
@@ -196,10 +196,10 @@ final class HealthKitAssistantTests: XCTestCase {
             start: .hoursAgo(15),
             duration: 1.5 * 3600 // 1.5 hours
         )
-        mockStore.mockCategorySamples = [session1, session2, session3]
+        mockStore!.mockCategorySamples =[session1, session2, session3]
 
         // Act
-        let sleepHours = await healthKit.recentSleepHours()
+        let sleepHours = await healthKit!.recentSleepHours()
 
         // Assert: Total should be 6.5 hours
         XCTAssertEqual(sleepHours, 6.5, accuracy: 0.01)
@@ -212,10 +212,10 @@ final class HealthKitAssistantTests: XCTestCase {
         let rem = HKCategorySample.mockSleep(value: .asleepREM, start: .hoursAgo(6), duration: 3600)
         let unspecified = HKCategorySample.mockSleep(value: .asleepUnspecified, start: .hoursAgo(5), duration: 3600)
 
-        mockStore.mockCategorySamples = [core, deep, rem, unspecified]
+        mockStore!.mockCategorySamples =[core, deep, rem, unspecified]
 
         // Act
-        let sleepHours = await healthKit.recentSleepHours()
+        let sleepHours = await healthKit!.recentSleepHours()
 
         // Assert: Should sum all stages = 4 hours
         XCTAssertEqual(sleepHours, 4.0, accuracy: 0.01)
@@ -226,10 +226,10 @@ final class HealthKitAssistantTests: XCTestCase {
         let asleep = HKCategorySample.mockSleep(value: .asleepCore, start: .hoursAgo(8), duration: 7 * 3600)
         let inBed = HKCategorySample.mockSleep(value: .inBed, start: .hoursAgo(9), duration: 8 * 3600)
 
-        mockStore.mockCategorySamples = [asleep, inBed]
+        mockStore!.mockCategorySamples =[asleep, inBed]
 
         // Act
-        let sleepHours = await healthKit.recentSleepHours()
+        let sleepHours = await healthKit!.recentSleepHours()
 
         // Assert: Should only count asleep time (7 hours)
         XCTAssertEqual(sleepHours, 7.0, accuracy: 0.01)
@@ -237,24 +237,24 @@ final class HealthKitAssistantTests: XCTestCase {
 
     func testRecentSleepHoursUsesCacheWhenValid() async throws {
         // Arrange
-        mockStore.mockCategorySamples = [
+        mockStore!.mockCategorySamples =[
             HKCategorySample.mockSleep(value: .asleepCore, start: .hoursAgo(8), duration: 7 * 3600)
         ]
         _ = await healthKit.recentSleepHours()
 
-        mockStore.reset()
+        mockStore?.reset()
 
         // Act: Within cache window (6 hours)
         let result = await healthKit.recentSleepHours()
 
         // Assert
         XCTAssertEqual(result, 7.0, accuracy: 0.01)
-        XCTAssertEqual(mockStore.executeCount, 0)
+        XCTAssertEqual(mockStore!.executeCount,0)
     }
 
     func testRecentSleepHoursReturnsNilWhenNoData() async throws {
         // Arrange
-        mockStore.mockCategorySamples = []
+        mockStore!.mockCategorySamples =[]
 
         // Act
         let result = await healthKit.recentSleepHours()
@@ -270,14 +270,14 @@ final class HealthKitAssistantTests: XCTestCase {
         let bedTime = Date.hoursAgo(8)
         let wakeTime = bedTime.addingTimeInterval(7 * 3600)
 
-        mockStore.mockCategorySamples = [
+        mockStore!.mockCategorySamples =[
             HKCategorySample.mockSleep(value: .asleepCore, start: bedTime, duration: 3 * 3600),
             HKCategorySample.mockSleep(value: .asleepDeep, start: bedTime.addingTimeInterval(3 * 3600), duration: 2 * 3600),
             HKCategorySample.mockSleep(value: .asleepREM, start: bedTime.addingTimeInterval(5 * 3600), duration: 2 * 3600)
         ]
 
         // Act
-        let result = await healthKit.fetchDetailedSleepData()
+        let result = await healthKit!.fetchDetailedSleepData()
 
         // Assert
         XCTAssertNotNil(result)
@@ -291,13 +291,13 @@ final class HealthKitAssistantTests: XCTestCase {
         let session1Start = Date.hoursAgo(20)
         let session2Start = Date.hoursAgo(8)
 
-        mockStore.mockCategorySamples = [
+        mockStore!.mockCategorySamples =[
             HKCategorySample.mockSleep(value: .asleepCore, start: session1Start, duration: 1 * 3600),
             HKCategorySample.mockSleep(value: .asleepCore, start: session2Start, duration: 7 * 3600)
         ]
 
         // Act
-        let result = await healthKit.fetchDetailedSleepData()
+        let result = await healthKit!.fetchDetailedSleepData()
 
         // Assert: Should return most recent session (7 hours)
         XCTAssertNotNil(result)
@@ -307,10 +307,10 @@ final class HealthKitAssistantTests: XCTestCase {
 
     func testFetchDetailedSleepDataReturnsNilWhenNoData() async throws {
         // Arrange
-        mockStore.mockCategorySamples = []
+        mockStore!.mockCategorySamples =[]
 
         // Act
-        let result = await healthKit.fetchDetailedSleepData()
+        let result = await healthKit!.fetchDetailedSleepData()
 
         // Assert
         XCTAssertNil(result)
@@ -324,7 +324,7 @@ final class HealthKitAssistantTests: XCTestCase {
         let workout2 = HKWorkout.mockWorkout(start: .hoursAgo(12), duration: 45 * 60) // 45 minutes
         let workout3 = HKWorkout.mockWorkout(start: .hoursAgo(2), duration: 25 * 60)  // 25 minutes
 
-        mockStore.mockWorkouts = [workout1, workout2, workout3]
+        mockStore!.mockWorkouts =[workout1, workout2, workout3]
 
         // Act
         let workoutMinutes = await healthKit.recentWorkoutMinutes()
@@ -339,7 +339,7 @@ final class HealthKitAssistantTests: XCTestCase {
         let cycling = HKWorkout.mockWorkout(activityType: .cycling, start: .hoursAgo(8), duration: 45 * 60)
         let yoga = HKWorkout.mockWorkout(activityType: .yoga, start: .hoursAgo(6), duration: 60 * 60)
 
-        mockStore.mockWorkouts = [running, cycling, yoga]
+        mockStore!.mockWorkouts =[running, cycling, yoga]
 
         // Act
         let workoutMinutes = await healthKit.recentWorkoutMinutes()
@@ -350,24 +350,24 @@ final class HealthKitAssistantTests: XCTestCase {
 
     func testRecentWorkoutMinutesUsesCacheWhenValid() async throws {
         // Arrange
-        mockStore.mockWorkouts = [
+        mockStore!.mockWorkouts =[
             HKWorkout.mockWorkout(start: .hoursAgo(5), duration: 30 * 60)
         ]
         _ = await healthKit.recentWorkoutMinutes()
 
-        mockStore.reset()
+        mockStore?.reset()
 
         // Act: Within cache window (6 hours)
         let result = await healthKit.recentWorkoutMinutes()
 
         // Assert
         XCTAssertEqual(result, 30.0, accuracy: 0.01)
-        XCTAssertEqual(mockStore.executeCount, 0)
+        XCTAssertEqual(mockStore!.executeCount,0)
     }
 
     func testRecentWorkoutMinutesReturnsNilWhenNoData() async throws {
         // Arrange
-        mockStore.mockWorkouts = []
+        mockStore!.mockWorkouts =[]
 
         // Act
         let result = await healthKit.recentWorkoutMinutes()
@@ -381,7 +381,7 @@ final class HealthKitAssistantTests: XCTestCase {
     func testRecentCycleDayCalculatesDaysSincePeriodStart() async throws {
         // Arrange: Period started 12 days ago
         let periodStart = Calendar.current.startOfDay(for: .daysAgo(12))
-        mockStore.mockCategorySamples = [
+        mockStore!.mockCategorySamples =[
             HKCategorySample.mockMenstrualFlow(value: .medium, date: periodStart)
         ]
 
@@ -398,7 +398,7 @@ final class HealthKitAssistantTests: XCTestCase {
         let today = calendar.startOfDay(for: Date())
         let periodStart = today.addingTimeInterval(14 * 3600) // 2pm today
 
-        mockStore.mockCategorySamples = [
+        mockStore!.mockCategorySamples =[
             HKCategorySample.mockMenstrualFlow(value: .heavy, date: periodStart)
         ]
 
@@ -411,7 +411,7 @@ final class HealthKitAssistantTests: XCTestCase {
 
     func testRecentCycleDayReturnsNilWhenNoData() async throws {
         // Arrange
-        mockStore.mockCategorySamples = []
+        mockStore!.mockCategorySamples =[]
 
         // Act
         let cycleDay = await healthKit.recentCycleDay()
@@ -425,7 +425,7 @@ final class HealthKitAssistantTests: XCTestCase {
     func testRecentFlowLevelReturnsTodaysFlow() async throws {
         // Arrange: Flow entry for today
         let today = Calendar.current.startOfDay(for: Date())
-        mockStore.mockCategorySamples = [
+        mockStore!.mockCategorySamples =[
             HKCategorySample.mockMenstrualFlow(value: .medium, date: today)
         ]
 
@@ -440,24 +440,24 @@ final class HealthKitAssistantTests: XCTestCase {
         let today = Calendar.current.startOfDay(for: Date())
 
         // Test light
-        mockStore.mockCategorySamples = [HKCategorySample.mockMenstrualFlow(value: .light, date: today)]
+        mockStore!.mockCategorySamples =[HKCategorySample.mockMenstrualFlow(value: .light, date: today)]
         var result = await healthKit.recentFlowLevel()
         XCTAssertEqual(result, "light")
 
         // Test medium
-        mockStore.mockCategorySamples = [HKCategorySample.mockMenstrualFlow(value: .medium, date: today)]
+        mockStore!.mockCategorySamples =[HKCategorySample.mockMenstrualFlow(value: .medium, date: today)]
         healthKit._setCacheTimestamp(.daysAgo(1), for: "cycle") // Invalidate cache
         result = await healthKit.recentFlowLevel()
         XCTAssertEqual(result, "medium")
 
         // Test heavy
-        mockStore.mockCategorySamples = [HKCategorySample.mockMenstrualFlow(value: .heavy, date: today)]
+        mockStore!.mockCategorySamples =[HKCategorySample.mockMenstrualFlow(value: .heavy, date: today)]
         healthKit._setCacheTimestamp(.daysAgo(1), for: "cycle")
         result = await healthKit.recentFlowLevel()
         XCTAssertEqual(result, "heavy")
 
         // Test spotting (unspecified maps to spotting)
-        mockStore.mockCategorySamples = [HKCategorySample.mockMenstrualFlow(value: .unspecified, date: today)]
+        mockStore!.mockCategorySamples =[HKCategorySample.mockMenstrualFlow(value: .unspecified, date: today)]
         healthKit._setCacheTimestamp(.daysAgo(1), for: "cycle")
         result = await healthKit.recentFlowLevel()
         XCTAssertEqual(result, "spotting")
@@ -465,7 +465,7 @@ final class HealthKitAssistantTests: XCTestCase {
 
     func testRecentFlowLevelReturnsNilForNonBleedingDays() async throws {
         // Arrange: No flow data for today
-        mockStore.mockCategorySamples = []
+        mockStore!.mockCategorySamples =[]
 
         // Act
         let result = await healthKit.recentFlowLevel()
@@ -478,15 +478,15 @@ final class HealthKitAssistantTests: XCTestCase {
 
     func testRefreshContextForcesRefreshOfAllMetrics() async throws {
         // Arrange: Populate all caches
-        mockStore.mockQuantitySamples = [
+        mockStore!.mockQuantitySamples =[
             HKQuantitySample.mockHRV(value: 45.0, date: Date()),
             HKQuantitySample.mockRestingHR(value: 65.0, date: Date())
         ]
-        mockStore.mockCategorySamples = [
+        mockStore!.mockCategorySamples =[
             HKCategorySample.mockSleep(value: .asleepCore, start: .hoursAgo(8), duration: 7 * 3600),
             HKCategorySample.mockMenstrualFlow(value: .medium, date: Calendar.current.startOfDay(for: .daysAgo(5)))
         ]
-        mockStore.mockWorkouts = [
+        mockStore!.mockWorkouts =[
             HKWorkout.mockWorkout(start: .hoursAgo(5), duration: 30 * 60)
         ]
 
@@ -500,12 +500,12 @@ final class HealthKitAssistantTests: XCTestCase {
 
     func testForceRefreshAllBypassesCaches() async throws {
         // Arrange: Populate caches with initial values
-        mockStore.mockQuantitySamples = [HKQuantitySample.mockHRV(value: 45.0, date: Date())]
+        mockStore!.mockQuantitySamples =[HKQuantitySample.mockHRV(value: 45.0, date: Date())]
         _ = await healthKit.recentHRV()
-        XCTAssertEqual(mockStore.executeCount, 1)
+        XCTAssertEqual(mockStore!.executeCount,1)
 
         // Update mock data
-        mockStore.mockQuantitySamples = [HKQuantitySample.mockHRV(value: 55.0, date: Date())]
+        mockStore!.mockQuantitySamples =[HKQuantitySample.mockHRV(value: 55.0, date: Date())]
 
         // Act: Force refresh should bypass cache
         await healthKit.forceRefreshAll()
@@ -516,7 +516,7 @@ final class HealthKitAssistantTests: XCTestCase {
 
     func testMultipleRapidCallsUseCacheToPreventRedundantQueries() async throws {
         // Arrange
-        mockStore.mockQuantitySamples = [HKQuantitySample.mockHRV(value: 45.0, date: Date())]
+        mockStore!.mockQuantitySamples =[HKQuantitySample.mockHRV(value: 45.0, date: Date())]
 
         // Act: Make 5 rapid calls
         let results = await withTaskGroup(of: Double?.self) { group in
@@ -536,7 +536,7 @@ final class HealthKitAssistantTests: XCTestCase {
         // Assert: All results should be the same
         XCTAssertTrue(results.allSatisfy { $0 == 45.0 })
         // Should only execute one query (first call), rest use cache
-        XCTAssertEqual(mockStore.executeCount, 1)
+        XCTAssertEqual(mockStore!.executeCount,1)
     }
 
     // MARK: - Baseline Calculation Tests
@@ -547,7 +547,7 @@ final class HealthKitAssistantTests: XCTestCase {
         for day in 0..<30 {
             samples.append(HKQuantitySample.mockHRV(value: Double(40 + day), date: .daysAgo(day)))
         }
-        mockStore.mockQuantitySamples = samples
+        mockStore!.mockQuantitySamples =samples
 
         // Clear existing baseline
         await MainActor.run {
@@ -575,7 +575,7 @@ final class HealthKitAssistantTests: XCTestCase {
         for (index, value) in values.enumerated() {
             samples.append(HKQuantitySample.mockRestingHR(value: value, date: .daysAgo(index)))
         }
-        mockStore.mockQuantitySamples = samples
+        mockStore!.mockQuantitySamples =samples
 
         // Clear existing baseline
         await MainActor.run {
@@ -602,7 +602,7 @@ final class HealthKitAssistantTests: XCTestCase {
         for day in 0..<5 {
             samples.append(HKQuantitySample.mockHRV(value: Double(40 + day), date: .daysAgo(day)))
         }
-        mockStore.mockQuantitySamples = samples
+        mockStore!.mockQuantitySamples =samples
 
         // Clear existing baseline
         await MainActor.run {
@@ -627,7 +627,7 @@ final class HealthKitAssistantTests: XCTestCase {
             hrvSamples.append(HKQuantitySample.mockHRV(value: Double(40 + day), date: .daysAgo(day)))
             hrvSamples.append(HKQuantitySample.mockRestingHR(value: Double(60 + day), date: .daysAgo(day)))
         }
-        mockStore.mockQuantitySamples = hrvSamples
+        mockStore!.mockQuantitySamples =hrvSamples
 
         let startTime = Date()
 
@@ -676,7 +676,7 @@ final class HealthKitAssistantTests: XCTestCase {
 
     func testBootstrapAuthorizationsRunsCompleteFlow() async throws {
         // Arrange
-        mockStore.mockQuantitySamples = [
+        mockStore!.mockQuantitySamples =[
             HKQuantitySample.mockHRV(value: 45.0, date: Date())
         ]
 
@@ -708,13 +708,13 @@ final class HealthKitAssistantTests: XCTestCase {
     func testRecentCycleDayUsesManualTrackerWhenEnabled() async throws {
         // Arrange: Set up manual tracker with data
         let testStack = InMemoryCoreDataStack()
-        let manualTracker = ManualCycleTracker(context: testStack.context)
+        let manualTracker = ManualCycleTracker(context: testStack!.context)
         manualTracker.setEnabled(true)
         manualTracker.setCycleDay(15)
         healthKit.manualCycleTracker = manualTracker
 
         // Also have HealthKit data (should be ignored)
-        mockStore.mockCategorySamples = [
+        mockStore!.mockCategorySamples =[
             HKCategorySample.mockMenstrualFlow(value: .medium, date: .daysAgo(10))
         ]
 
@@ -724,13 +724,13 @@ final class HealthKitAssistantTests: XCTestCase {
         // Assert: Should use manual tracker value
         XCTAssertEqual(cycleDay, 15)
         // Should not have queried HealthKit
-        XCTAssertEqual(mockStore.executeCount, 0)
+        XCTAssertEqual(mockStore!.executeCount,0)
     }
 
     func testRecentFlowLevelUsesManualTrackerWhenEnabled() async throws {
         // Arrange
         let testStack = InMemoryCoreDataStack()
-        let manualTracker = ManualCycleTracker(context: testStack.context)
+        let manualTracker = ManualCycleTracker(context: testStack!.context)
         manualTracker.setEnabled(true)
 
         let today = Date()
@@ -745,18 +745,18 @@ final class HealthKitAssistantTests: XCTestCase {
 
         // Assert: Should use manual tracker
         XCTAssertEqual(flowLevel, "heavy")
-        XCTAssertEqual(mockStore.executeCount, 0)
+        XCTAssertEqual(mockStore!.executeCount,0)
     }
 
     func testCycleDataFallsBackToHealthKitWhenManualDisabled() async throws {
         // Arrange: Manual tracker disabled
         let testStack = InMemoryCoreDataStack()
-        let manualTracker = ManualCycleTracker(context: testStack.context)
+        let manualTracker = ManualCycleTracker(context: testStack!.context)
         manualTracker.setEnabled(false)
         healthKit.manualCycleTracker = manualTracker
 
         // HealthKit data available
-        mockStore.mockCategorySamples = [
+        mockStore!.mockCategorySamples =[
             HKCategorySample.mockMenstrualFlow(value: .medium, date: .daysAgo(7))
         ]
 
@@ -772,19 +772,19 @@ final class HealthKitAssistantTests: XCTestCase {
 
     func testQueriesAddedToActiveQueriesOnExecution() async throws {
         // Arrange
-        mockStore.mockQuantitySamples = [HKQuantitySample.mockHRV(value: 45.0, date: Date())]
+        mockStore!.mockQuantitySamples =[HKQuantitySample.mockHRV(value: 45.0, date: Date())]
 
         // Act
         _ = await healthKit.recentHRV()
 
         // Assert: Query should have been added and then removed
         XCTAssertEqual(healthKit._activeQueriesCount, 0) // Should be cleaned up
-        XCTAssertEqual(mockStore.executeCount, 1)
+        XCTAssertEqual(mockStore!.executeCount,1)
     }
 
     func testQueriesRemovedAfterCompletion() async throws {
         // Arrange
-        mockStore.mockQuantitySamples = [HKQuantitySample.mockHRV(value: 45.0, date: Date())]
+        mockStore!.mockQuantitySamples =[HKQuantitySample.mockHRV(value: 45.0, date: Date())]
 
         // Act: Execute multiple queries
         async let hrv = healthKit.recentHRV()
@@ -807,7 +807,7 @@ final class HealthKitAssistantTests: XCTestCase {
         let withinWindow = HKQuantitySample.mockHRV(value: 50.0, date: .hoursAgo(48))
         let outsideWindow = HKQuantitySample.mockHRV(value: 30.0, date: .hoursAgo(80))
 
-        mockStore.mockQuantitySamples = [withinWindow, outsideWindow]
+        mockStore!.mockQuantitySamples =[withinWindow, outsideWindow]
 
         // Act
         _ = await healthKit.recentHRV()
@@ -822,7 +822,7 @@ final class HealthKitAssistantTests: XCTestCase {
         let recent = HKCategorySample.mockSleep(value: .asleepCore, start: .hoursAgo(8), duration: 7 * 3600)
         let old = HKCategorySample.mockSleep(value: .asleepCore, start: .hoursAgo(30), duration: 7 * 3600)
 
-        mockStore.mockCategorySamples = [recent, old]
+        mockStore!.mockCategorySamples =[recent, old]
 
         // Act
         _ = await healthKit.recentSleepHours()
@@ -835,7 +835,7 @@ final class HealthKitAssistantTests: XCTestCase {
     func testCycleUsesLongerLookbackWindow() async throws {
         // Arrange: Cycle data from 45 days ago
         let periodStart = HKCategorySample.mockMenstrualFlow(value: .medium, date: .daysAgo(40))
-        mockStore.mockCategorySamples = [periodStart]
+        mockStore!.mockCategorySamples =[periodStart]
 
         // Act
         _ = await healthKit.recentCycleDay()
@@ -851,10 +851,10 @@ final class HealthKitAssistantTests: XCTestCase {
         let inBed = HKCategorySample.mockSleep(value: .inBed, start: .hoursAgo(9), duration: 8 * 3600)
         let awake = HKCategorySample.mockSleep(value: .awake, start: .hoursAgo(10), duration: 0.5 * 3600)
 
-        mockStore.mockCategorySamples = [asleep, inBed, awake]
+        mockStore!.mockCategorySamples =[asleep, inBed, awake]
 
         // Act
-        let sleepHours = await healthKit.recentSleepHours()
+        let sleepHours = await healthKit!.recentSleepHours()
 
         // Assert: Should only include asleep time
         // Note: The mock's predicate filtering needs to handle category value filtering
@@ -870,10 +870,10 @@ final class HealthKitAssistantTests: XCTestCase {
             HKQuantitySample.mockHRV(value: 50.0, date: .hoursAgo(10)),
             HKQuantitySample.mockHRV(value: 52.0, date: .hoursAgo(1))
         ]
-        mockStore.mockQuantitySamples = samples
+        mockStore!.mockQuantitySamples =samples
 
         // Act
-        let hrv = await healthKit.recentHRV()
+        let hrv = await healthKit!.recentHRV()
 
         // Assert: Should return most recent (52.0)
         XCTAssertEqual(hrv, 52.0, accuracy: 0.01)
@@ -885,7 +885,7 @@ final class HealthKitAssistantTests: XCTestCase {
         for i in 0..<100 {
             samples.append(HKQuantitySample.mockHRV(value: Double(40 + i), date: .hoursAgo(i)))
         }
-        mockStore.mockQuantitySamples = samples
+        mockStore!.mockQuantitySamples =samples
 
         // Act
         _ = await healthKit.recentHRV()

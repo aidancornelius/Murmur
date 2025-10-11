@@ -10,7 +10,7 @@ import Foundation
 // MARK: - Protocols
 
 /// Service responsible for caching HealthKit data to reduce redundant queries
-protocol HealthKitCacheServiceProtocol {
+protocol HealthKitCacheServiceProtocol: Sendable {
     // MARK: - Recent Data Cache (Timestamp-based)
     func getLastSampleDate(for metric: HealthMetric) -> Date?
     func setLastSampleDate(_ date: Date, for metric: HealthMetric)
@@ -35,7 +35,7 @@ enum HealthMetric {
 // MARK: - Implementation
 
 /// Manages caching of HealthKit data with timestamp and day-based strategies
-final class HealthKitCacheService: HealthKitCacheServiceProtocol {
+final class HealthKitCacheService: HealthKitCacheServiceProtocol, @unchecked Sendable {
     // MARK: - Recent Data Cache
     // Stores the timestamp of the last sample fetched for each metric
     private var lastHRVSampleDate: Date?

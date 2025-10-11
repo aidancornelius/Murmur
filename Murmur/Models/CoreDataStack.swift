@@ -9,7 +9,7 @@ import CoreData
 import os.log
 
 /// Core Data stack configured for on-device encryption and background contexts.
-final class CoreDataStack {
+final class CoreDataStack: @unchecked Sendable {
     enum CoreDataError: Error {
         case modelNotFound
         case storeLoadFailed(Error)
@@ -24,7 +24,7 @@ final class CoreDataStack {
         }
     }
 
-    static let shared = CoreDataStack()
+    nonisolated(unsafe) static let shared = CoreDataStack()
     private let logger = Logger(subsystem: "app.murmur", category: "CoreData")
 
     /// Error state if Core Data stack failed to initialise.
@@ -59,14 +59,14 @@ final class CoreDataStack {
                 self?.logger.critical("Failed to load persistent store: \(error.localizedDescription)")
             }
         }
-        container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        container.viewContext.mergePolicy = NSMergePolicy.mergeByPropertyObjectTrump
         container.viewContext.automaticallyMergesChangesFromParent = true
     }
 
     /// Internal initializer for testing purposes
     internal init(container: NSPersistentContainer) {
         self.container = container
-        container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        container.viewContext.mergePolicy = NSMergePolicy.mergeByPropertyObjectTrump
         container.viewContext.automaticallyMergesChangesFromParent = true
     }
 
@@ -74,7 +74,7 @@ final class CoreDataStack {
 
     func newBackgroundContext() -> NSManagedObjectContext {
         let context = container.newBackgroundContext()
-        context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        context.mergePolicy = NSMergePolicy.mergeByPropertyObjectTrump
         return context
     }
 

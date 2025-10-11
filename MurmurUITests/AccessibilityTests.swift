@@ -9,7 +9,7 @@ import XCTest
 
 /// Accessibility tests covering VoiceOver, Dynamic Type, voice commands, and accessibility identifiers
 final class AccessibilityTests: XCTestCase {
-    var app: XCUIApplication!
+    var app: XCUIApplication?
 
     override func setUpWithError() throws {
         continueAfterFailure = false
@@ -24,6 +24,10 @@ final class AccessibilityTests: XCTestCase {
 
     /// Verifies timeline elements have proper VoiceOver labels
     func testVoiceOverLabels_Timeline() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -49,6 +53,10 @@ final class AccessibilityTests: XCTestCase {
 
     /// Verifies add entry screen elements have proper VoiceOver labels
     func testVoiceOverLabels_AddEntry() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -80,6 +88,10 @@ final class AccessibilityTests: XCTestCase {
 
     /// Verifies analysis screen elements have proper VoiceOver labels
     func testVoiceOverLabels_Analysis() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         app.buttons[AccessibilityIdentifiers.analysisButton].tap()
@@ -109,6 +121,10 @@ final class AccessibilityTests: XCTestCase {
 
     /// Verifies VoiceOver hints are present for complex interactions
     func testVoiceOverHints() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -133,6 +149,10 @@ final class AccessibilityTests: XCTestCase {
 
     /// Verifies custom accessibility actions are available
     func testCustomActions() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         _ = TimelineScreen(app: app)
@@ -157,6 +177,10 @@ final class AccessibilityTests: XCTestCase {
 
     /// Tests layout with extra small text size
     func testDynamicType_ExtraSmall() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchForAccessibility(contentSize: .extraSmall)
 
         let timeline = TimelineScreen(app: app)
@@ -172,6 +196,10 @@ final class AccessibilityTests: XCTestCase {
 
     /// Tests layout with extra large text size
     func testDynamicType_ExtraLarge() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchForAccessibility(contentSize: .extraLarge)
 
         let timeline = TimelineScreen(app: app)
@@ -186,6 +214,10 @@ final class AccessibilityTests: XCTestCase {
 
     /// Tests layout with accessibility extra large text size
     func testDynamicType_AccessibilityLarge() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchForAccessibility(contentSize: .accessibilityExtraLarge)
 
         let timeline = TimelineScreen(app: app)
@@ -211,6 +243,10 @@ final class AccessibilityTests: XCTestCase {
 
     /// Verifies text doesn't truncate at different sizes
     func testDynamicType_NoTruncation() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchForAccessibility(contentSize: .accessibilityLarge)
 
         let timeline = TimelineScreen(app: app)
@@ -236,6 +272,10 @@ final class AccessibilityTests: XCTestCase {
 
     /// Verifies buttons remain tappable at all text sizes
     func testDynamicType_ButtonsRemainTappable() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchForAccessibility(contentSize: .accessibilityExtraLarge)
 
         let timeline = TimelineScreen(app: app)
@@ -264,6 +304,10 @@ final class AccessibilityTests: XCTestCase {
 
     /// Verifies layout adapts appropriately to different text sizes
     func testDynamicType_LayoutAdaptation() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchForAccessibility(contentSize: .accessibilityExtraLarge)
 
         let timeline = TimelineScreen(app: app)
@@ -295,6 +339,10 @@ final class AccessibilityTests: XCTestCase {
 
     /// Tests voice command to add symptom
     func testVoiceCommand_AddSymptom() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -320,6 +368,10 @@ final class AccessibilityTests: XCTestCase {
 
     /// Tests voice command to open analysis
     func testVoiceCommand_OpenAnalysis() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         // This test verifies the app supports voice navigation
@@ -336,6 +388,10 @@ final class AccessibilityTests: XCTestCase {
 
     /// Tests voice command to open settings
     func testVoiceCommand_OpenSettings() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let settingsTab = app.buttons[AccessibilityIdentifiers.settingsButton]
@@ -349,6 +405,10 @@ final class AccessibilityTests: XCTestCase {
 
     /// Tests voice command error feedback
     func testVoiceCommand_ErrorFeedback() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         // Verify that the app provides clear feedback for actions
@@ -377,6 +437,10 @@ final class AccessibilityTests: XCTestCase {
 
     /// Verifies all interactive elements have accessibility identifiers
     func testAllInteractiveElementsHaveIdentifiers() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         // Timeline screen
@@ -403,6 +467,10 @@ final class AccessibilityTests: XCTestCase {
 
     /// Verifies no duplicate accessibility identifiers exist
     func testNoDuplicateIdentifiers() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         var seenIdentifiers = Set<String>()

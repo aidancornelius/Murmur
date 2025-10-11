@@ -15,7 +15,7 @@ packages:
 
 settings:
   base:
-    SWIFT_VERSION: "5.0"
+    SWIFT_VERSION: "6.0"
     MARKETING_VERSION: "1.51"
     CURRENT_PROJECT_VERSION: "210"
     ENABLE_HARDENED_RUNTIME: NO
@@ -81,8 +81,6 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.cornelius-bell.Murmur
         INFOPLIST_FILE: Murmur/Resources/Info.plist
         CODE_SIGN_ENTITLEMENTS: Murmur/Murmur.entitlements
-        MARKETING_VERSION: "1.40"
-        CURRENT_PROJECT_VERSION: "100"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         ASSETCATALOG_OTHER_FLAGS: --enable-icon-stack-fallback-generation=disabled
@@ -125,8 +123,6 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.cornelius-bell.Murmur.MurmurWidgets
         PRODUCT_NAME: MurmurWidgets
         PRODUCT_DISPLAY_NAME: Murmur Widgets
-        MARKETING_VERSION: "1.40"
-        CURRENT_PROJECT_VERSION: "100"
         SKIP_INSTALL: YES
         LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks"
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor

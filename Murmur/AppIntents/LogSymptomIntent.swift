@@ -11,9 +11,9 @@ import Foundation
 
 @available(iOS 16.0, *)
 struct LogSymptomIntent: AppIntent {
-    static var title: LocalizedStringResource = "Log symptom"
-    static var description = IntentDescription("Quickly log a symptom")
-    static var openAppWhenRun: Bool = false
+    static let title: LocalizedStringResource = "Log symptom"
+    static let description = IntentDescription("Quickly log a symptom")
+    static let openAppWhenRun: Bool = false
 
     @Parameter(title: "Symptom name", description: "The name of the symptom to log")
     var symptomName: String?

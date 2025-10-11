@@ -10,7 +10,7 @@ import XCTest
 /// Visual regression tests capturing screenshots of app screens
 /// Run these tests with Fastlane snapshot for consistent locale and device configuration
 final class SnapshotTests: XCTestCase {
-    var app: XCUIApplication!
+    var app: XCUIApplication?
 
     override func setUpWithError() throws {
         continueAfterFailure = false
@@ -26,6 +26,10 @@ final class SnapshotTests: XCTestCase {
     /// Captures timeline with populated data
     @MainActor
     func testTimelineSnapshot_Populated() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchForSnapshots()
 
         let timeline = TimelineScreen(app: app)
@@ -40,6 +44,10 @@ final class SnapshotTests: XCTestCase {
     /// Captures timeline in empty state
     @MainActor
     func testTimelineSnapshot_Empty() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchEmpty()
         setupSnapshot(app)
 
@@ -52,6 +60,10 @@ final class SnapshotTests: XCTestCase {
     /// Captures add entry screen
     @MainActor
     func testAddEntrySnapshot() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchForSnapshots()
 
         let timeline = TimelineScreen(app: app)
@@ -68,6 +80,10 @@ final class SnapshotTests: XCTestCase {
     /// Captures day detail view
     @MainActor
     func testDayDetailSnapshot() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchForSnapshots()
 
         _ = TimelineScreen(app: app)
@@ -89,6 +105,10 @@ final class SnapshotTests: XCTestCase {
     /// Captures analysis view with trends chart
     @MainActor
     func testAnalysisTrendsSnapshot() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchForSnapshots()
 
         // Navigate to analysis
@@ -111,6 +131,10 @@ final class SnapshotTests: XCTestCase {
     /// Captures analysis view with calendar heat map
     @MainActor
     func testAnalysisCalendarSnapshot() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchForSnapshots()
 
         // Navigate to analysis
@@ -133,6 +157,10 @@ final class SnapshotTests: XCTestCase {
     /// Captures settings screen
     @MainActor
     func testSettingsSnapshot() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchForSnapshots()
 
         // Navigate to settings
@@ -149,6 +177,10 @@ final class SnapshotTests: XCTestCase {
     /// Captures timeline in dark mode
     @MainActor
     func testTimelineSnapshot_DarkMode() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchDarkMode()
         setupSnapshot(app)
 
@@ -163,6 +195,10 @@ final class SnapshotTests: XCTestCase {
     /// Captures add entry in dark mode
     @MainActor
     func testAddEntrySnapshot_DarkMode() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchDarkMode()
         setupSnapshot(app)
 
@@ -178,6 +214,10 @@ final class SnapshotTests: XCTestCase {
     /// Captures day detail in dark mode
     @MainActor
     func testDayDetailSnapshot_DarkMode() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchDarkMode()
         setupSnapshot(app)
 
@@ -197,6 +237,10 @@ final class SnapshotTests: XCTestCase {
     /// Captures analysis trends in dark mode
     @MainActor
     func testAnalysisTrendsSnapshot_DarkMode() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchDarkMode()
         setupSnapshot(app)
 
@@ -217,6 +261,10 @@ final class SnapshotTests: XCTestCase {
     /// Captures analysis calendar in dark mode
     @MainActor
     func testAnalysisCalendarSnapshot_DarkMode() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchDarkMode()
         setupSnapshot(app)
 
@@ -237,6 +285,10 @@ final class SnapshotTests: XCTestCase {
     /// Captures settings in dark mode
     @MainActor
     func testSettingsSnapshot_DarkMode() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchDarkMode()
         setupSnapshot(app)
 
@@ -251,6 +303,10 @@ final class SnapshotTests: XCTestCase {
     /// Captures empty state in dark mode
     @MainActor
     func testEmptyStateSnapshot_DarkMode() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launch(
             scenario: .emptyState,
             appearance: .dark
@@ -268,6 +324,10 @@ final class SnapshotTests: XCTestCase {
     /// Captures timeline on iPad
     @MainActor
     func testTimelineSnapshot_iPad() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         // Only run on iPad
         guard UIDevice.current.userInterfaceIdiom == .pad else {
             throw XCTSkip("iPad-only test")
@@ -286,6 +346,10 @@ final class SnapshotTests: XCTestCase {
     /// Captures analysis on iPad
     @MainActor
     func testAnalysisSnapshot_iPad() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         guard UIDevice.current.userInterfaceIdiom == .pad else {
             throw XCTSkip("iPad-only test")
         }
@@ -305,6 +369,10 @@ final class SnapshotTests: XCTestCase {
     /// Captures add entry on iPad
     @MainActor
     func testAddEntrySnapshot_iPad() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         guard UIDevice.current.userInterfaceIdiom == .pad else {
             throw XCTSkip("iPad-only test")
         }
@@ -323,6 +391,10 @@ final class SnapshotTests: XCTestCase {
     /// Captures settings on iPad
     @MainActor
     func testSettingsSnapshot_iPad() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         guard UIDevice.current.userInterfaceIdiom == .pad else {
             throw XCTSkip("iPad-only test")
         }
@@ -342,6 +414,10 @@ final class SnapshotTests: XCTestCase {
     /// Captures loading state (if applicable)
     @MainActor
     func testLoadingStateSnapshot() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launch(
             scenario: .activeUser
         )
@@ -357,6 +433,10 @@ final class SnapshotTests: XCTestCase {
     /// Captures error states
     @MainActor
     func testErrorStateSnapshot() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launch(
             scenario: .activeUser,
             featureFlags: [.disableHealthKit]
@@ -381,6 +461,10 @@ final class SnapshotTests: XCTestCase {
     /// Captures various empty states
     @MainActor
     func testEmptyStatesSnapshot() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchEmpty()
         setupSnapshot(app)
 
@@ -393,6 +477,10 @@ final class SnapshotTests: XCTestCase {
     /// Captures symptom entry with selections made
     @MainActor
     func testSymptomEntryWithSelectionsSnapshot() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchForSnapshots()
 
         let timeline = TimelineScreen(app: app)
@@ -417,6 +505,10 @@ final class SnapshotTests: XCTestCase {
     /// Captures calendar view with full year of data
     @MainActor
     func testCalendarWithYearSnapshot() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launch(
             scenario: .heavyUser
         )
@@ -441,6 +533,10 @@ final class SnapshotTests: XCTestCase {
     /// Captures load capacity tracking view
     @MainActor
     func testLoadCapacityViewSnapshot() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchForSnapshots()
 
         app.buttons[AccessibilityIdentifiers.analysisButton].tap()

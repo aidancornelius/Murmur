@@ -13,13 +13,13 @@ import XCTest
 @MainActor
 final class SymptomEntryCreationTests: XCTestCase {
 
-    var testStack: InMemoryCoreDataStack!
-    var mockHealthKit: MockHealthKitAssistant!
-    var mockLocation: MockLocationAssistant!
+    var testStack: InMemoryCoreDataStack?
+    var mockHealthKit: MockHealthKitAssistant?
+    var mockLocation: MockLocationAssistant?
 
     override func setUp() async throws {
         testStack = InMemoryCoreDataStack()
-        SampleDataSeeder.seedIfNeeded(in: testStack.context, forceSeed: true)
+        SampleDataSeeder.seedIfNeeded(in: testStack!.context, forceSeed: true)
 
         mockHealthKit = MockHealthKitAssistant()
         mockLocation = MockLocationAssistant()
@@ -34,8 +34,12 @@ final class SymptomEntryCreationTests: XCTestCase {
     // MARK: - Basic Entry Creation Tests
 
     func testSaveSingleSymptomEntry() async throws {
+        guard let testStack = testStack, let mockHealthKit = mockHealthKit, let mockLocation = mockLocation else {
+            XCTFail("Test dependencies not initialized")
+            return
+        }
         // Given: One selected symptom
-        let symptomTypes = try testStack.context.fetch(SymptomType.fetchRequest())
+        let symptomTypes = try testStack!.context.fetch(SymptomType.fetchRequest())
         guard let symptomType = symptomTypes.first else {
             XCTFail("No symptom types available")
             return
@@ -51,7 +55,7 @@ final class SymptomEntryCreationTests: XCTestCase {
             includeLocation: false,
             healthKit: mockHealthKit,
             location: mockLocation,
-            context: testStack.context
+            context: testStack!.context
         )
 
         // Then: Should create one entry
@@ -65,7 +69,7 @@ final class SymptomEntryCreationTests: XCTestCase {
 
     func testSaveMultipleSymptomEntries() async throws {
         // Given: Multiple selected symptoms
-        let symptomTypes = try testStack.context.fetch(SymptomType.fetchRequest())
+        let symptomTypes = try testStack!.context.fetch(SymptomType.fetchRequest())
         let selectedSymptoms = symptomTypes.prefix(3).map {
             SelectedSymptom(symptomType: $0, severity: 4)
         }
@@ -78,7 +82,7 @@ final class SymptomEntryCreationTests: XCTestCase {
             includeLocation: false,
             healthKit: mockHealthKit,
             location: mockLocation,
-            context: testStack.context
+            context: testStack!.context
         )
 
         // Then: Should create three entries
@@ -97,7 +101,7 @@ final class SymptomEntryCreationTests: XCTestCase {
 
     func testSaveWithMaxSymptoms() async throws {
         // Given: Maximum allowed symptoms (5)
-        let symptomTypes = try testStack.context.fetch(SymptomType.fetchRequest())
+        let symptomTypes = try testStack!.context.fetch(SymptomType.fetchRequest())
         let selectedSymptoms = symptomTypes.prefix(5).map {
             SelectedSymptom(symptomType: $0, severity: 2)
         }
@@ -110,7 +114,7 @@ final class SymptomEntryCreationTests: XCTestCase {
             includeLocation: false,
             healthKit: mockHealthKit,
             location: mockLocation,
-            context: testStack.context
+            context: testStack!.context
         )
 
         // Then: Should create all five entries
@@ -119,7 +123,7 @@ final class SymptomEntryCreationTests: XCTestCase {
 
     func testEachEntryGetsUniqueUUID() async throws {
         // Given: Multiple symptoms
-        let symptomTypes = try testStack.context.fetch(SymptomType.fetchRequest())
+        let symptomTypes = try testStack!.context.fetch(SymptomType.fetchRequest())
         let selectedSymptoms = symptomTypes.prefix(3).map {
             SelectedSymptom(symptomType: $0, severity: 3)
         }
@@ -132,7 +136,7 @@ final class SymptomEntryCreationTests: XCTestCase {
             includeLocation: false,
             healthKit: mockHealthKit,
             location: mockLocation,
-            context: testStack.context
+            context: testStack!.context
         )
 
         // Then: Each entry should have a unique UUID
@@ -143,7 +147,7 @@ final class SymptomEntryCreationTests: XCTestCase {
 
     func testCreatedAtSetToCurrentTime() async throws {
         // Given: Symptom to save
-        let symptomType = try testStack.context.fetch(SymptomType.fetchRequest()).first!
+        let symptomType = try testStack!.context.fetch(SymptomType.fetchRequest()).first!
         let selectedSymptom = SelectedSymptom(symptomType: symptomType, severity: 3)
 
         let beforeSave = Date()
@@ -156,7 +160,7 @@ final class SymptomEntryCreationTests: XCTestCase {
             includeLocation: false,
             healthKit: mockHealthKit,
             location: mockLocation,
-            context: testStack.context
+            context: testStack!.context
         )
 
         let afterSave = Date()
@@ -170,7 +174,7 @@ final class SymptomEntryCreationTests: XCTestCase {
 
     func testBackdatedAtSetToUserSelectedTimestamp() async throws {
         // Given: Symptom with backdated timestamp
-        let symptomType = try testStack.context.fetch(SymptomType.fetchRequest()).first!
+        let symptomType = try testStack!.context.fetch(SymptomType.fetchRequest()).first!
         let selectedSymptom = SelectedSymptom(symptomType: symptomType, severity: 3)
         let backdatedTime = Date().addingTimeInterval(-7200) // 2 hours ago
 
@@ -182,7 +186,7 @@ final class SymptomEntryCreationTests: XCTestCase {
             includeLocation: false,
             healthKit: mockHealthKit,
             location: mockLocation,
-            context: testStack.context
+            context: testStack!.context
         )
 
         // Then: backdatedAt should match user-selected timestamp
@@ -192,7 +196,7 @@ final class SymptomEntryCreationTests: XCTestCase {
 
     func testSeveritySavedCorrectly() async throws {
         // Given: Symptoms with different severities
-        let symptomTypes = try testStack.context.fetch(SymptomType.fetchRequest())
+        let symptomTypes = try testStack!.context.fetch(SymptomType.fetchRequest())
         let severities: [Double] = [1, 2, 3, 4, 5]
         let selectedSymptoms = zip(symptomTypes.prefix(5), severities).map { type, severity in
             SelectedSymptom(symptomType: type, severity: severity)
@@ -206,7 +210,7 @@ final class SymptomEntryCreationTests: XCTestCase {
             includeLocation: false,
             healthKit: mockHealthKit,
             location: mockLocation,
-            context: testStack.context
+            context: testStack!.context
         )
 
         // Then: Each entry should have correct severity
@@ -217,7 +221,7 @@ final class SymptomEntryCreationTests: XCTestCase {
 
     func testNotesTrimmedAndSaved() async throws {
         // Given: Symptom with note containing whitespace
-        let symptomType = try testStack.context.fetch(SymptomType.fetchRequest()).first!
+        let symptomType = try testStack!.context.fetch(SymptomType.fetchRequest()).first!
         let selectedSymptom = SelectedSymptom(symptomType: symptomType, severity: 3)
 
         // When: Create entry with padded note
@@ -228,7 +232,7 @@ final class SymptomEntryCreationTests: XCTestCase {
             includeLocation: false,
             healthKit: mockHealthKit,
             location: mockLocation,
-            context: testStack.context
+            context: testStack!.context
         )
 
         // Then: Note should be trimmed
@@ -237,7 +241,7 @@ final class SymptomEntryCreationTests: XCTestCase {
 
     func testEmptyNoteBecomesNil() async throws {
         // Given: Symptom with empty note
-        let symptomType = try testStack.context.fetch(SymptomType.fetchRequest()).first!
+        let symptomType = try testStack!.context.fetch(SymptomType.fetchRequest()).first!
         let selectedSymptom = SelectedSymptom(symptomType: symptomType, severity: 3)
 
         // When: Create entry with empty/whitespace note
@@ -248,7 +252,7 @@ final class SymptomEntryCreationTests: XCTestCase {
             includeLocation: false,
             healthKit: mockHealthKit,
             location: mockLocation,
-            context: testStack.context
+            context: testStack!.context
         )
 
         // Then: Note should be nil
@@ -257,7 +261,7 @@ final class SymptomEntryCreationTests: XCTestCase {
 
     func testRelationshipToSymptomTypeEstablished() async throws {
         // Given: Symptom to save
-        let symptomType = try testStack.context.fetch(SymptomType.fetchRequest()).first!
+        let symptomType = try testStack!.context.fetch(SymptomType.fetchRequest()).first!
         let selectedSymptom = SelectedSymptom(symptomType: symptomType, severity: 3)
 
         // When: Create entry
@@ -268,7 +272,7 @@ final class SymptomEntryCreationTests: XCTestCase {
             includeLocation: false,
             healthKit: mockHealthKit,
             location: mockLocation,
-            context: testStack.context
+            context: testStack!.context
         )
 
         // Then: Relationship should be set
@@ -288,7 +292,7 @@ final class SymptomEntryCreationTests: XCTestCase {
             flowLevel: "light"
         )
 
-        let symptomType = try testStack.context.fetch(SymptomType.fetchRequest()).first!
+        let symptomType = try testStack!.context.fetch(SymptomType.fetchRequest()).first!
         let selectedSymptom = SelectedSymptom(symptomType: symptomType, severity: 3)
 
         // When: Create entry
@@ -299,7 +303,7 @@ final class SymptomEntryCreationTests: XCTestCase {
             includeLocation: false,
             healthKit: mockHealthKit,
             location: mockLocation,
-            context: testStack.context
+            context: testStack!.context
         )
 
         // Then: All metrics should have been fetched
@@ -315,7 +319,7 @@ final class SymptomEntryCreationTests: XCTestCase {
         // Given: Mock HealthKit with HRV
         mockHealthKit.mockHRV = 45.2
 
-        let symptomType = try testStack.context.fetch(SymptomType.fetchRequest()).first!
+        let symptomType = try testStack!.context.fetch(SymptomType.fetchRequest()).first!
         let selectedSymptom = SelectedSymptom(symptomType: symptomType, severity: 3)
 
         // When: Create entry
@@ -326,7 +330,7 @@ final class SymptomEntryCreationTests: XCTestCase {
             includeLocation: false,
             healthKit: mockHealthKit,
             location: mockLocation,
-            context: testStack.context
+            context: testStack!.context
         )
 
         // Then: HRV should be attached
@@ -337,7 +341,7 @@ final class SymptomEntryCreationTests: XCTestCase {
         // Given: Mock HealthKit with resting HR
         mockHealthKit.mockRestingHR = 62.0
 
-        let symptomType = try testStack.context.fetch(SymptomType.fetchRequest()).first!
+        let symptomType = try testStack!.context.fetch(SymptomType.fetchRequest()).first!
         let selectedSymptom = SelectedSymptom(symptomType: symptomType, severity: 3)
 
         // When: Create entry
@@ -348,7 +352,7 @@ final class SymptomEntryCreationTests: XCTestCase {
             includeLocation: false,
             healthKit: mockHealthKit,
             location: mockLocation,
-            context: testStack.context
+            context: testStack!.context
         )
 
         // Then: Resting HR should be attached
@@ -359,7 +363,7 @@ final class SymptomEntryCreationTests: XCTestCase {
         // Given: Mock HealthKit with sleep data
         mockHealthKit.mockSleepHours = 7.5
 
-        let symptomType = try testStack.context.fetch(SymptomType.fetchRequest()).first!
+        let symptomType = try testStack!.context.fetch(SymptomType.fetchRequest()).first!
         let selectedSymptom = SelectedSymptom(symptomType: symptomType, severity: 3)
 
         // When: Create entry
@@ -370,7 +374,7 @@ final class SymptomEntryCreationTests: XCTestCase {
             includeLocation: false,
             healthKit: mockHealthKit,
             location: mockLocation,
-            context: testStack.context
+            context: testStack!.context
         )
 
         // Then: Sleep hours should be attached
@@ -381,7 +385,7 @@ final class SymptomEntryCreationTests: XCTestCase {
         // Given: Mock HealthKit with workout data
         mockHealthKit.mockWorkoutMinutes = 30.0
 
-        let symptomType = try testStack.context.fetch(SymptomType.fetchRequest()).first!
+        let symptomType = try testStack!.context.fetch(SymptomType.fetchRequest()).first!
         let selectedSymptom = SelectedSymptom(symptomType: symptomType, severity: 3)
 
         // When: Create entry
@@ -392,7 +396,7 @@ final class SymptomEntryCreationTests: XCTestCase {
             includeLocation: false,
             healthKit: mockHealthKit,
             location: mockLocation,
-            context: testStack.context
+            context: testStack!.context
         )
 
         // Then: Workout minutes should be attached
@@ -403,7 +407,7 @@ final class SymptomEntryCreationTests: XCTestCase {
         // Given: Mock HealthKit with cycle data
         mockHealthKit.mockCycleDay = 14
 
-        let symptomType = try testStack.context.fetch(SymptomType.fetchRequest()).first!
+        let symptomType = try testStack!.context.fetch(SymptomType.fetchRequest()).first!
         let selectedSymptom = SelectedSymptom(symptomType: symptomType, severity: 3)
 
         // When: Create entry
@@ -414,7 +418,7 @@ final class SymptomEntryCreationTests: XCTestCase {
             includeLocation: false,
             healthKit: mockHealthKit,
             location: mockLocation,
-            context: testStack.context
+            context: testStack!.context
         )
 
         // Then: Cycle day should be attached
@@ -425,7 +429,7 @@ final class SymptomEntryCreationTests: XCTestCase {
         // Given: Mock HealthKit with flow data
         mockHealthKit.mockFlowLevel = "light"
 
-        let symptomType = try testStack.context.fetch(SymptomType.fetchRequest()).first!
+        let symptomType = try testStack!.context.fetch(SymptomType.fetchRequest()).first!
         let selectedSymptom = SelectedSymptom(symptomType: symptomType, severity: 3)
 
         // When: Create entry
@@ -436,7 +440,7 @@ final class SymptomEntryCreationTests: XCTestCase {
             includeLocation: false,
             healthKit: mockHealthKit,
             location: mockLocation,
-            context: testStack.context
+            context: testStack!.context
         )
 
         // Then: Flow level should be attached
@@ -454,7 +458,7 @@ final class SymptomEntryCreationTests: XCTestCase {
             flowLevel: "light"
         )
 
-        let symptomTypes = try testStack.context.fetch(SymptomType.fetchRequest())
+        let symptomTypes = try testStack!.context.fetch(SymptomType.fetchRequest())
         let selectedSymptoms = symptomTypes.prefix(3).map {
             SelectedSymptom(symptomType: $0, severity: 4)
         }
@@ -467,7 +471,7 @@ final class SymptomEntryCreationTests: XCTestCase {
             includeLocation: false,
             healthKit: mockHealthKit,
             location: mockLocation,
-            context: testStack.context
+            context: testStack!.context
         )
 
         // Then: All entries should have same HealthKit data
@@ -490,7 +494,7 @@ final class SymptomEntryCreationTests: XCTestCase {
         // Given: Mock HealthKit with no data (all nil)
         mockHealthKit.reset() // All metrics are nil
 
-        let symptomType = try testStack.context.fetch(SymptomType.fetchRequest()).first!
+        let symptomType = try testStack!.context.fetch(SymptomType.fetchRequest()).first!
         let selectedSymptom = SelectedSymptom(symptomType: symptomType, severity: 3)
 
         // When: Create entry
@@ -501,7 +505,7 @@ final class SymptomEntryCreationTests: XCTestCase {
             includeLocation: false,
             healthKit: mockHealthKit,
             location: mockLocation,
-            context: testStack.context
+            context: testStack!.context
         )
 
         // Then: Entry should be created without HealthKit data
@@ -521,7 +525,7 @@ final class SymptomEntryCreationTests: XCTestCase {
         let placemark = CLPlacemark.mockSydney()
         mockLocation.mockPlacemark = placemark
 
-        let symptomType = try testStack.context.fetch(SymptomType.fetchRequest()).first!
+        let symptomType = try testStack!.context.fetch(SymptomType.fetchRequest()).first!
         let selectedSymptom = SelectedSymptom(symptomType: symptomType, severity: 3)
 
         // When: Create entry with location
@@ -532,7 +536,7 @@ final class SymptomEntryCreationTests: XCTestCase {
             includeLocation: true,
             healthKit: mockHealthKit,
             location: mockLocation,
-            context: testStack.context
+            context: testStack!.context
         )
 
         // Then: Location should be attached
@@ -545,7 +549,7 @@ final class SymptomEntryCreationTests: XCTestCase {
         let placemark = CLPlacemark.mockSydney()
         mockLocation.mockPlacemark = placemark
 
-        let symptomType = try testStack.context.fetch(SymptomType.fetchRequest()).first!
+        let symptomType = try testStack!.context.fetch(SymptomType.fetchRequest()).first!
         let selectedSymptom = SelectedSymptom(symptomType: symptomType, severity: 3)
 
         // When: Create entry without location
@@ -556,7 +560,7 @@ final class SymptomEntryCreationTests: XCTestCase {
             includeLocation: false,
             healthKit: mockHealthKit,
             location: mockLocation,
-            context: testStack.context
+            context: testStack!.context
         )
 
         // Then: Location should not be attached
@@ -568,7 +572,7 @@ final class SymptomEntryCreationTests: XCTestCase {
         let placemark = CLPlacemark.mockMelbourne()
         mockLocation.mockPlacemark = placemark
 
-        let symptomTypes = try testStack.context.fetch(SymptomType.fetchRequest())
+        let symptomTypes = try testStack!.context.fetch(SymptomType.fetchRequest())
         let selectedSymptoms = symptomTypes.prefix(3).map {
             SelectedSymptom(symptomType: $0, severity: 4)
         }
@@ -581,7 +585,7 @@ final class SymptomEntryCreationTests: XCTestCase {
             includeLocation: true,
             healthKit: mockHealthKit,
             location: mockLocation,
-            context: testStack.context
+            context: testStack!.context
         )
 
         // Then: All entries should have same placemark
@@ -595,7 +599,7 @@ final class SymptomEntryCreationTests: XCTestCase {
 
     func testContextProcessPendingChangesCalled() async throws {
         // Given: Symptom to save
-        let symptomType = try testStack.context.fetch(SymptomType.fetchRequest()).first!
+        let symptomType = try testStack!.context.fetch(SymptomType.fetchRequest()).first!
         let selectedSymptom = SelectedSymptom(symptomType: symptomType, severity: 3)
 
         // When: Create entry
@@ -606,16 +610,16 @@ final class SymptomEntryCreationTests: XCTestCase {
             includeLocation: false,
             healthKit: mockHealthKit,
             location: mockLocation,
-            context: testStack.context
+            context: testStack!.context
         )
 
         // Then: Context should have been saved
-        XCTAssertFalse(testStack.context.hasChanges)
+        XCTAssertFalse(testStack!.context.hasChanges)
     }
 
     func testAllEntriesCommittedAtomically() async throws {
         // Given: Multiple symptoms
-        let symptomTypes = try testStack.context.fetch(SymptomType.fetchRequest())
+        let symptomTypes = try testStack!.context.fetch(SymptomType.fetchRequest())
         let selectedSymptoms = symptomTypes.prefix(3).map {
             SelectedSymptom(symptomType: $0, severity: 4)
         }
@@ -628,12 +632,12 @@ final class SymptomEntryCreationTests: XCTestCase {
             includeLocation: false,
             healthKit: mockHealthKit,
             location: mockLocation,
-            context: testStack.context
+            context: testStack!.context
         )
 
         // Then: All entries should be persisted
         let fetchRequest: NSFetchRequest<SymptomEntry> = SymptomEntry.fetchRequest()
-        let saved = try testStack.context.fetch(fetchRequest)
+        let saved = try testStack!.context.fetch(fetchRequest)
         XCTAssertEqual(saved.count, 3)
     }
 
@@ -652,7 +656,7 @@ final class SymptomEntryCreationTests: XCTestCase {
                 includeLocation: false,
                 healthKit: mockHealthKit,
                 location: mockLocation,
-                context: testStack.context
+                context: testStack!.context
             )
             XCTFail("Should have thrown error")
         } catch SymptomEntryService.ServiceError.noSymptomsSelected {
@@ -664,7 +668,7 @@ final class SymptomEntryCreationTests: XCTestCase {
 
     func testTaskCancellationTriggersRollback() async throws {
         // Given: Symptom to save
-        let symptomType = try testStack.context.fetch(SymptomType.fetchRequest()).first!
+        let symptomType = try testStack!.context.fetch(SymptomType.fetchRequest()).first!
         let selectedSymptom = SelectedSymptom(symptomType: symptomType, severity: 3)
 
         // When: Create task and cancel it immediately
@@ -676,7 +680,7 @@ final class SymptomEntryCreationTests: XCTestCase {
                 includeLocation: false,
                 healthKit: mockHealthKit,
                 location: mockLocation,
-                context: testStack.context
+                context: testStack!.context
             )
         }
 
@@ -687,18 +691,18 @@ final class SymptomEntryCreationTests: XCTestCase {
 
         // Then: No entries should be saved
         let fetchRequest: NSFetchRequest<SymptomEntry> = SymptomEntry.fetchRequest()
-        let saved = try testStack.context.fetch(fetchRequest)
+        let saved = try testStack!.context.fetch(fetchRequest)
         XCTAssertEqual(saved.count, 0)
 
         // Context should have no changes
-        XCTAssertFalse(testStack.context.hasChanges)
+        XCTAssertFalse(testStack!.context.hasChanges)
     }
 
     // MARK: - Edge Cases
 
     func testSaveWithVeryLongNote() async throws {
         // Given: Symptom with very long note
-        let symptomType = try testStack.context.fetch(SymptomType.fetchRequest()).first!
+        let symptomType = try testStack!.context.fetch(SymptomType.fetchRequest()).first!
         let selectedSymptom = SelectedSymptom(symptomType: symptomType, severity: 3)
         let longNote = String(repeating: "This is a long note. ", count: 100) // ~2000 chars
 
@@ -710,7 +714,7 @@ final class SymptomEntryCreationTests: XCTestCase {
             includeLocation: false,
             healthKit: mockHealthKit,
             location: mockLocation,
-            context: testStack.context
+            context: testStack!.context
         )
 
         // Then: Note should be saved (possibly truncated by Core Data constraints)
@@ -719,7 +723,7 @@ final class SymptomEntryCreationTests: XCTestCase {
 
     func testBackdatedEntryInPast() async throws {
         // Given: Symptom backdated to yesterday
-        let symptomType = try testStack.context.fetch(SymptomType.fetchRequest()).first!
+        let symptomType = try testStack!.context.fetch(SymptomType.fetchRequest()).first!
         let selectedSymptom = SelectedSymptom(symptomType: symptomType, severity: 3)
         let yesterday = Date().addingTimeInterval(-24 * 3600)
 
@@ -731,7 +735,7 @@ final class SymptomEntryCreationTests: XCTestCase {
             includeLocation: false,
             healthKit: mockHealthKit,
             location: mockLocation,
-            context: testStack.context
+            context: testStack!.context
         )
 
         // Then: Should accept past dates
@@ -744,7 +748,7 @@ final class SymptomEntryCreationTests: XCTestCase {
         mockHealthKit.mockSleepHours = 7.5
         // Other metrics are nil
 
-        let symptomType = try testStack.context.fetch(SymptomType.fetchRequest()).first!
+        let symptomType = try testStack!.context.fetch(SymptomType.fetchRequest()).first!
         let selectedSymptom = SelectedSymptom(symptomType: symptomType, severity: 3)
 
         // When: Create entry
@@ -755,7 +759,7 @@ final class SymptomEntryCreationTests: XCTestCase {
             includeLocation: false,
             healthKit: mockHealthKit,
             location: mockLocation,
-            context: testStack.context
+            context: testStack!.context
         )
 
         // Then: Should save with partial data

@@ -12,8 +12,8 @@ import XCTest
 @MainActor
 final class LocationAssistantTests: XCTestCase {
 
-    var assistant: LocationAssistant!
-    var mockManager: MockCLLocationManager!
+    var assistant: LocationAssistant?
+    var mockManager: MockCLLocationManager?
 
     override func setUp() async throws {
         mockManager = MockCLLocationManager()

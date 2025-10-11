@@ -10,6 +10,7 @@ import UserNotifications
 import AppIntents
 import BackgroundTasks
 
+@MainActor
 final class MurmurAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     let healthKitAssistant: HealthKitAssistant
     let calendarAssistant: CalendarAssistant

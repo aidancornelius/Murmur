@@ -10,7 +10,7 @@ import XCTest
 @testable import Murmur
 
 final class MurmurTests: XCTestCase {
-    var testStack: InMemoryCoreDataStack!
+    var testStack: InMemoryCoreDataStack?
 
     override func setUp() {
         super.setUp()
@@ -25,19 +25,19 @@ final class MurmurTests: XCTestCase {
     // MARK: - Sample Data Tests
 
     func testSampleDataSeedCreatesTypes() throws {
-        SampleDataSeeder.seedIfNeeded(in: testStack.context, forceSeed: true)
+        SampleDataSeeder.seedIfNeeded(in: testStack!.context, forceSeed: true)
 
         let request = SymptomType.fetchRequest()
-        let types = try testStack.context.fetch(request)
+        let types = try testStack!.context.fetch(request)
         XCTAssertFalse(types.isEmpty, "Should create default symptom types")
         XCTAssertGreaterThan(types.count, 50, "Should have many default symptoms")
     }
 
     func testPositiveSymptomsExist() throws {
-        SampleDataSeeder.seedIfNeeded(in: testStack.context, forceSeed: true)
+        SampleDataSeeder.seedIfNeeded(in: testStack!.context, forceSeed: true)
 
         let request = SymptomType.fetchRequest()
-        let types = try testStack.context.fetch(request)
+        let types = try testStack!.context.fetch(request)
 
         // Verify positive symptoms were added
         let positiveSymptoms = types.filter { $0.isPositive }
@@ -52,10 +52,10 @@ final class MurmurTests: XCTestCase {
     }
 
     func testPositiveSymptomDetection() throws {
-        SampleDataSeeder.seedIfNeeded(in: testStack.context, forceSeed: true)
+        SampleDataSeeder.seedIfNeeded(in: testStack!.context, forceSeed: true)
 
         let request = SymptomType.fetchRequest()
-        let types = try testStack.context.fetch(request)
+        let types = try testStack!.context.fetch(request)
 
         // Find Energy symptom
         let energy = types.first { $0.name == "Energy" }
@@ -71,10 +71,10 @@ final class MurmurTests: XCTestCase {
     }
 
     func testSymptomCategoriesAreCorrect() throws {
-        SampleDataSeeder.seedIfNeeded(in: testStack.context, forceSeed: true)
+        SampleDataSeeder.seedIfNeeded(in: testStack!.context, forceSeed: true)
 
         let request = SymptomType.fetchRequest()
-        let types = try testStack.context.fetch(request)
+        let types = try testStack!.context.fetch(request)
 
         // Check category distribution
         let categories = Set(types.compactMap { $0.category })
@@ -92,27 +92,27 @@ final class MurmurTests: XCTestCase {
     // MARK: - Symptom Entry Tests
 
     func testCreateSymptomEntry() throws {
-        SampleDataSeeder.seedIfNeeded(in: testStack.context, forceSeed: true)
+        SampleDataSeeder.seedIfNeeded(in: testStack!.context, forceSeed: true)
 
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
 
-        let entry = SymptomEntry(context: testStack.context)
+        let entry = SymptomEntry(context: testStack!.context)
         entry.id = UUID()
         entry.createdAt = Date()
         entry.severity = 3
         entry.symptomType = symptomType
         entry.note = "Test note"
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
-        let fetchedEntry = try XCTUnwrap(fetchFirstObject(SymptomEntry.fetchRequest(), in: testStack.context))
+        let fetchedEntry = try XCTUnwrap(fetchFirstObject(SymptomEntry.fetchRequest(), in: testStack!.context))
         XCTAssertEqual(fetchedEntry.severity, 3)
         XCTAssertEqual(fetchedEntry.note, "Test note")
         XCTAssertEqual(fetchedEntry.symptomType, symptomType)
     }
 
     func testSymptomEntrySafeAccessors() throws {
-        let entry = SymptomEntry(context: testStack.context)
+        let entry = SymptomEntry(context: testStack!.context)
 
         // Test safeId generation
         XCTAssertNil(entry.id)
@@ -132,27 +132,27 @@ final class MurmurTests: XCTestCase {
     }
 
     func testMultipleEntriesForSameSymptom() throws {
-        SampleDataSeeder.seedIfNeeded(in: testStack.context, forceSeed: true)
+        SampleDataSeeder.seedIfNeeded(in: testStack!.context, forceSeed: true)
 
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
 
         // Create multiple entries for the same symptom
         for i in 1...5 {
-            let entry = SymptomEntry(context: testStack.context)
+            let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
             entry.createdAt = Date().addingTimeInterval(TimeInterval(-i * 3600))
             entry.severity = Int16(i)
             entry.symptomType = symptomType
         }
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         // Fetch and verify
         let request: NSFetchRequest<SymptomEntry> = SymptomEntry.fetchRequest()
         request.predicate = NSPredicate(format: "symptomType == %@", symptomType)
         request.sortDescriptors = [NSSortDescriptor(keyPath: \SymptomEntry.createdAt, ascending: false)]
 
-        let entries = try testStack.context.fetch(request)
+        let entries = try testStack!.context.fetch(request)
         XCTAssertEqual(entries.count, 5)
         XCTAssertEqual(entries.first?.severity, 1)
         XCTAssertEqual(entries.last?.severity, 5)

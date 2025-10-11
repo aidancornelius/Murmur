@@ -9,7 +9,7 @@ import XCTest
 @testable import Murmur
 
 final class ResourceManagerTests: XCTestCase {
-    var manager: ResourceManager!
+    var manager: ResourceManager?
 
     override func setUp() async throws {
         try await super.setUp()
@@ -17,7 +17,7 @@ final class ResourceManagerTests: XCTestCase {
     }
 
     override func tearDown() async throws {
-        await manager.cleanupAll()
+        await manager!.cleanupAll()
         manager = nil
         try await super.tearDown()
     }
@@ -29,10 +29,10 @@ final class ResourceManagerTests: XCTestCase {
         let resource = MockResource()
 
         // Act
-        try await manager.register(resource)
+        try await manager!.register(resource)
 
         // Assert
-        let count = await manager.managedResourceCount
+        let count = await manager!.managedResourceCount
         XCTAssertEqual(count, 1)
     }
 
@@ -43,12 +43,12 @@ final class ResourceManagerTests: XCTestCase {
         let resource3 = MockResource()
 
         // Act
-        try await manager.register(resource1)
-        try await manager.register(resource2)
-        try await manager.register(resource3)
+        try await manager!.register(resource1)
+        try await manager!.register(resource2)
+        try await manager!.register(resource3)
 
         // Assert
-        let count = await manager.managedResourceCount
+        let count = await manager!.managedResourceCount
         XCTAssertEqual(count, 3)
     }
 
@@ -58,7 +58,7 @@ final class ResourceManagerTests: XCTestCase {
         XCTAssertFalse(resource.didStart)
 
         // Act
-        try await manager.register(resource, autoStart: true)
+        try await manager!.register(resource, autoStart: true)
 
         // Assert
         XCTAssertTrue(resource.didStart)
@@ -69,7 +69,7 @@ final class ResourceManagerTests: XCTestCase {
         let resource = MockResource()
 
         // Act
-        try await manager.register(resource, autoStart: false)
+        try await manager!.register(resource, autoStart: false)
 
         // Assert
         XCTAssertFalse(resource.didStart)
@@ -83,19 +83,19 @@ final class ResourceManagerTests: XCTestCase {
         let resource2 = MockResource()
         let resource3 = MockResource()
 
-        try await manager.register(resource1)
-        try await manager.register(resource2)
-        try await manager.register(resource3)
+        try await manager!.register(resource1)
+        try await manager!.register(resource2)
+        try await manager!.register(resource3)
 
         // Act
-        await manager.cleanupAll()
+        await manager!.cleanupAll()
 
         // Assert
         XCTAssertTrue(resource1.didCleanup)
         XCTAssertTrue(resource2.didCleanup)
         XCTAssertTrue(resource3.didCleanup)
 
-        let count = await manager.managedResourceCount
+        let count = await manager!.managedResourceCount
         XCTAssertEqual(count, 0)
     }
 
@@ -106,12 +106,12 @@ final class ResourceManagerTests: XCTestCase {
         let resource2 = MockResource(cleanupCallback: { cleanupOrder.append("resource2") })
         let resource3 = MockResource(cleanupCallback: { cleanupOrder.append("resource3") })
 
-        try await manager.register(resource1)
-        try await manager.register(resource2)
-        try await manager.register(resource3)
+        try await manager!.register(resource1)
+        try await manager!.register(resource2)
+        try await manager!.register(resource3)
 
         // Act
-        await manager.cleanupAll()
+        await manager!.cleanupAll()
 
         // Assert: LIFO order (last in, first out)
         XCTAssertEqual(cleanupOrder, ["resource3", "resource2", "resource1"])
@@ -124,10 +124,10 @@ final class ResourceManagerTests: XCTestCase {
         let resource = MockResource()
 
         // Act
-        try await manager.register(resource, scope: "test-scope")
+        try await manager!.register(resource, scope: "test-scope")
 
         // Assert
-        let count = await manager.resourceCount(in: "test-scope")
+        let count = await manager!.resourceCount(in: "test-scope")
         XCTAssertEqual(count, 1)
     }
 
@@ -137,22 +137,22 @@ final class ResourceManagerTests: XCTestCase {
         let scopedResource2 = MockResource()
         let unscopedResource = MockResource()
 
-        try await manager.register(scopedResource1, scope: "test-scope")
-        try await manager.register(scopedResource2, scope: "test-scope")
-        try await manager.register(unscopedResource)
+        try await manager!.register(scopedResource1, scope: "test-scope")
+        try await manager!.register(scopedResource2, scope: "test-scope")
+        try await manager!.register(unscopedResource)
 
         // Act
-        await manager.cleanup(scope: "test-scope")
+        await manager!.cleanup(scope: "test-scope")
 
         // Assert
         XCTAssertTrue(scopedResource1.didCleanup)
         XCTAssertTrue(scopedResource2.didCleanup)
         XCTAssertFalse(unscopedResource.didCleanup)
 
-        let scopedCount = await manager.resourceCount(in: "test-scope")
+        let scopedCount = await manager!.resourceCount(in: "test-scope")
         XCTAssertEqual(scopedCount, 0)
 
-        let totalCount = await manager.managedResourceCount
+        let totalCount = await manager!.managedResourceCount
         XCTAssertEqual(totalCount, 1) // Only unscopedResource remains
     }
 
@@ -162,20 +162,20 @@ final class ResourceManagerTests: XCTestCase {
         let scope2Resource = MockResource()
         let scope3Resource = MockResource()
 
-        try await manager.register(scope1Resource, scope: "scope1")
-        try await manager.register(scope2Resource, scope: "scope2")
-        try await manager.register(scope3Resource, scope: "scope3")
+        try await manager!.register(scope1Resource, scope: "scope1")
+        try await manager!.register(scope2Resource, scope: "scope2")
+        try await manager!.register(scope3Resource, scope: "scope3")
 
         // Act
-        await manager.cleanup(scope: "scope1")
-        await manager.cleanup(scope: "scope3")
+        await manager!.cleanup(scope: "scope1")
+        await manager!.cleanup(scope: "scope3")
 
         // Assert
         XCTAssertTrue(scope1Resource.didCleanup)
         XCTAssertFalse(scope2Resource.didCleanup)
         XCTAssertTrue(scope3Resource.didCleanup)
 
-        let remainingCount = await manager.managedResourceCount
+        let remainingCount = await manager!.managedResourceCount
         XCTAssertEqual(remainingCount, 1)
     }
 
@@ -184,18 +184,18 @@ final class ResourceManagerTests: XCTestCase {
     func testWeakReferencesPruneWhenResourceDeallocated() async throws {
         // Arrange
         var resource: MockResource? = MockResource()
-        try await manager.register(resource!)
+        try await manager!.register(resource!)
 
-        var count = await manager.managedResourceCount
+        var count = await manager!.managedResourceCount
         XCTAssertEqual(count, 1)
 
         // Act: Deallocate resource
         resource = nil
 
-        await manager.pruneDeadReferences()
+        await manager!.pruneDeadReferences()
 
         // Assert
-        count = await manager.managedResourceCount
+        count = await manager!.managedResourceCount
         XCTAssertEqual(count, 0)
     }
 
@@ -204,19 +204,19 @@ final class ResourceManagerTests: XCTestCase {
         var resource1: MockResource? = MockResource()
         let resource2 = MockResource()
 
-        try await manager.register(resource1!)
-        try await manager.register(resource2)
+        try await manager!.register(resource1!)
+        try await manager!.register(resource2)
 
         // Deallocate one resource
         resource1 = nil
 
         // Act
-        await manager.cleanupAll()
+        await manager!.cleanupAll()
 
         // Assert: Should not crash and should cleanup remaining resource
         XCTAssertTrue(resource2.didCleanup)
 
-        let count = await manager.managedResourceCount
+        let count = await manager!.managedResourceCount
         XCTAssertEqual(count, 0)
     }
 
@@ -314,10 +314,10 @@ final class ResourceManagerTests: XCTestCase {
         let resources = [MockResource(), MockResource(), MockResource()]
 
         // Act
-        try await manager.registerAll(resources)
+        try await manager!.registerAll(resources)
 
         // Assert
-        let count = await manager.managedResourceCount
+        let count = await manager!.managedResourceCount
         XCTAssertEqual(count, 3)
     }
 
@@ -326,10 +326,10 @@ final class ResourceManagerTests: XCTestCase {
         let resources = [MockResource(), MockResource()]
 
         // Act
-        try await manager.registerAll(resources, scope: "batch-scope")
+        try await manager!.registerAll(resources, scope: "batch-scope")
 
         // Assert
-        let count = await manager.resourceCount(in: "batch-scope")
+        let count = await manager!.resourceCount(in: "batch-scope")
         XCTAssertEqual(count, 2)
     }
 
@@ -338,7 +338,7 @@ final class ResourceManagerTests: XCTestCase {
         let resources = [MockResource(), MockResource()]
 
         // Act
-        try await manager.registerAll(resources, autoStart: true)
+        try await manager!.registerAll(resources, autoStart: true)
 
         // Assert
         XCTAssertTrue(resources[0].didStart)
@@ -350,11 +350,11 @@ final class ResourceManagerTests: XCTestCase {
         var didCleanup = false
 
         // Act
-        let handle = try await manager.registerHandle(
+        let handle = try await manager!.registerHandle(
             onCleanup: { didCleanup = true }
         )
 
-        await manager.cleanupAll()
+        await manager!.cleanupAll()
 
         // Assert
         XCTAssertNotNil(handle)
@@ -366,12 +366,12 @@ final class ResourceManagerTests: XCTestCase {
         var didCleanup = false
 
         // Act
-        _ = try await manager.registerHandle(
+        _ = try await manager!.registerHandle(
             scope: "handle-scope",
             onCleanup: { didCleanup = true }
         )
 
-        await manager.cleanup(scope: "handle-scope")
+        await manager!.cleanup(scope: "handle-scope")
 
         // Assert
         XCTAssertTrue(didCleanup)
@@ -385,7 +385,7 @@ final class ResourceManagerTests: XCTestCase {
 
         // Act & Assert
         do {
-            try await manager.register(resource, autoStart: true)
+            try await manager!.register(resource, autoStart: true)
             XCTFail("Should have thrown error")
         } catch {
             // Expected
@@ -398,14 +398,14 @@ final class ResourceManagerTests: XCTestCase {
 
         // Act
         do {
-            try await manager.register(throwingResource, autoStart: true)
+            try await manager!.register(throwingResource, autoStart: true)
             XCTFail("Should have thrown error")
         } catch {
             // Expected
         }
 
         // Assert: Resource should not be registered
-        let count = await manager.managedResourceCount
+        let count = await manager!.managedResourceCount
         XCTAssertEqual(count, 0)
     }
 
@@ -414,16 +414,16 @@ final class ResourceManagerTests: XCTestCase {
     func testReregisteringSameResourceReplacesOld() async throws {
         // Arrange
         let resource = MockResource()
-        try await manager.register(resource)
+        try await manager!.register(resource)
 
-        var count = await manager.managedResourceCount
+        var count = await manager!.managedResourceCount
         XCTAssertEqual(count, 1)
 
         // Act: Re-register same resource
-        try await manager.register(resource)
+        try await manager!.register(resource)
 
         // Assert: Should still be 1 (not 2)
-        count = await manager.managedResourceCount
+        count = await manager!.managedResourceCount
         XCTAssertEqual(count, 1)
     }
 }

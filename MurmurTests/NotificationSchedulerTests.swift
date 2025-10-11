@@ -11,7 +11,7 @@ import UserNotifications
 @testable import Murmur
 
 final class NotificationSchedulerTests: XCTestCase {
-    var testStack: InMemoryCoreDataStack!
+    var testStack: InMemoryCoreDataStack?
 
     override func setUp() {
         super.setUp()
@@ -28,17 +28,17 @@ final class NotificationSchedulerTests: XCTestCase {
     // MARK: - Core Data Reminder Tests
 
     func testCreateReminder() throws {
-        let reminder = Reminder(context: testStack.context)
+        let reminder = Reminder(context: testStack!.context)
         reminder.id = UUID()
         reminder.hour = 9
         reminder.minute = 30
         reminder.isEnabled = true
         reminder.repeatsOn = NSArray(array: ["Monday", "Tuesday", "Wednesday"])
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         let request = Reminder.fetchRequest()
-        let reminders = try testStack.context.fetch(request)
+        let reminders = try testStack!.context.fetch(request)
 
         XCTAssertEqual(reminders.count, 1)
         XCTAssertEqual(reminders.first?.hour, 9)
@@ -49,14 +49,14 @@ final class NotificationSchedulerTests: XCTestCase {
     // MARK: - NotificationScheduler API Tests
 
     func testScheduleReminderWithNoRepeatingDays() async throws {
-        let reminder = Reminder(context: testStack.context)
+        let reminder = Reminder(context: testStack!.context)
         reminder.id = UUID()
         reminder.hour = 10
         reminder.minute = 30
         reminder.isEnabled = true
         reminder.repeatsOn = NSArray(array: [])
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         // Schedule the reminder
         try await NotificationScheduler.schedule(reminder: reminder)
@@ -81,14 +81,14 @@ final class NotificationSchedulerTests: XCTestCase {
     }
 
     func testScheduleReminderWithRepeatingDays() async throws {
-        let reminder = Reminder(context: testStack.context)
+        let reminder = Reminder(context: testStack!.context)
         reminder.id = UUID()
         reminder.hour = 9
         reminder.minute = 0
         reminder.isEnabled = true
         reminder.repeatsOn = NSArray(array: ["Monday", "Wednesday", "Friday"])
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         try await NotificationScheduler.schedule(reminder: reminder)
 
@@ -130,14 +130,14 @@ final class NotificationSchedulerTests: XCTestCase {
     }
 
     func testScheduleReminderReplacesExisting() async throws {
-        let reminder = Reminder(context: testStack.context)
+        let reminder = Reminder(context: testStack!.context)
         reminder.id = UUID()
         reminder.hour = 8
         reminder.minute = 0
         reminder.isEnabled = true
         reminder.repeatsOn = NSArray(array: [])
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         // Schedule first time
         try await NotificationScheduler.schedule(reminder: reminder)
@@ -165,14 +165,14 @@ final class NotificationSchedulerTests: XCTestCase {
     }
 
     func testRemoveReminder() async throws {
-        let reminder = Reminder(context: testStack.context)
+        let reminder = Reminder(context: testStack!.context)
         reminder.id = UUID()
         reminder.hour = 7
         reminder.minute = 0
         reminder.isEnabled = true
         reminder.repeatsOn = NSArray(array: ["Monday", "Wednesday"])
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         // Schedule it
         try await NotificationScheduler.schedule(reminder: reminder)
@@ -198,7 +198,7 @@ final class NotificationSchedulerTests: XCTestCase {
     }
 
     func testScheduleWithMissingIdentifier() async throws {
-        let reminder = Reminder(context: testStack.context)
+        let reminder = Reminder(context: testStack!.context)
         reminder.id = nil // No ID
         reminder.hour = 10
         reminder.minute = 0
@@ -218,7 +218,7 @@ final class NotificationSchedulerTests: XCTestCase {
         let expectedWeekdayNumbers = [1, 2, 3, 4, 5, 6, 7]
 
         for (index, day) in weekdays.enumerated() {
-            let reminder = Reminder(context: testStack.context)
+            let reminder = Reminder(context: testStack!.context)
             reminder.id = UUID()
             reminder.hour = 12
             reminder.minute = 0
@@ -246,7 +246,7 @@ final class NotificationSchedulerTests: XCTestCase {
     }
 
     func testScheduleWithCaseInsensitiveDays() async throws {
-        let reminder = Reminder(context: testStack.context)
+        let reminder = Reminder(context: testStack!.context)
         reminder.id = UUID()
         reminder.hour = 15
         reminder.minute = 30
@@ -266,7 +266,7 @@ final class NotificationSchedulerTests: XCTestCase {
     }
 
     func testNotificationContent() async throws {
-        let reminder = Reminder(context: testStack.context)
+        let reminder = Reminder(context: testStack!.context)
         reminder.id = UUID()
         reminder.hour = 11
         reminder.minute = 0

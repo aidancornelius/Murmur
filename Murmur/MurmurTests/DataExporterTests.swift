@@ -12,7 +12,7 @@ import XCTest
 @testable import Murmur
 
 final class DataExporterTests: XCTestCase {
-    var testStack: InMemoryCoreDataStack!
+    var testStack: InMemoryCoreDataStack?
 
     override func setUp() {
         super.setUp()
@@ -30,7 +30,7 @@ final class DataExporterTests: XCTestCase {
 
     func testCreateSampleData() throws {
         // Manually create test symptom type
-        let symptomType = SymptomType(context: testStack.context)
+        let symptomType = SymptomType(context: testStack!.context)
         symptomType.id = UUID()
         symptomType.name = "Test Symptom"
         symptomType.color = "#FF0000"
@@ -40,7 +40,7 @@ final class DataExporterTests: XCTestCase {
 
         // Create a few entries
         for i in 1...3 {
-            let entry = SymptomEntry(context: testStack.context)
+            let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
             entry.createdAt = Date().addingTimeInterval(TimeInterval(-i * 3600))
             entry.severity = Int16(i)
@@ -48,22 +48,22 @@ final class DataExporterTests: XCTestCase {
             entry.note = "Test note \(i)"
         }
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         // Verify data was created
         let entryRequest = SymptomEntry.fetchRequest()
-        let entries = try testStack.context.fetch(entryRequest)
+        let entries = try testStack!.context.fetch(entryRequest)
         XCTAssertEqual(entries.count, 3)
 
         // Verify symptom types exist
         let typeRequest = SymptomType.fetchRequest()
-        let types = try testStack.context.fetch(typeRequest)
+        let types = try testStack!.context.fetch(typeRequest)
         XCTAssertGreaterThan(types.count, 0)
     }
 
     func testDataStructure() throws {
         // Manually create test symptom type
-        let symptomType = SymptomType(context: testStack.context)
+        let symptomType = SymptomType(context: testStack!.context)
         symptomType.id = UUID()
         symptomType.name = "Test Symptom"
         symptomType.color = "#FF0000"
@@ -71,14 +71,14 @@ final class DataExporterTests: XCTestCase {
         symptomType.category = "Test"
         symptomType.isDefault = false
 
-        let entry = SymptomEntry(context: testStack.context)
+        let entry = SymptomEntry(context: testStack!.context)
         entry.id = UUID()
         entry.createdAt = Date()
         entry.severity = 3
         entry.symptomType = symptomType
         entry.note = "Test note"
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         // Verify relationships
         XCTAssertNotNil(entry.symptomType)
@@ -96,11 +96,11 @@ final class DataExporterTests: XCTestCase {
     func testEmptyDatabase() throws {
         // Don't seed data, test with empty database
         let entryRequest = SymptomEntry.fetchRequest()
-        let entries = try testStack.context.fetch(entryRequest)
+        let entries = try testStack!.context.fetch(entryRequest)
         XCTAssertTrue(entries.isEmpty)
 
         let typeRequest = SymptomType.fetchRequest()
-        let types = try testStack.context.fetch(typeRequest)
+        let types = try testStack!.context.fetch(typeRequest)
         XCTAssertTrue(types.isEmpty)
     }
 

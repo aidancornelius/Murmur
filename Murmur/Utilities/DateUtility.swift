@@ -23,13 +23,13 @@ enum DateUtility {
     )
 
     /// Cached day key formatter (yyyy-MM-dd)
-    private static var _dayKeyFormatter: DateFormatter?
+    nonisolated(unsafe) private static var _dayKeyFormatter: DateFormatter?
 
     /// Cached monthly key formatter (yyyy-MM)
-    private static var _monthlyKeyFormatter: DateFormatter?
+    nonisolated(unsafe) private static var _monthlyKeyFormatter: DateFormatter?
 
     /// Cached backup timestamp formatter (yyyy-MM-dd_HHmm)
-    private static var _backupTimestampFormatter: DateFormatter?
+    nonisolated(unsafe) private static var _backupTimestampFormatter: DateFormatter?
 
     /// Get or create day key formatter (yyyy-MM-dd)
     private static func dayKeyFormatter(timeZone: TimeZone) -> DateFormatter {

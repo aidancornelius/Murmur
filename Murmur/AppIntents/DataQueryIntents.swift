@@ -13,9 +13,9 @@ import Foundation
 
 @available(iOS 16.0, *)
 struct GetSymptomsBySeverityIntent: AppIntent {
-    static var title: LocalizedStringResource = "Get symptoms by severity"
-    static var description = IntentDescription("Get symptom entries filtered by severity level")
-    static var openAppWhenRun: Bool = false
+    static let title: LocalizedStringResource = "Get symptoms by severity"
+    static let description = IntentDescription("Get symptom entries filtered by severity level")
+    static let openAppWhenRun: Bool = false
 
     @Parameter(title: "Minimum severity", description: "Filter entries with this severity or higher (1-5)", default: 3)
     var minSeverity: Int
@@ -51,9 +51,9 @@ struct GetSymptomsBySeverityIntent: AppIntent {
 
 @available(iOS 16.0, *)
 struct GetRecentActivitiesIntent: AppIntent {
-    static var title: LocalizedStringResource = "Get recent activities"
-    static var description = IntentDescription("Get recent activity events")
-    static var openAppWhenRun: Bool = false
+    static let title: LocalizedStringResource = "Get recent activities"
+    static let description = IntentDescription("Get recent activity events")
+    static let openAppWhenRun: Bool = false
 
     @Parameter(title: "Number of activities", description: "How many recent activities to fetch", default: 5)
     var count: Int
@@ -79,9 +79,9 @@ struct GetRecentActivitiesIntent: AppIntent {
 
 @available(iOS 16.0, *)
 struct GetSymptomsInRangeIntent: AppIntent {
-    static var title: LocalizedStringResource = "Get symptoms in date range"
-    static var description = IntentDescription("Get symptom entries within a specific date range")
-    static var openAppWhenRun: Bool = false
+    static let title: LocalizedStringResource = "Get symptoms in date range"
+    static let description = IntentDescription("Get symptom entries within a specific date range")
+    static let openAppWhenRun: Bool = false
 
     @Parameter(title: "Start date", description: "Beginning of date range")
     var startDate: Date
@@ -114,9 +114,9 @@ struct GetSymptomsInRangeIntent: AppIntent {
 
 @available(iOS 16.0, *)
 struct GetSymptomTypesIntent: AppIntent {
-    static var title: LocalizedStringResource = "Get symptom types"
-    static var description = IntentDescription("Get all available symptom types")
-    static var openAppWhenRun: Bool = false
+    static let title: LocalizedStringResource = "Get symptom types"
+    static let description = IntentDescription("Get all available symptom types")
+    static let openAppWhenRun: Bool = false
 
     @Parameter(title: "Starred only", description: "Only return starred/favourite symptoms", default: false)
     var starredOnly: Bool
@@ -149,9 +149,9 @@ struct GetSymptomTypesIntent: AppIntent {
 
 @available(iOS 16.0, *)
 struct GetDailySummaryIntent: AppIntent {
-    static var title: LocalizedStringResource = "Get daily summary"
-    static var description = IntentDescription("Get a summary of symptoms and activities for a specific day")
-    static var openAppWhenRun: Bool = false
+    static let title: LocalizedStringResource = "Get daily summary"
+    static let description = IntentDescription("Get a summary of symptoms and activities for a specific day")
+    static let openAppWhenRun: Bool = false
 
     @Parameter(title: "Date", description: "The date to get summary for", default: Date())
     var date: Date
@@ -223,9 +223,9 @@ struct GetDailySummaryIntent: AppIntent {
 
 @available(iOS 16.0, *)
 struct CountSymptomsIntent: AppIntent {
-    static var title: LocalizedStringResource = "Count symptoms"
-    static var description = IntentDescription("Count how many symptom entries you've logged")
-    static var openAppWhenRun: Bool = false
+    static let title: LocalizedStringResource = "Count symptoms"
+    static let description = IntentDescription("Count how many symptom entries you've logged")
+    static let openAppWhenRun: Bool = false
 
     @Parameter(title: "Days to count", description: "How many days back to count (0 for all time)", default: 7)
     var daysBack: Int

@@ -12,13 +12,13 @@ import HealthKit
 @MainActor
 final class HealthKitBaselineCalculatorTests: XCTestCase {
 
-    var mockQueryService: MockHealthKitQueryService!
-    var baselineCalculator: HealthKitBaselineCalculator!
+    var mockQueryService: MockHealthKitQueryService?
+    var baselineCalculator: HealthKitBaselineCalculator?
 
     override func setUp() async throws {
         try await super.setUp()
         mockQueryService = MockHealthKitQueryService()
-        baselineCalculator = HealthKitBaselineCalculator(queryService: mockQueryService)
+        baselineCalculator = HealthKitBaselineCalculator(queryService: mockQueryService!)
     }
 
     override func tearDown() async throws {
@@ -38,13 +38,13 @@ final class HealthKitBaselineCalculatorTests: XCTestCase {
             HKQuantitySample.mockHRV(value: 48.0, date: .daysAgo(15)),
             HKQuantitySample.mockHRV(value: 46.0, date: .daysAgo(20))
         ]
-        mockQueryService.mockQuantitySamples = mockSamples
+        mockQueryService!.mockQuantitySamples = mockSamples
 
         // When
-        await baselineCalculator.updateHRVBaseline()
+        await baselineCalculator!.updateHRVBaseline()
 
         // Then
-        XCTAssertEqual(mockQueryService.fetchQuantityCount, 1)
+        XCTAssertEqual(mockQueryService!.fetchQuantityCount, 1)
 
         // Verify baseline was updated (check singleton)
         let baseline = HealthMetricBaselines.shared.hrvBaseline
@@ -58,25 +58,25 @@ final class HealthKitBaselineCalculatorTests: XCTestCase {
 
     func testUpdateHRVBaseline_NoSamples() async {
         // Given
-        mockQueryService.mockQuantitySamples = []
+        mockQueryService!.mockQuantitySamples = []
 
         // When
-        await baselineCalculator.updateHRVBaseline()
+        await baselineCalculator!.updateHRVBaseline()
 
         // Then
-        XCTAssertEqual(mockQueryService.fetchQuantityCount, 1)
+        XCTAssertEqual(mockQueryService!.fetchQuantityCount, 1)
         // Baseline should remain unchanged or be nil
     }
 
     func testUpdateHRVBaseline_WithError() async {
         // Given
-        mockQueryService.shouldThrowError = NSError(domain: "TestError", code: 1)
+        mockQueryService!.shouldThrowError = NSError(domain: "TestError", code: 1)
 
         // When
-        await baselineCalculator.updateHRVBaseline()
+        await baselineCalculator!.updateHRVBaseline()
 
         // Then
-        XCTAssertEqual(mockQueryService.fetchQuantityCount, 1)
+        XCTAssertEqual(mockQueryService!.fetchQuantityCount, 1)
         // Should handle error gracefully without crashing
     }
 
@@ -91,13 +91,13 @@ final class HealthKitBaselineCalculatorTests: XCTestCase {
             HKQuantitySample.mockRestingHR(value: 63.0, date: .daysAgo(15)),
             HKQuantitySample.mockRestingHR(value: 61.0, date: .daysAgo(20))
         ]
-        mockQueryService.mockQuantitySamples = mockSamples
+        mockQueryService!.mockQuantitySamples = mockSamples
 
         // When
-        await baselineCalculator.updateRestingHRBaseline()
+        await baselineCalculator!.updateRestingHRBaseline()
 
         // Then
-        XCTAssertEqual(mockQueryService.fetchQuantityCount, 1)
+        XCTAssertEqual(mockQueryService!.fetchQuantityCount, 1)
 
         // Verify baseline was updated
         let baseline = HealthMetricBaselines.shared.restingHRBaseline
@@ -111,24 +111,24 @@ final class HealthKitBaselineCalculatorTests: XCTestCase {
 
     func testUpdateRestingHRBaseline_NoSamples() async {
         // Given
-        mockQueryService.mockQuantitySamples = []
+        mockQueryService!.mockQuantitySamples = []
 
         // When
-        await baselineCalculator.updateRestingHRBaseline()
+        await baselineCalculator!.updateRestingHRBaseline()
 
         // Then
-        XCTAssertEqual(mockQueryService.fetchQuantityCount, 1)
+        XCTAssertEqual(mockQueryService!.fetchQuantityCount, 1)
     }
 
     func testUpdateRestingHRBaseline_WithError() async {
         // Given
-        mockQueryService.shouldThrowError = NSError(domain: "TestError", code: 1)
+        mockQueryService!.shouldThrowError = NSError(domain: "TestError", code: 1)
 
         // When
-        await baselineCalculator.updateRestingHRBaseline()
+        await baselineCalculator!.updateRestingHRBaseline()
 
         // Then
-        XCTAssertEqual(mockQueryService.fetchQuantityCount, 1)
+        XCTAssertEqual(mockQueryService!.fetchQuantityCount, 1)
         // Should handle error gracefully
     }
 
@@ -146,30 +146,30 @@ final class HealthKitBaselineCalculatorTests: XCTestCase {
             HKQuantitySample.mockRestingHR(value: 64.0, date: .daysAgo(5))
         ]
 
-        mockQueryService.mockQuantitySamples = hrvSamples + hrSamples
+        mockQueryService!.mockQuantitySamples = hrvSamples + hrSamples
 
         // When
-        await baselineCalculator.updateBaselines()
+        await baselineCalculator!.updateBaselines()
 
         // Then
         // Should call both HRV and resting HR fetches
-        XCTAssertEqual(mockQueryService.fetchQuantityCount, 2, "Should fetch both HRV and resting HR")
+        XCTAssertEqual(mockQueryService!.fetchQuantityCount, 2, "Should fetch both HRV and resting HR")
     }
 
     func testUpdateBaselines_ConcurrentExecution() async {
         // Given
-        mockQueryService.mockQuantitySamples = [
+        mockQueryService!.mockQuantitySamples = [
             HKQuantitySample.mockHRV(value: 45.0, date: .daysAgo(1)),
             HKQuantitySample.mockRestingHR(value: 62.0, date: .daysAgo(1))
         ]
 
         // When
         let startTime = Date()
-        await baselineCalculator.updateBaselines()
+        await baselineCalculator!.updateBaselines()
         let duration = Date().timeIntervalSince(startTime)
 
         // Then
-        XCTAssertEqual(mockQueryService.fetchQuantityCount, 2)
+        XCTAssertEqual(mockQueryService!.fetchQuantityCount, 2)
         // Should complete quickly since it's concurrent (not a strict test, but validates structure)
         XCTAssertLessThan(duration, 1.0, "Should execute concurrently")
     }
@@ -182,13 +182,13 @@ final class HealthKitBaselineCalculatorTests: XCTestCase {
         let mockSamples = values.enumerated().map { index, value in
             HKQuantitySample.mockHRV(value: value, date: .daysAgo(index + 1))
         }
-        mockQueryService.mockQuantitySamples = mockSamples
+        mockQueryService!.mockQuantitySamples = mockSamples
 
         // Clear existing baseline
         HealthMetricBaselines.shared.updateHRVBaseline(from: [])
 
         // When
-        await baselineCalculator.updateHRVBaseline()
+        await baselineCalculator!.updateHRVBaseline()
 
         // Then
         let baseline = HealthMetricBaselines.shared.hrvBaseline
@@ -211,13 +211,13 @@ final class HealthKitBaselineCalculatorTests: XCTestCase {
         let mockSamples = values.enumerated().map { index, value in
             HKQuantitySample.mockRestingHR(value: value, date: .daysAgo(index + 1))
         }
-        mockQueryService.mockQuantitySamples = mockSamples
+        mockQueryService!.mockQuantitySamples = mockSamples
 
         // Clear existing baseline
         HealthMetricBaselines.shared.updateRestingHRBaseline(from: [])
 
         // When
-        await baselineCalculator.updateRestingHRBaseline()
+        await baselineCalculator!.updateRestingHRBaseline()
 
         // Then
         let baseline = HealthMetricBaselines.shared.restingHRBaseline
@@ -238,15 +238,15 @@ final class HealthKitBaselineCalculatorTests: XCTestCase {
 
     func testUpdateBaselines_Queries30Days() async {
         // Given
-        mockQueryService.mockQuantitySamples = [
+        mockQueryService!.mockQuantitySamples = [
             HKQuantitySample.mockHRV(value: 45.0, date: .daysAgo(1))
         ]
 
         // When
-        await baselineCalculator.updateHRVBaseline()
+        await baselineCalculator!.updateHRVBaseline()
 
         // Then
-        XCTAssertEqual(mockQueryService.fetchQuantityCount, 1)
+        XCTAssertEqual(mockQueryService!.fetchQuantityCount, 1)
         // Note: We can't directly verify the date range in mock, but the implementation
         // should query 30 days. This could be enhanced with more sophisticated mocking.
     }

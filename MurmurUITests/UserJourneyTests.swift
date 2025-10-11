@@ -9,7 +9,7 @@ import XCTest
 
 /// Comprehensive user journey tests covering critical workflows
 final class UserJourneyTests: XCTestCase {
-    var app: XCUIApplication!
+    var app: XCUIApplication?
     private var systemAlertMonitor: NSObjectProtocol?
 
     override func setUpWithError() throws {
@@ -30,6 +30,10 @@ final class UserJourneyTests: XCTestCase {
     /// Tests complete symptom entry workflow including search, severity, note, and save
     @MainActor
     func testCompleteSymptomEntry() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -67,6 +71,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests adding multiple symptoms in one entry
     func testMultiSymptomEntry() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -99,6 +107,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests symptom entry with note
     func testSymptomEntryWithNote() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -121,6 +133,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests symptom entry with location tracking
     func testSymptomEntryWithLocation() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launch(
             scenario: .activeUser,
             featureFlags: [] // Ensure location is enabled
@@ -152,6 +168,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests creating a backdated symptom entry
     func testBackdatedEntry() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -193,6 +213,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests cancelling symptom entry
     func testCancelEntry() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -221,6 +245,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests searching for and creating a new custom symptom
     func testSearchAndCreateNewSymptom() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -258,6 +286,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests quick symptom selection from starred symptoms
     func testQuickSymptomSelection() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -291,6 +323,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests scrolling through timeline
     func testScrollTimeline() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -310,6 +346,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests pull to refresh on timeline
     func testPullToRefresh() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -327,6 +367,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests navigating to day detail view
     func testNavigateToDayDetail() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -346,6 +390,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests timeline grouping by day
     func testTimelineGrouping() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -358,6 +406,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests empty timeline state
     func testEmptyTimelineState() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchEmpty()
 
         let timeline = TimelineScreen(app: app)
@@ -373,6 +425,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests navigating between weeks in timeline
     func testNavigateBetweenWeeks() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launch(scenario: .longHistory)
 
         let timeline = TimelineScreen(app: app)
@@ -398,6 +454,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests viewing trends chart
     func testViewTrendsChart() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -418,6 +478,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests switching to calendar heat map view
     func testSwitchToCalendarHeatMap() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -436,6 +500,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests tapping on calendar day to view details
     func testTapCalendarDayViewDetails() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -461,6 +529,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests viewing symptom history
     func testViewSymptomHistory() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -480,6 +552,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests changing time period filter
     func testChangeTimePeriod() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -506,6 +582,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests viewing activities analysis
     func testViewActivitiesAnalysis() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -524,6 +604,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests viewing health analysis
     func testViewHealthAnalysis() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launch(
             scenario: .activeUser,
             featureFlags: [] // Ensure HealthKit enabled
@@ -545,6 +629,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests empty analysis state
     func testEmptyAnalysisState() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchEmpty()
 
         let timeline = TimelineScreen(app: app)
@@ -561,6 +649,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests navigating to settings
     func testNavigateToSettings() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -575,6 +667,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests adding a symptom type
     func testAddSymptomType() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -595,6 +691,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests editing a symptom type
     func testEditSymptomType() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -627,6 +727,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests deleting a symptom type
     func testDeleteSymptomType() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -653,6 +757,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests starring/unstarring a symptom
     func testStarUnstarSymptom() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -684,6 +792,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests toggling dark mode
     func testToggleDarkMode() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -710,6 +822,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests enabling/disabling HealthKit integration
     func testEnableDisableHealthKit() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -740,6 +856,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests setting up reminders
     func testSetUpReminders() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -770,6 +890,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests exporting data
     func testExportData() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -803,6 +927,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests load capacity settings
     func testLoadCapacitySettings() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -823,6 +951,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests adding an activity/event
     func testAddActivityEvent() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -847,6 +979,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests editing an activity
     func testEditActivity() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         _ = TimelineScreen(app: app)
@@ -875,6 +1011,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests deleting an activity
     func testDeleteActivity() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -902,6 +1042,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests viewing activity in timeline
     func testViewActivityInTimeline() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -917,6 +1061,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests activity correlation in analysis
     func testActivityCorrelation() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -937,6 +1085,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests adding a sleep event
     func testAddSleepEvent() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -963,6 +1115,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests adding a meal event
     func testAddMealEvent() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -988,6 +1144,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests editing a sleep event
     func testEditSleepEvent() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         _ = TimelineScreen(app: app)
@@ -1013,6 +1173,10 @@ final class UserJourneyTests: XCTestCase {
 
     /// Tests deleting a meal event
     func testDeleteMealEvent() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)

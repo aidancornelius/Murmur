@@ -9,7 +9,7 @@ import XCTest
 
 /// Edge case and error handling tests
 final class EdgeCaseTests: XCTestCase {
-    var app: XCUIApplication!
+    var app: XCUIApplication?
 
     override func setUpWithError() throws {
         continueAfterFailure = false
@@ -24,6 +24,10 @@ final class EdgeCaseTests: XCTestCase {
 
     /// Tests timeline empty state
     func testEmptyTimeline() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchEmpty()
 
         let timeline = TimelineScreen(app: app)
@@ -42,6 +46,10 @@ final class EdgeCaseTests: XCTestCase {
 
     /// Tests analysis empty state
     func testEmptyAnalysis() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchEmpty()
 
         app.buttons[AccessibilityIdentifiers.analysisButton].tap()
@@ -58,6 +66,10 @@ final class EdgeCaseTests: XCTestCase {
 
     /// Tests symptom history empty state
     func testEmptySymptomHistory() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchEmpty()
 
         app.buttons[AccessibilityIdentifiers.analysisButton].tap()
@@ -79,6 +91,10 @@ final class EdgeCaseTests: XCTestCase {
 
     /// Tests settings with no starred symptoms
     func testNoStarredSymptoms() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launch(scenario: .emptyState)
 
         app.buttons[AccessibilityIdentifiers.settingsButton].tap()
@@ -98,6 +114,10 @@ final class EdgeCaseTests: XCTestCase {
 
     /// Tests settings with no custom symptoms
     func testNoCustomSymptoms() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launch(scenario: .newUser)
 
         app.buttons[AccessibilityIdentifiers.settingsButton].tap()
@@ -119,6 +139,10 @@ final class EdgeCaseTests: XCTestCase {
 
     /// Tests handling of failed save operations
     func testFailedToSaveEntry() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launch(
             scenario: .activeUser
         )
@@ -147,6 +171,10 @@ final class EdgeCaseTests: XCTestCase {
 
     /// Tests HealthKit permission denied state
     func testHealthKitPermissionDenied() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launch(
             scenario: .activeUser,
             featureFlags: [.disableHealthKit]
@@ -169,6 +197,10 @@ final class EdgeCaseTests: XCTestCase {
 
     /// Tests location permission denied state
     func testLocationPermissionDenied() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launch(
             scenario: .activeUser,
             featureFlags: [.disableLocation]
@@ -197,6 +229,10 @@ final class EdgeCaseTests: XCTestCase {
 
     /// Tests calendar permission denied state
     func testCalendarPermissionDenied() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launch(
             scenario: .activeUser,
             featureFlags: [.disableCalendar]
@@ -213,6 +249,10 @@ final class EdgeCaseTests: XCTestCase {
 
     /// Tests Core Data error handling
     func testCoreDataError() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launch(
             scenario: .activeUser,
             featureFlags: [.enableDebugLogging]
@@ -228,6 +268,10 @@ final class EdgeCaseTests: XCTestCase {
 
     /// Tests initial loading indicator
     func testInitialLoadingIndicator() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launch(scenario: .heavyUser)
 
         // On launch with large data, should show loading indicator briefly
@@ -248,6 +292,10 @@ final class EdgeCaseTests: XCTestCase {
 
     /// Tests pull to refresh loading
     func testPullToRefreshLoading() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -269,6 +317,10 @@ final class EdgeCaseTests: XCTestCase {
 
     /// Tests analysis calculation loading state
     func testAnalysisCalculating() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launch(scenario: .heavyUser)
 
         app.buttons[AccessibilityIdentifiers.analysisButton].tap()
@@ -286,6 +338,10 @@ final class EdgeCaseTests: XCTestCase {
 
     /// Tests selecting maximum number of symptoms
     func testMaximumSymptomSelection() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -327,6 +383,10 @@ final class EdgeCaseTests: XCTestCase {
 
     /// Tests attempting to add more than maximum symptoms
     func testAttemptSixthSymptomSelection() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -362,6 +422,10 @@ final class EdgeCaseTests: XCTestCase {
 
     /// Tests entry with very long note
     func testVeryLongNote() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -393,6 +457,10 @@ final class EdgeCaseTests: XCTestCase {
 
     /// Tests minimum severity value
     func testMinimumSeverity() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -416,6 +484,10 @@ final class EdgeCaseTests: XCTestCase {
 
     /// Tests maximum severity value
     func testMaximumSeverity() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -439,6 +511,10 @@ final class EdgeCaseTests: XCTestCase {
 
     /// Tests creating entry with very old date
     func testVeryOldBackdatedEntry() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -474,6 +550,10 @@ final class EdgeCaseTests: XCTestCase {
 
     /// Tests prevention of future dates
     func testFutureDatePrevention() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -511,6 +591,10 @@ final class EdgeCaseTests: XCTestCase {
 
     /// Tests attempting to save entry with all fields empty
     func testEntryWithAllFieldsEmpty() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -543,6 +627,10 @@ final class EdgeCaseTests: XCTestCase {
 
     /// Tests that edited entries persist correctly
     func testEditEntryPersists() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -584,6 +672,10 @@ final class EdgeCaseTests: XCTestCase {
 
     /// Tests that deleted entries are removed from timeline
     func testDeleteEntryRemoves() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
@@ -624,6 +716,10 @@ final class EdgeCaseTests: XCTestCase {
 
     /// Tests that newly added symptom types are immediately available
     func testAddSymptomTypeImmediatelyAvailable() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         // Go to settings
@@ -677,6 +773,10 @@ final class EdgeCaseTests: XCTestCase {
 
     /// Tests deleting symptom type that has associated entries
     func testDeleteSymptomTypeWithEntries() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         app.buttons[AccessibilityIdentifiers.settingsButton].tap()
@@ -716,6 +816,10 @@ final class EdgeCaseTests: XCTestCase {
 
     /// Tests that app handles being backgrounded during save
     func testAppBackgroundedDuringSave() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)

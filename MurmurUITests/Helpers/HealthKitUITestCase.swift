@@ -10,7 +10,7 @@ import XCTest
 /// Base class for UI tests that need real HealthKit data
 /// Simplifies launching the app with HealthKit seeding flags
 class HealthKitUITestCase: XCTestCase {
-    var app: XCUIApplication!
+    var app: XCUIApplication?
 
     /// Launch app with HealthKit data seeded with normal health profile
     /// - Parameters:

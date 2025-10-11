@@ -10,7 +10,7 @@ import XCTest
 @testable import Murmur
 
 final class ManualCycleTrackerTests: XCTestCase {
-    var testStack: InMemoryCoreDataStack!
+    var testStack: InMemoryCoreDataStack?
 
     override func setUp() {
         super.setUp()
@@ -30,14 +30,14 @@ final class ManualCycleTrackerTests: XCTestCase {
     // Since ManualCycleTracker is @MainActor, we need to test it differently
     @MainActor
     func testAddManualCycleEntry() async throws {
-        let tracker = ManualCycleTracker(context: testStack.context)
+        let tracker = ManualCycleTracker(context: testStack!.context)
 
         let date = Date()
         try tracker.addEntry(date: date, flowLevel: "medium")
 
         // Verify entry was created
         let request = ManualCycleEntry.fetchRequest()
-        let entries = try testStack.context.fetch(request)
+        let entries = try testStack!.context.fetch(request)
 
         XCTAssertEqual(entries.count, 1)
         XCTAssertEqual(entries.first?.flowLevel, "medium")
@@ -46,7 +46,7 @@ final class ManualCycleTrackerTests: XCTestCase {
 
     @MainActor
     func testRemoveManualCycleEntry() async throws {
-        let tracker = ManualCycleTracker(context: testStack.context)
+        let tracker = ManualCycleTracker(context: testStack!.context)
 
         // Add an entry
         let date = Date()
@@ -54,20 +54,20 @@ final class ManualCycleTrackerTests: XCTestCase {
 
         // Verify it was added
         let request = ManualCycleEntry.fetchRequest()
-        var entries = try testStack.context.fetch(request)
+        var entries = try testStack!.context.fetch(request)
         XCTAssertEqual(entries.count, 1)
 
         // Remove the entry
         try tracker.removeEntry(date: date)
 
         // Verify it was removed
-        entries = try testStack.context.fetch(request)
+        entries = try testStack!.context.fetch(request)
         XCTAssertEqual(entries.count, 0)
     }
 
     @MainActor
     func testUpdateExistingEntry() async throws {
-        let tracker = ManualCycleTracker(context: testStack.context)
+        let tracker = ManualCycleTracker(context: testStack!.context)
 
         let date = Date()
 
@@ -79,7 +79,7 @@ final class ManualCycleTrackerTests: XCTestCase {
 
         // Should still only have one entry but with updated flow level
         let request = ManualCycleEntry.fetchRequest()
-        let entries = try testStack.context.fetch(request)
+        let entries = try testStack!.context.fetch(request)
 
         XCTAssertEqual(entries.count, 1)
         XCTAssertEqual(entries.first?.flowLevel, "heavy")
@@ -87,7 +87,7 @@ final class ManualCycleTrackerTests: XCTestCase {
 
     @MainActor
     func testGetFlowLevelForDate() async throws {
-        let tracker = ManualCycleTracker(context: testStack.context)
+        let tracker = ManualCycleTracker(context: testStack!.context)
         tracker.setEnabled(true)
 
         let date = Date()
@@ -102,7 +102,7 @@ final class ManualCycleTrackerTests: XCTestCase {
 
     @MainActor
     func testEnableDisableTracking() async throws {
-        let tracker = ManualCycleTracker(context: testStack.context)
+        let tracker = ManualCycleTracker(context: testStack!.context)
 
         // Initially disabled
         XCTAssertFalse(tracker.isEnabled)
@@ -120,23 +120,23 @@ final class ManualCycleTrackerTests: XCTestCase {
         let entry = ManualCycleEntry.create(
             date: Date(),
             flowLevel: "light",
-            in: testStack.context
+            in: testStack!.context
         )
 
         XCTAssertNotNil(entry.id)
         XCTAssertNotNil(entry.date)
         XCTAssertEqual(entry.flowLevel, "light")
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         let request = ManualCycleEntry.fetchRequest()
-        let entries = try testStack.context.fetch(request)
+        let entries = try testStack!.context.fetch(request)
         XCTAssertEqual(entries.count, 1)
     }
 
     @MainActor
     func testSetCycleDay() async throws {
-        let tracker = ManualCycleTracker(context: testStack.context)
+        let tracker = ManualCycleTracker(context: testStack!.context)
         tracker.setEnabled(true)
 
         // Set cycle day 15
@@ -156,14 +156,14 @@ final class ManualCycleTrackerTests: XCTestCase {
         for i in 0..<5 {
             let date = calendar.date(byAdding: .day, value: -i, to: Date())!
             let flowLevel = ["light", "medium", "heavy", "spotting", "none"][i]
-            _ = ManualCycleEntry.create(date: date, flowLevel: flowLevel, in: testStack.context)
+            _ = ManualCycleEntry.create(date: date, flowLevel: flowLevel, in: testStack!.context)
         }
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         // Verify all entries were created
         let request = ManualCycleEntry.fetchRequest()
-        let entries = try testStack.context.fetch(request)
+        let entries = try testStack!.context.fetch(request)
         XCTAssertEqual(entries.count, 5)
     }
 }

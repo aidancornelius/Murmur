@@ -10,13 +10,15 @@ import XCTest
 @testable import Murmur
 
 final class CalendarHeatMapTests: XCTestCase {
-    var testStack: InMemoryCoreDataStack!
+    var testStack: InMemoryCoreDataStack?
     let calendar = Calendar.current
 
     override func setUp() {
         super.setUp()
         testStack = InMemoryCoreDataStack()
-        SampleDataSeeder.seedIfNeeded(in: testStack.context, forceSeed: true)
+        if let testStack = testStack {
+            SampleDataSeeder.seedIfNeeded(in: testStack!.context, forceSeed: true)
+        }
     }
 
     override func tearDown() {
@@ -27,7 +29,11 @@ final class CalendarHeatMapTests: XCTestCase {
     // MARK: - Month Data Loading Tests
 
     func testLoadMonthDataFetchesCorrectDateRange() throws {
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        guard let testStack = testStack else {
+            XCTFail("Test stack not initialized")
+            return
+        }
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
         let now = Date()
 
         guard let monthInterval = calendar.dateInterval(of: .month, for: now) else {
@@ -37,7 +43,7 @@ final class CalendarHeatMapTests: XCTestCase {
 
         // Create entries within current month
         for i in 1...5 {
-            let entry = SymptomEntry(context: testStack.context)
+            let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
             let entryDate = calendar.date(byAdding: .day, value: i, to: monthInterval.start)!
             entry.createdAt = entryDate
@@ -47,13 +53,13 @@ final class CalendarHeatMapTests: XCTestCase {
 
         // Create entries outside current month
         let previousMonth = calendar.date(byAdding: .month, value: -1, to: now)!
-        let entry = SymptomEntry(context: testStack.context)
+        let entry = SymptomEntry(context: testStack!.context)
         entry.id = UUID()
         entry.createdAt = previousMonth
         entry.symptomType = symptomType
         entry.severity = 3
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         // Simulate CalendarHeatMapView's loadMonthData predicate
         let request = SymptomEntry.fetchRequest()
@@ -63,7 +69,7 @@ final class CalendarHeatMapTests: XCTestCase {
             monthInterval.start as NSDate, monthInterval.end as NSDate
         )
 
-        let results = try testStack.context.fetch(request)
+        let results = try testStack!.context.fetch(request)
 
         // Should only include entries within current month
         XCTAssertEqual(results.count, 5)
@@ -76,19 +82,19 @@ final class CalendarHeatMapTests: XCTestCase {
     }
 
     func testMonthDataGroupsEntriesByDay() throws {
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
         let testDate = calendar.startOfDay(for: Date())
 
         // Create multiple entries on the same day
         for i in 0..<3 {
-            let entry = SymptomEntry(context: testStack.context)
+            let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
             entry.createdAt = calendar.date(byAdding: .hour, value: i, to: testDate)
             entry.symptomType = symptomType
             entry.severity = Int16(i + 2) // Severities: 2, 3, 4
         }
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         guard let monthInterval = calendar.dateInterval(of: .month, for: testDate) else {
             XCTFail("Could not get month interval")
@@ -102,7 +108,7 @@ final class CalendarHeatMapTests: XCTestCase {
             monthInterval.start as NSDate, monthInterval.end as NSDate
         )
 
-        let entries = try testStack.context.fetch(request)
+        let entries = try testStack!.context.fetch(request)
 
         // Group entries by day (simulating CalendarHeatMapView logic)
         let groupedEntries = Dictionary(grouping: entries) { entry in
@@ -117,20 +123,20 @@ final class CalendarHeatMapTests: XCTestCase {
     }
 
     func testMonthDataCalculatesAverageSeverity() throws {
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
         let testDate = calendar.startOfDay(for: Date())
 
         // Create entries with known severities
         let severities: [Int16] = [2, 3, 4, 5]
         for severity in severities {
-            let entry = SymptomEntry(context: testStack.context)
+            let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
             entry.createdAt = testDate
             entry.symptomType = symptomType
             entry.severity = severity
         }
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         guard let monthInterval = calendar.dateInterval(of: .month, for: testDate) else {
             XCTFail("Could not get month interval")
@@ -144,7 +150,7 @@ final class CalendarHeatMapTests: XCTestCase {
             monthInterval.start as NSDate, monthInterval.end as NSDate
         )
 
-        let entries = try testStack.context.fetch(request)
+        let entries = try testStack!.context.fetch(request)
         let groupedEntries = Dictionary(grouping: entries) { entry in
             calendar.startOfDay(for: entry.backdatedAt ?? entry.createdAt ?? Date())
         }
@@ -164,12 +170,12 @@ final class CalendarHeatMapTests: XCTestCase {
     }
 
     func testMonthDataHandlesVaryingEntryCounts() throws {
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
         let baseDate = calendar.startOfDay(for: Date())
 
         // Day 1: 1 entry
         let day1 = baseDate
-        let entry1 = SymptomEntry(context: testStack.context)
+        let entry1 = SymptomEntry(context: testStack!.context)
         entry1.id = UUID()
         entry1.createdAt = day1
         entry1.symptomType = symptomType
@@ -178,7 +184,7 @@ final class CalendarHeatMapTests: XCTestCase {
         // Day 2: 5 entries
         let day2 = calendar.date(byAdding: .day, value: 1, to: baseDate)!
         for i in 0..<5 {
-            let entry = SymptomEntry(context: testStack.context)
+            let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
             entry.createdAt = calendar.date(byAdding: .hour, value: i, to: day2)
             entry.symptomType = symptomType
@@ -188,14 +194,14 @@ final class CalendarHeatMapTests: XCTestCase {
         // Day 3: 10 entries
         let day3 = calendar.date(byAdding: .day, value: 2, to: baseDate)!
         for i in 0..<10 {
-            let entry = SymptomEntry(context: testStack.context)
+            let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
             entry.createdAt = calendar.date(byAdding: .hour, value: i, to: day3)
             entry.symptomType = symptomType
             entry.severity = 2
         }
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         guard let monthInterval = calendar.dateInterval(of: .month, for: baseDate) else {
             XCTFail("Could not get month interval")
@@ -209,7 +215,7 @@ final class CalendarHeatMapTests: XCTestCase {
             monthInterval.start as NSDate, monthInterval.end as NSDate
         )
 
-        let entries = try testStack.context.fetch(request)
+        let entries = try testStack!.context.fetch(request)
         let groupedEntries = Dictionary(grouping: entries) { entry in
             calendar.startOfDay(for: entry.backdatedAt ?? entry.createdAt ?? Date())
         }
@@ -221,13 +227,13 @@ final class CalendarHeatMapTests: XCTestCase {
     }
 
     func testMonthDataIdentifiesHighSeverityDays() throws {
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
         let baseDate = calendar.startOfDay(for: Date())
 
         // Create day with high severity entries
         let highSeverityDay = baseDate
         for _ in 0..<3 {
-            let entry = SymptomEntry(context: testStack.context)
+            let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
             entry.createdAt = highSeverityDay
             entry.symptomType = symptomType
@@ -237,14 +243,14 @@ final class CalendarHeatMapTests: XCTestCase {
         // Create day with low severity entries
         let lowSeverityDay = calendar.date(byAdding: .day, value: 1, to: baseDate)!
         for _ in 0..<3 {
-            let entry = SymptomEntry(context: testStack.context)
+            let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
             entry.createdAt = lowSeverityDay
             entry.symptomType = symptomType
             entry.severity = 1 // Low severity
         }
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         guard let monthInterval = calendar.dateInterval(of: .month, for: baseDate) else {
             XCTFail("Could not get month interval")
@@ -258,7 +264,7 @@ final class CalendarHeatMapTests: XCTestCase {
             monthInterval.start as NSDate, monthInterval.end as NSDate
         )
 
-        let entries = try testStack.context.fetch(request)
+        let entries = try testStack!.context.fetch(request)
         let groupedEntries = Dictionary(grouping: entries) { entry in
             calendar.startOfDay(for: entry.backdatedAt ?? entry.createdAt ?? Date())
         }
@@ -294,7 +300,7 @@ final class CalendarHeatMapTests: XCTestCase {
             monthInterval.start as NSDate, monthInterval.end as NSDate
         )
 
-        let entries = try testStack.context.fetch(request)
+        let entries = try testStack!.context.fetch(request)
 
         // Should return empty array
         XCTAssertTrue(entries.isEmpty)
@@ -310,20 +316,20 @@ final class CalendarHeatMapTests: XCTestCase {
     // MARK: - Month Summary Statistics Tests
 
     func testMonthSummaryCalculatesDaysWithData() throws {
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
         let baseDate = calendar.startOfDay(for: Date())
 
         // Create entries on 5 different days
         for i in 0..<5 {
             let day = calendar.date(byAdding: .day, value: i, to: baseDate)!
-            let entry = SymptomEntry(context: testStack.context)
+            let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
             entry.createdAt = day
             entry.symptomType = symptomType
             entry.severity = 3
         }
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         guard let monthInterval = calendar.dateInterval(of: .month, for: baseDate) else {
             XCTFail("Could not get month interval")
@@ -337,7 +343,7 @@ final class CalendarHeatMapTests: XCTestCase {
             monthInterval.start as NSDate, monthInterval.end as NSDate
         )
 
-        let entries = try testStack.context.fetch(request)
+        let entries = try testStack!.context.fetch(request)
         let groupedEntries = Dictionary(grouping: entries) { entry in
             calendar.startOfDay(for: entry.backdatedAt ?? entry.createdAt ?? Date())
         }
@@ -349,14 +355,14 @@ final class CalendarHeatMapTests: XCTestCase {
     }
 
     func testMonthSummaryCalculatesAverageIntensity() throws {
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
         let baseDate = calendar.startOfDay(for: Date())
 
         // Create entries with varying severities across multiple days
         // Day 1: avg = 2
         let day1 = baseDate
         for _ in 0..<2 {
-            let entry = SymptomEntry(context: testStack.context)
+            let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
             entry.createdAt = day1
             entry.symptomType = symptomType
@@ -366,14 +372,14 @@ final class CalendarHeatMapTests: XCTestCase {
         // Day 2: avg = 4
         let day2 = calendar.date(byAdding: .day, value: 1, to: baseDate)!
         for _ in 0..<2 {
-            let entry = SymptomEntry(context: testStack.context)
+            let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
             entry.createdAt = day2
             entry.symptomType = symptomType
             entry.severity = 4
         }
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         guard let monthInterval = calendar.dateInterval(of: .month, for: baseDate) else {
             XCTFail("Could not get month interval")
@@ -387,7 +393,7 @@ final class CalendarHeatMapTests: XCTestCase {
             monthInterval.start as NSDate, monthInterval.end as NSDate
         )
 
-        let entries = try testStack.context.fetch(request)
+        let entries = try testStack!.context.fetch(request)
         let groupedEntries = Dictionary(grouping: entries) { entry in
             calendar.startOfDay(for: entry.backdatedAt ?? entry.createdAt ?? Date())
         }
@@ -412,7 +418,7 @@ final class CalendarHeatMapTests: XCTestCase {
     }
 
     func testMonthSummaryCalculatesTotalEntries() throws {
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
         let baseDate = calendar.startOfDay(for: Date())
 
         // Create varying number of entries across days
@@ -421,7 +427,7 @@ final class CalendarHeatMapTests: XCTestCase {
             let entriesForDay = day + 1 // 1, 2, 3 entries
 
             for _ in 0..<entriesForDay {
-                let entry = SymptomEntry(context: testStack.context)
+                let entry = SymptomEntry(context: testStack!.context)
                 entry.id = UUID()
                 entry.createdAt = dayDate
                 entry.symptomType = symptomType
@@ -429,7 +435,7 @@ final class CalendarHeatMapTests: XCTestCase {
             }
         }
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         guard let monthInterval = calendar.dateInterval(of: .month, for: baseDate) else {
             XCTFail("Could not get month interval")
@@ -443,7 +449,7 @@ final class CalendarHeatMapTests: XCTestCase {
             monthInterval.start as NSDate, monthInterval.end as NSDate
         )
 
-        let entries = try testStack.context.fetch(request)
+        let entries = try testStack!.context.fetch(request)
 
         // Total entries should be 1 + 2 + 3 = 6
         XCTAssertEqual(entries.count, 6)
@@ -452,7 +458,7 @@ final class CalendarHeatMapTests: XCTestCase {
     // MARK: - Backdated Entry Tests
 
     func testMonthDataHandlesBackdatedEntries() throws {
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
         let now = Date()
 
         guard let monthInterval = calendar.dateInterval(of: .month, for: now) else {
@@ -463,14 +469,14 @@ final class CalendarHeatMapTests: XCTestCase {
         let dateInMonth = calendar.date(byAdding: .day, value: 5, to: monthInterval.start)!
 
         // Create entry backdated to current month but created outside month
-        let entry = SymptomEntry(context: testStack.context)
+        let entry = SymptomEntry(context: testStack!.context)
         entry.id = UUID()
         entry.createdAt = calendar.date(byAdding: .month, value: -2, to: now) // Created 2 months ago
         entry.backdatedAt = dateInMonth // But backdated to current month
         entry.symptomType = symptomType
         entry.severity = 3
 
-        try testStack.context.save()
+        try testStack!.context.save()
 
         let request = SymptomEntry.fetchRequest()
         request.predicate = NSPredicate(
@@ -479,7 +485,7 @@ final class CalendarHeatMapTests: XCTestCase {
             monthInterval.start as NSDate, monthInterval.end as NSDate
         )
 
-        let results = try testStack.context.fetch(request)
+        let results = try testStack!.context.fetch(request)
 
         // Entry should be included because backdatedAt is in current month
         XCTAssertEqual(results.count, 1)

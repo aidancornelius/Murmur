@@ -11,12 +11,12 @@ import XCTest
 
 @MainActor
 final class LoadScoreTests: XCTestCase {
-    var testStack: InMemoryCoreDataStack!
+    var testStack: InMemoryCoreDataStack?
 
     override func setUp() {
         super.setUp()
         testStack = InMemoryCoreDataStack()
-        SampleDataSeeder.seedIfNeeded(in: testStack.context, forceSeed: true)
+        SampleDataSeeder.seedIfNeeded(in: testStack!.context, forceSeed: true)
     }
 
     override func tearDown() {
@@ -46,7 +46,7 @@ final class LoadScoreTests: XCTestCase {
 
     func testCalculateLoadWithSingleActivity() throws {
         let date = Date()
-        let activity = ActivityEvent(context: testStack.context)
+        let activity = ActivityEvent(context: testStack!.context)
         activity.id = UUID()
         activity.createdAt = date
         activity.name = "Test Activity"
@@ -70,7 +70,7 @@ final class LoadScoreTests: XCTestCase {
 
     func testCalculateLoadWithHighExertionActivity() throws {
         let date = Date()
-        let activity = ActivityEvent(context: testStack.context)
+        let activity = ActivityEvent(context: testStack!.context)
         activity.id = UUID()
         activity.createdAt = date
         activity.name = "High Intensity"
@@ -94,10 +94,10 @@ final class LoadScoreTests: XCTestCase {
 
     func testCalculateLoadWithHighSeveritySymptoms() throws {
         let date = Date()
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
         symptomType.category = "Physical"
 
-        let symptom = SymptomEntry(context: testStack.context)
+        let symptom = SymptomEntry(context: testStack!.context)
         symptom.id = UUID()
         symptom.createdAt = date
         symptom.severity = 5
@@ -120,9 +120,9 @@ final class LoadScoreTests: XCTestCase {
 
     func testCalculateLoadWithLowSeveritySymptoms() throws {
         let date = Date()
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
 
-        let symptom = SymptomEntry(context: testStack.context)
+        let symptom = SymptomEntry(context: testStack!.context)
         symptom.id = UUID()
         symptom.createdAt = date
         symptom.severity = 2
@@ -143,10 +143,10 @@ final class LoadScoreTests: XCTestCase {
 
     func testCalculateLoadWithPositiveSymptom() throws {
         let date = Date()
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
         symptomType.category = "Positive wellbeing"
 
-        let symptom = SymptomEntry(context: testStack.context)
+        let symptom = SymptomEntry(context: testStack!.context)
         symptom.id = UUID()
         symptom.createdAt = date
         symptom.severity = 5
@@ -184,10 +184,10 @@ final class LoadScoreTests: XCTestCase {
 
     func testCalculateLoadWithSymptomModifiedDecay() throws {
         let date = Date()
-        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack.context))
+        let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
         symptomType.category = "Physical"
 
-        let highSeveritySymptom = SymptomEntry(context: testStack.context)
+        let highSeveritySymptom = SymptomEntry(context: testStack!.context)
         highSeveritySymptom.id = UUID()
         highSeveritySymptom.createdAt = date
         highSeveritySymptom.severity = 5
@@ -217,7 +217,7 @@ final class LoadScoreTests: XCTestCase {
 
     func testRiskLevelSafe() throws {
         let date = Date()
-        let activity = ActivityEvent(context: testStack.context)
+        let activity = ActivityEvent(context: testStack!.context)
         activity.id = UUID()
         activity.createdAt = date
         activity.physicalExertion = 1
@@ -241,7 +241,7 @@ final class LoadScoreTests: XCTestCase {
         // Create multiple high-exertion activities
         var activities: [ActivityEvent] = []
         for i in 0..<5 {
-            let activity = ActivityEvent(context: testStack.context)
+            let activity = ActivityEvent(context: testStack!.context)
             activity.id = UUID()
             activity.createdAt = date
             activity.name = "Activity \(i)"
@@ -276,7 +276,7 @@ final class LoadScoreTests: XCTestCase {
             guard let day = calendar.date(byAdding: .day, value: -i, to: endDate) else { continue }
             let dayStart = calendar.startOfDay(for: day)
 
-            let activity = ActivityEvent(context: testStack.context)
+            let activity = ActivityEvent(context: testStack!.context)
             activity.id = UUID()
             activity.createdAt = day
             activity.physicalExertion = 3
@@ -314,7 +314,7 @@ final class LoadScoreTests: XCTestCase {
             guard let day = calendar.date(byAdding: .day, value: -i, to: endDate) else { continue }
             let dayStart = calendar.startOfDay(for: day)
 
-            let activity = ActivityEvent(context: testStack.context)
+            let activity = ActivityEvent(context: testStack!.context)
             activity.id = UUID()
             activity.createdAt = day
             activity.physicalExertion = 4
@@ -345,7 +345,7 @@ final class LoadScoreTests: XCTestCase {
 
         // Day 0: high load
         let day0 = calendar.date(byAdding: .day, value: -4, to: endDate)!
-        let activity0 = ActivityEvent(context: testStack.context)
+        let activity0 = ActivityEvent(context: testStack!.context)
         activity0.id = UUID()
         activity0.createdAt = day0
         activity0.physicalExertion = 5
@@ -377,7 +377,7 @@ final class LoadScoreTests: XCTestCase {
         // Create an extreme number of high-intensity activities
         var activities: [ActivityEvent] = []
         for i in 0..<20 {
-            let activity = ActivityEvent(context: testStack.context)
+            let activity = ActivityEvent(context: testStack!.context)
             activity.id = UUID()
             activity.createdAt = date
             activity.name = "Extreme Activity \(i)"

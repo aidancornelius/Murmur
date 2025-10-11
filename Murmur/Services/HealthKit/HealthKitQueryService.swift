@@ -13,7 +13,7 @@ import os.log
 
 /// Protocol abstraction for HealthKit data access to enable testing with mock implementations
 /// This protocol abstracts the actual data fetching operations rather than the low-level query execution
-protocol HealthKitDataProvider {
+protocol HealthKitDataProvider: Sendable {
     func fetchQuantitySamples(
         type: HKQuantityType,
         predicate: NSPredicate?,
@@ -45,7 +45,7 @@ protocol HealthKitDataProvider {
 
 /// Service responsible for executing HealthKit queries with timeout handling
 /// Encapsulates all direct HKHealthStore interactions
-protocol HealthKitQueryServiceProtocol {
+protocol HealthKitQueryServiceProtocol: Sendable {
     var dataProvider: HealthKitDataProvider { get }
     var isHealthDataAvailable: Bool { get }
 
@@ -114,8 +114,8 @@ final class RealHealthKitDataProvider: HealthKitDataProvider, @unchecked Sendabl
     /// Generic helper to execute any HKQuery with continuation-based async handling
     /// Encapsulates query lifecycle management (tracking, cleanup) and error handling
     /// Returns optional result - callers handle nil as appropriate (e.g., empty array)
-    private func executeQuery<ResultType>(
-        _ queryBuilder: @escaping (@escaping (ResultType?, Error?) -> Void) -> HKQuery
+    private func executeQuery<ResultType: Sendable>(
+        _ queryBuilder: @escaping (@escaping @Sendable (ResultType?, Error?) -> Void) -> HKQuery
     ) async throws -> ResultType? {
         try await withCheckedThrowingContinuation { continuation in
             var queryRef: HKQuery?
@@ -212,7 +212,7 @@ extension RealHealthKitDataProvider: ResourceManageable {
 }
 
 /// Service that wraps HealthKit queries with timeout handling and provides high-level data access
-final class HealthKitQueryService: HealthKitQueryServiceProtocol {
+final class HealthKitQueryService: HealthKitQueryServiceProtocol, @unchecked Sendable {
     private let logger = Logger(subsystem: "app.murmur", category: "HealthKitQuery")
     let dataProvider: HealthKitDataProvider
 
@@ -241,9 +241,9 @@ final class HealthKitQueryService: HealthKitQueryServiceProtocol {
     // MARK: - Timeout Wrapper
 
     /// Wraps an async operation with a timeout to prevent indefinite hangs
-    private func withTimeout<T>(
+    private func withTimeout<T: Sendable>(
         _ timeout: TimeInterval = AppConstants.HealthKit.queryTimeout,
-        operation: @escaping () async throws -> T
+        operation: @escaping @Sendable () async throws -> T
     ) async throws -> T {
         try await withThrowingTaskGroup(of: T.self) { group in
             group.addTask {
@@ -279,13 +279,14 @@ final class HealthKitQueryService: HealthKitQueryServiceProtocol {
         limit: Int,
         sortDescriptors: [NSSortDescriptor]?
     ) async throws -> [HKQuantitySample] {
-        let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
+        nonisolated(unsafe) let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
+        nonisolated(unsafe) let sortDescriptorsCopy = sortDescriptors
         return try await withTimeout {
             try await self.dataProvider.fetchQuantitySamples(
                 type: type,
                 predicate: predicate,
                 limit: limit,
-                sortDescriptors: sortDescriptors
+                sortDescriptors: sortDescriptorsCopy
             )
         }
     }
@@ -297,13 +298,14 @@ final class HealthKitQueryService: HealthKitQueryServiceProtocol {
         limit: Int,
         sortDescriptors: [NSSortDescriptor]?
     ) async throws -> [HKCategorySample] {
-        let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
+        nonisolated(unsafe) let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
+        nonisolated(unsafe) let sortDescriptorsCopy = sortDescriptors
         return try await withTimeout {
             try await self.dataProvider.fetchCategorySamples(
                 type: type,
                 predicate: predicate,
                 limit: limit,
-                sortDescriptors: sortDescriptors
+                sortDescriptors: sortDescriptorsCopy
             )
         }
     }
@@ -314,12 +316,13 @@ final class HealthKitQueryService: HealthKitQueryServiceProtocol {
         limit: Int,
         sortDescriptors: [NSSortDescriptor]?
     ) async throws -> [HKWorkout] {
-        let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
+        nonisolated(unsafe) let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
+        nonisolated(unsafe) let sortDescriptorsCopy = sortDescriptors
         return try await withTimeout {
             try await self.dataProvider.fetchWorkouts(
                 predicate: predicate,
                 limit: limit,
-                sortDescriptors: sortDescriptors
+                sortDescriptors: sortDescriptorsCopy
             )
         }
     }
@@ -330,7 +333,7 @@ final class HealthKitQueryService: HealthKitQueryServiceProtocol {
         end: Date,
         options: HKStatisticsOptions
     ) async throws -> HKStatistics? {
-        let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
+        nonisolated(unsafe) let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
         return try await withTimeout {
             try await self.dataProvider.fetchStatistics(
                 quantityType: quantityType,
@@ -363,11 +366,12 @@ final class HealthKitQueryService: HealthKitQueryServiceProtocol {
         }
         let sleepPredicate = NSCompoundPredicate(orPredicateWithSubpredicates: sleepPredicates)
         let combinedPredicate = NSCompoundPredicate(andPredicateWithSubpredicates: [timePredicate, sleepPredicate])
+        nonisolated(unsafe) let predicateCopy = combinedPredicate
 
         return try await withTimeout {
             try await self.dataProvider.fetchCategorySamples(
                 type: sleepType,
-                predicate: combinedPredicate,
+                predicate: predicateCopy,
                 limit: HKObjectQueryNoLimit,
                 sortDescriptors: nil
             )

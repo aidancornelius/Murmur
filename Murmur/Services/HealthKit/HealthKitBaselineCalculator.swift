@@ -12,7 +12,7 @@ import os.log
 // MARK: - Protocols
 
 /// Service responsible for calculating baseline health metrics from historical data
-protocol HealthKitBaselineCalculatorProtocol {
+protocol HealthKitBaselineCalculatorProtocol: Sendable {
     /// Update all health metric baselines from historical data (typically 30 days)
     func updateBaselines() async
 
