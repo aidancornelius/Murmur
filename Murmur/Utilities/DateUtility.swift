@@ -12,71 +12,36 @@ import Foundation
 /// Provides reusable helpers for date formatting and calendar operations to ensure
 /// consistency across cache keys, lookback windows, and time zone handling.
 ///
-/// All formatters are cached and thread-safe using concurrent dispatch queues.
+/// All formatters are created on-demand for thread safety. DateFormatter creation
+/// is sufficiently fast that caching adds unnecessary complexity and potential for bugs.
 enum DateUtility {
-    // MARK: - Thread-Safe Formatter Cache
+    // MARK: - Formatter Creation
 
-    /// Thread-safe formatter cache using concurrent queue
-    private static let formatterQueue = DispatchQueue(
-        label: "app.murmur.dateUtility.formatters",
-        attributes: .concurrent
-    )
-
-    /// Cached day key formatter (yyyy-MM-dd)
-    nonisolated(unsafe) private static var _dayKeyFormatter: DateFormatter?
-
-    /// Cached monthly key formatter (yyyy-MM)
-    nonisolated(unsafe) private static var _monthlyKeyFormatter: DateFormatter?
-
-    /// Cached backup timestamp formatter (yyyy-MM-dd_HHmm)
-    nonisolated(unsafe) private static var _backupTimestampFormatter: DateFormatter?
-
-    /// Get or create day key formatter (yyyy-MM-dd)
-    private static func dayKeyFormatter(timeZone: TimeZone) -> DateFormatter {
-        formatterQueue.sync {
-            if let existing = _dayKeyFormatter, existing.timeZone == timeZone {
-                return existing
-            }
-
-            let formatter = DateFormatter()
-            formatter.dateFormat = "yyyy-MM-dd"
-            formatter.timeZone = timeZone
-            formatter.locale = Locale(identifier: "en_US_POSIX") // Ensure consistent formatting
-            _dayKeyFormatter = formatter
-            return formatter
-        }
+    /// Create a day key formatter (yyyy-MM-dd)
+    private static func createDayKeyFormatter(timeZone: TimeZone) -> DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = timeZone
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter
     }
 
-    /// Get or create monthly key formatter (yyyy-MM)
-    private static func monthlyKeyFormatter(timeZone: TimeZone) -> DateFormatter {
-        formatterQueue.sync {
-            if let existing = _monthlyKeyFormatter, existing.timeZone == timeZone {
-                return existing
-            }
-
-            let formatter = DateFormatter()
-            formatter.dateFormat = "yyyy-MM"
-            formatter.timeZone = timeZone
-            formatter.locale = Locale(identifier: "en_US_POSIX")
-            _monthlyKeyFormatter = formatter
-            return formatter
-        }
+    /// Create a monthly key formatter (yyyy-MM)
+    private static func createMonthlyKeyFormatter(timeZone: TimeZone) -> DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM"
+        formatter.timeZone = timeZone
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter
     }
 
-    /// Get or create backup timestamp formatter (yyyy-MM-dd_HHmm)
-    private static func backupTimestampFormatter(timeZone: TimeZone) -> DateFormatter {
-        formatterQueue.sync {
-            if let existing = _backupTimestampFormatter, existing.timeZone == timeZone {
-                return existing
-            }
-
-            let formatter = DateFormatter()
-            formatter.dateFormat = "yyyy-MM-dd_HHmm"
-            formatter.timeZone = timeZone
-            formatter.locale = Locale(identifier: "en_US_POSIX")
-            _backupTimestampFormatter = formatter
-            return formatter
-        }
+    /// Create a backup timestamp formatter (yyyy-MM-dd_HHmm)
+    private static func createBackupTimestampFormatter(timeZone: TimeZone) -> DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd_HHmm"
+        formatter.timeZone = timeZone
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter
     }
 
     // MARK: - Day Key Formatting
@@ -90,12 +55,10 @@ enum DateUtility {
     ///   - timeZone: The time zone to use (defaults to current)
     /// - Returns: A string key in format "yyyy-MM-dd"
     ///
-    /// - Note: This uses a cached DateFormatter for thread-safe performance
+    /// - Note: Creates a new DateFormatter for thread safety
     static func dayKey(for date: Date, timeZone: TimeZone = .current) -> String {
-        let formatter = dayKeyFormatter(timeZone: timeZone)
-        return formatterQueue.sync {
-            formatter.string(from: date)
-        }
+        let formatter = createDayKeyFormatter(timeZone: timeZone)
+        return formatter.string(from: date)
     }
 
     /// Generate a monthly key for a given date
@@ -107,10 +70,8 @@ enum DateUtility {
     ///   - timeZone: The time zone to use (defaults to current)
     /// - Returns: A string key in format "yyyy-MM"
     static func monthlyKey(for date: Date, timeZone: TimeZone = .current) -> String {
-        let formatter = monthlyKeyFormatter(timeZone: timeZone)
-        return formatterQueue.sync {
-            formatter.string(from: date)
-        }
+        let formatter = createMonthlyKeyFormatter(timeZone: timeZone)
+        return formatter.string(from: date)
     }
 
     /// Generate a backup timestamp for a given date
@@ -122,10 +83,8 @@ enum DateUtility {
     ///   - timeZone: The time zone to use (defaults to current)
     /// - Returns: A string timestamp in format "yyyy-MM-dd_HHmm"
     static func backupTimestamp(for date: Date, timeZone: TimeZone = .current) -> String {
-        let formatter = backupTimestampFormatter(timeZone: timeZone)
-        return formatterQueue.sync {
-            formatter.string(from: date)
-        }
+        let formatter = createBackupTimestampFormatter(timeZone: timeZone)
+        return formatter.string(from: date)
     }
 
     // MARK: - Day Bounds Calculation

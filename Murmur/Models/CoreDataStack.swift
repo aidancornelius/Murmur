@@ -9,7 +9,11 @@ import CoreData
 import os.log
 
 /// Core Data stack configured for on-device encryption and background contexts.
-final class CoreDataStack: @unchecked Sendable {
+///
+/// This class provides thread-safe access to Core Data via NSPersistentContainer.
+/// The viewContext is main-thread only and should be accessed via the @MainActor context property.
+/// Background contexts should be created via newBackgroundContext() which provides private queue contexts.
+final class CoreDataStack: Sendable {
     enum CoreDataError: Error {
         case modelNotFound
         case storeLoadFailed(Error)
@@ -24,24 +28,25 @@ final class CoreDataStack: @unchecked Sendable {
         }
     }
 
-    nonisolated(unsafe) static let shared = CoreDataStack()
+    static let shared = CoreDataStack()
     private let logger = Logger(subsystem: "app.murmur", category: "CoreData")
 
-    /// Error state if Core Data stack failed to initialise.
-    private(set) var initializationError: CoreDataError?
+    /// Error state if Core Data stack failed to initialise (immutable after init).
+    let initializationError: CoreDataError?
 
     let container: NSPersistentContainer
 
     private init() {
+        let logger = Logger(subsystem: "app.murmur", category: "CoreData")
+
         guard let modelURL = Bundle.main.url(forResource: "Murmur", withExtension: "momd"),
               let model = NSManagedObjectModel(contentsOf: modelURL) else {
-            let error = CoreDataError.modelNotFound
-            self.initializationError = error
             logger.critical("Core Data model not found in bundle")
-            // Return empty container as fallback - app will handle error state
+            self.initializationError = .modelNotFound
             self.container = NSPersistentContainer(name: "Murmur")
             return
         }
+
         let container = NSPersistentContainer(name: "Murmur", managedObjectModel: model)
         if let description = container.persistentStoreDescriptions.first {
             description.setOption(FileProtectionType.complete as NSObject, forKey: NSPersistentStoreFileProtectionKey)
@@ -49,16 +54,24 @@ final class CoreDataStack: @unchecked Sendable {
             description.shouldInferMappingModelAutomatically = true
         }
 
-        // Initialize container before using self in closures
-        self.container = container
+        // Track initialization error using a synchronization mechanism
+        var storeError: CoreDataError?
+        let semaphore = DispatchSemaphore(value: 0)
 
-        container.loadPersistentStores { [weak self] _, error in
+        container.loadPersistentStores { _, error in
             if let error = error as NSError? {
-                let coreDataError = CoreDataError.storeLoadFailed(error)
-                self?.initializationError = coreDataError
-                self?.logger.critical("Failed to load persistent store: \(error.localizedDescription)")
+                storeError = .storeLoadFailed(error)
+                logger.critical("Failed to load persistent store: \(error.localizedDescription)")
             }
+            semaphore.signal()
         }
+
+        // Wait for store loading to complete during init
+        semaphore.wait()
+
+        self.container = container
+        self.initializationError = storeError
+
         container.viewContext.mergePolicy = NSMergePolicy.mergeByPropertyObjectTrump
         container.viewContext.automaticallyMergesChangesFromParent = true
     }
@@ -66,10 +79,14 @@ final class CoreDataStack: @unchecked Sendable {
     /// Internal initializer for testing purposes
     internal init(container: NSPersistentContainer) {
         self.container = container
+        self.initializationError = nil
         container.viewContext.mergePolicy = NSMergePolicy.mergeByPropertyObjectTrump
         container.viewContext.automaticallyMergesChangesFromParent = true
     }
 
+    /// Returns the main-thread view context.
+    /// This property must only be accessed from the main actor.
+    @MainActor
     var context: NSManagedObjectContext { container.viewContext }
 
     func newBackgroundContext() -> NSManagedObjectContext {
@@ -78,6 +95,8 @@ final class CoreDataStack: @unchecked Sendable {
         return context
     }
 
+    /// Saves the main view context (must be called from main actor).
+    @MainActor
     func save() throws {
         let context = container.viewContext
         if context.hasChanges {
@@ -96,15 +115,18 @@ extension CoreDataStack: ResourceManageable {
         }
     }
 
-    func cleanup() {
+    nonisolated func cleanup() {
         // Save any pending changes before app termination
-        let context = container.viewContext
-        if context.hasChanges {
-            do {
-                try context.save()
-                logger.info("Saved pending Core Data changes on cleanup")
-            } catch {
-                logger.error("Failed to save Core Data on cleanup: \(error.localizedDescription)")
+        // Must be called on main thread to access viewContext safely
+        Task { @MainActor in
+            let context = container.viewContext
+            if context.hasChanges {
+                do {
+                    try context.save()
+                    logger.info("Saved pending Core Data changes on cleanup")
+                } catch {
+                    logger.error("Failed to save Core Data on cleanup: \(error.localizedDescription)")
+                }
             }
         }
 
