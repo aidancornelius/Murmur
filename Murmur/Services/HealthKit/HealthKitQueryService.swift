@@ -375,7 +375,7 @@ final class HealthKitQueryService: HealthKitQueryServiceProtocol {
     }
 
     func fetchDetailedSleepData() async -> (bedTime: Date?, wakeTime: Date?, totalHours: Double?)? {
-        guard let sleepType else {
+        guard sleepType != nil else {
             logger.warning("Sleep type not available on this device")
             return nil
         }
@@ -385,7 +385,6 @@ final class HealthKitQueryService: HealthKitQueryServiceProtocol {
             let end = Date()
             let start = end.addingTimeInterval(-AppConstants.HealthKit.dailyMetricsLookback)
 
-            let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)
             let samples = try await fetchSleepSamples(start: start, end: end)
 
             guard !samples.isEmpty else { return nil }

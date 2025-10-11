@@ -150,7 +150,7 @@ extension CalendarAssistant: ResourceManageable {
 
     nonisolated func cleanup() {
         Task { @MainActor in
-            await _cleanup()
+            _cleanup()
         }
     }
 

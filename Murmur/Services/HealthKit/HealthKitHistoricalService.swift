@@ -126,7 +126,7 @@ final class HealthKitHistoricalService: HealthKitHistoricalServiceProtocol {
             return cached
         }
 
-        guard let sleepType else {
+        guard sleepType != nil else {
             logger.warning("Sleep type not available on this device")
             return nil
         }

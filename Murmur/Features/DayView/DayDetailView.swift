@@ -65,7 +65,7 @@ struct DayDetailView: View {
             }
 
             // Calibration section
-            if loadManager.isCalibrating, let summary {
+            if loadManager.isCalibrating, let _ = summary {
                 Section {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
