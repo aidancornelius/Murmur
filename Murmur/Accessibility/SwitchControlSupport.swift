@@ -242,22 +242,27 @@ struct AccessibleNavigationLink<Destination: View>: View {
 
 // MARK: - Accessibility Preferences
 struct AccessibilityPreferences {
+    @MainActor
     static var isSwitchControlEnabled: Bool {
         UIAccessibility.isSwitchControlRunning
     }
 
+    @MainActor
     static var isVoiceOverEnabled: Bool {
         UIAccessibility.isVoiceOverRunning
     }
 
+    @MainActor
     static var isAssistiveTouchEnabled: Bool {
         UIAccessibility.isAssistiveTouchRunning
     }
 
+    @MainActor
     static var shouldUseSimplifiedUI: Bool {
         isSwitchControlEnabled || isAssistiveTouchEnabled
     }
 
+    @MainActor
     static var shouldUseLargeTouchTargets: Bool {
         isAssistiveTouchEnabled || UIAccessibility.isShakeToUndoEnabled
     }

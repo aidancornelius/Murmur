@@ -65,11 +65,17 @@ public protocol ResourceManageable: AnyObject, Sendable {
 ///     }
 /// )
 /// ```
-public final class ResourceHandle: ResourceManageable, @unchecked Sendable {
+public final class ResourceHandle: ResourceManageable, Sendable {
     private let startClosure: (@Sendable () async throws -> Void)?
     private let cleanupClosure: @Sendable () -> Void
-    private var hasStarted = false
-    private var hasCleaned = false
+
+    // Use OSAllocatedUnfairLock for thread-safe state management
+    private let lock = OSAllocatedUnfairLock<State>(initialState: State())
+
+    private struct State {
+        var hasStarted = false
+        var hasCleaned = false
+    }
 
     /// Creates a resource handle with optional start and cleanup closures.
     ///
@@ -85,15 +91,25 @@ public final class ResourceHandle: ResourceManageable, @unchecked Sendable {
     }
 
     public func start() async throws {
-        guard !hasStarted else { return }
+        let shouldStart = lock.withLock { state in
+            guard !state.hasStarted else { return false }
+            state.hasStarted = true
+            return true
+        }
+
+        guard shouldStart else { return }
         try await startClosure?()
-        hasStarted = true
     }
 
     public func cleanup() {
-        guard !hasCleaned else { return }
+        let shouldCleanup = lock.withLock { state in
+            guard !state.hasCleaned else { return false }
+            state.hasCleaned = true
+            return true
+        }
+
+        guard shouldCleanup else { return }
         cleanupClosure()
-        hasCleaned = true
     }
 
     deinit {

@@ -69,9 +69,7 @@ final class HealthKitBaselineCalculator: HealthKitBaselineCalculatorProtocol {
 
             let values = samples.map { $0.quantity.doubleValue(for: HKUnit.secondUnit(with: .milli)) }
             if !values.isEmpty {
-                await MainActor.run {
-                    HealthMetricBaselines.shared.updateHRVBaseline(from: values)
-                }
+                HealthMetricBaselines.shared.updateHRVBaseline(from: values)
                 logger.info("Updated HRV baseline with \(values.count) samples")
             }
         } catch {
@@ -102,9 +100,7 @@ final class HealthKitBaselineCalculator: HealthKitBaselineCalculatorProtocol {
             let unit = HKUnit.count().unitDivided(by: HKUnit.minute())
             let values = samples.map { $0.quantity.doubleValue(for: unit) }
             if !values.isEmpty {
-                await MainActor.run {
-                    HealthMetricBaselines.shared.updateRestingHRBaseline(from: values)
-                }
+                HealthMetricBaselines.shared.updateRestingHRBaseline(from: values)
                 logger.info("Updated resting HR baseline with \(values.count) samples")
             }
         } catch {

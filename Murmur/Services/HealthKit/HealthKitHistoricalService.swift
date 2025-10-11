@@ -36,16 +36,17 @@ protocol HealthKitHistoricalServiceProtocol: Sendable {
 
 /// Handles historical health data queries for specific dates
 /// Uses caching to avoid redundant HealthKit queries for same-day lookups
-final class HealthKitHistoricalService: HealthKitHistoricalServiceProtocol, @unchecked Sendable {
+/// Actor provides thread-safe access to services and lazy properties
+actor HealthKitHistoricalService: HealthKitHistoricalServiceProtocol {
     private let logger = Logger(subsystem: "app.murmur", category: "HealthKitHistorical")
 
     private let queryService: HealthKitQueryServiceProtocol
     private let cacheService: HealthKitCacheServiceProtocol
 
-    private lazy var hrvType: HKQuantityType? = HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN)
-    private lazy var restingHeartType: HKQuantityType? = HKQuantityType.quantityType(forIdentifier: .restingHeartRate)
-    private lazy var sleepType: HKCategoryType? = HKCategoryType.categoryType(forIdentifier: .sleepAnalysis)
-    private lazy var menstrualFlowType: HKCategoryType? = HKCategoryType.categoryType(forIdentifier: .menstrualFlow)
+    private let hrvType: HKQuantityType? = HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN)
+    private let restingHeartType: HKQuantityType? = HKQuantityType.quantityType(forIdentifier: .restingHeartRate)
+    private let sleepType: HKCategoryType? = HKCategoryType.categoryType(forIdentifier: .sleepAnalysis)
+    private let menstrualFlowType: HKCategoryType? = HKCategoryType.categoryType(forIdentifier: .menstrualFlow)
 
     init(queryService: HealthKitQueryServiceProtocol, cacheService: HealthKitCacheServiceProtocol) {
         self.queryService = queryService

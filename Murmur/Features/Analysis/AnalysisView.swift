@@ -138,23 +138,17 @@ struct AnalysisView: View {
         let healthAvailable = healthKit.isHealthDataAvailable
         let hasHealthData = await hasAnyHealthKitData()
         let hasHealth = healthAvailable && hasHealthData
-        await MainActor.run {
-            self.hasHealthData = hasHealth
-        }
+        self.hasHealthData = hasHealth
 
         // Check for activity data
         let hasActivities = await hasAnyActivityData()
-        await MainActor.run {
-            hasActivityData = hasActivities
-        }
+        hasActivityData = hasActivities
 
         // If current tab is now hidden, switch to trends
-        await MainActor.run {
-            if selectedTab == .health && !hasHealthData {
-                selectedTab = .trends
-            } else if selectedTab == .correlations && !hasActivityData {
-                selectedTab = .trends
-            }
+        if selectedTab == .health && !hasHealthData {
+            selectedTab = .trends
+        } else if selectedTab == .correlations && !hasActivityData {
+            selectedTab = .trends
         }
     }
 
@@ -214,12 +208,10 @@ private struct TrendsAnalysisView: View {
 
     private func loadTrends() async {
         isLoading = true
-        let trends = await Task.detached {
-            let bgContext = CoreDataStack.shared.newBackgroundContext()
-            return await bgContext.perform {
-                AnalysisEngine.analyseSymptomTrends(in: bgContext, days: days)
-            }
-        }.value
+        let bgContext = CoreDataStack.shared.newBackgroundContext()
+        let trends = await bgContext.perform {
+            AnalysisEngine.analyseSymptomTrends(in: bgContext, days: days)
+        }
         self.trends = trends
         isLoading = false
     }
@@ -369,23 +361,19 @@ private struct CorrelationsAnalysisView: View {
     private func loadCorrelations() async {
         isLoading = true
 
+        let bgContext = CoreDataStack.shared.newBackgroundContext()
+
         // Check if we have any activities at all
-        let hasActivities = await Task.detached {
-            let bgContext = CoreDataStack.shared.newBackgroundContext()
-            return await bgContext.perform {
-                let request = ActivityEvent.fetchRequest()
-                request.fetchLimit = 1
-                return (try? bgContext.fetch(request).first) != nil
-            }
-        }.value
+        let hasActivities = await bgContext.perform {
+            let request = ActivityEvent.fetchRequest()
+            request.fetchLimit = 1
+            return (try? bgContext.fetch(request).first) != nil
+        }
         hasAnyActivities = hasActivities
 
-        let correlations = await Task.detached {
-            let bgContext = CoreDataStack.shared.newBackgroundContext()
-            return await bgContext.perform {
-                AnalysisEngine.analyseActivityCorrelations(in: bgContext, days: days)
-            }
-        }.value
+        let correlations = await bgContext.perform {
+            AnalysisEngine.analyseActivityCorrelations(in: bgContext, days: days)
+        }
         self.correlations = correlations
         isLoading = false
     }
@@ -536,12 +524,10 @@ private struct PatternsAnalysisView: View {
 
     private func loadPatterns() async {
         isLoading = true
-        let patterns = await Task.detached {
-            let bgContext = CoreDataStack.shared.newBackgroundContext()
-            return await bgContext.perform {
-                AnalysisEngine.analyseTimePatterns(in: bgContext, days: days)
-            }
-        }.value
+        let bgContext = CoreDataStack.shared.newBackgroundContext()
+        let patterns = await bgContext.perform {
+            AnalysisEngine.analyseTimePatterns(in: bgContext, days: days)
+        }
         self.patterns = patterns
         isLoading = false
     }
@@ -705,26 +691,22 @@ private struct HealthAnalysisView: View {
     private func loadCorrelations() async {
         isLoading = true
 
+        let bgContext = CoreDataStack.shared.newBackgroundContext()
+
         // Check if we have any health data at all
-        let hasHealthData = await Task.detached {
-            let bgContext = CoreDataStack.shared.newBackgroundContext()
-            return await bgContext.perform {
-                let request = SymptomEntry.fetchRequest()
-                request.predicate = NSPredicate(
-                    format: "hkHRV != nil OR hkRestingHR != nil OR hkSleepHours != nil"
-                )
-                request.fetchLimit = 1
-                return (try? bgContext.fetch(request).first) != nil
-            }
-        }.value
+        let hasHealthData = await bgContext.perform {
+            let request = SymptomEntry.fetchRequest()
+            request.predicate = NSPredicate(
+                format: "hkHRV != nil OR hkRestingHR != nil OR hkSleepHours != nil"
+            )
+            request.fetchLimit = 1
+            return (try? bgContext.fetch(request).first) != nil
+        }
         hasAnyHealthData = hasHealthData
 
-        let correlations = await Task.detached {
-            let bgContext = CoreDataStack.shared.newBackgroundContext()
-            return await bgContext.perform {
-                AnalysisEngine.analysePhysiologicalCorrelations(in: bgContext, days: days)
-            }
-        }.value
+        let correlations = await bgContext.perform {
+            AnalysisEngine.analysePhysiologicalCorrelations(in: bgContext, days: days)
+        }
         self.correlations = correlations
         isLoading = false
     }

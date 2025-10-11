@@ -6,14 +6,14 @@
 //
 
 import Foundation
-import HealthKit
+@preconcurrency import HealthKit
 import os.log
 
 // MARK: - Protocols
 
 /// Protocol abstraction for HealthKit data access to enable testing with mock implementations
 /// This protocol abstracts the actual data fetching operations rather than the low-level query execution
-protocol HealthKitDataProvider: Sendable {
+@preconcurrency protocol HealthKitDataProvider: Sendable {
     func fetchQuantitySamples(
         type: HKQuantityType,
         predicate: NSPredicate?,
@@ -45,7 +45,7 @@ protocol HealthKitDataProvider: Sendable {
 
 /// Service responsible for executing HealthKit queries with timeout handling
 /// Encapsulates all direct HKHealthStore interactions
-protocol HealthKitQueryServiceProtocol: Sendable {
+@preconcurrency protocol HealthKitQueryServiceProtocol: Sendable {
     var dataProvider: HealthKitDataProvider { get }
     var isHealthDataAvailable: Bool { get }
 
@@ -100,7 +100,8 @@ protocol HealthKitQueryServiceProtocol: Sendable {
 // MARK: - Real Implementation
 
 /// Real HealthKit data provider that uses HKHealthStore
-final class RealHealthKitDataProvider: HealthKitDataProvider, @unchecked Sendable {
+/// Actor provides thread-safe access to query state
+actor RealHealthKitDataProvider: HealthKitDataProvider {
     private let store = HKHealthStore()
     private var activeQueries: [HKQuery] = []
 
@@ -118,12 +119,10 @@ final class RealHealthKitDataProvider: HealthKitDataProvider, @unchecked Sendabl
         _ queryBuilder: @escaping (@escaping @Sendable (ResultType?, Error?) -> Void) -> HKQuery
     ) async throws -> ResultType? {
         try await withCheckedThrowingContinuation { continuation in
-            var queryRef: HKQuery?
             let query = queryBuilder { [weak self] result, error in
-                Task { @MainActor [weak self] in
-                    guard let self, let queryRef else { return }
-                    if let index = self.activeQueries.firstIndex(where: { $0 === queryRef }) {
-                        self.activeQueries.remove(at: index)
+                Task {
+                    if let self {
+                        await self.removeQuery(query)
                     }
                 }
                 if let error {
@@ -132,11 +131,20 @@ final class RealHealthKitDataProvider: HealthKitDataProvider, @unchecked Sendabl
                     continuation.resume(returning: result)
                 }
             }
-            queryRef = query
-            Task { @MainActor in
-                self.activeQueries.append(query)
+            Task {
+                await self.addQuery(query)
             }
             store.execute(query)
+        }
+    }
+
+    private func addQuery(_ query: HKQuery) {
+        activeQueries.append(query)
+    }
+
+    private func removeQuery(_ query: HKQuery) {
+        if let index = activeQueries.firstIndex(where: { $0 === query }) {
+            activeQueries.remove(at: index)
         }
     }
 
@@ -201,31 +209,44 @@ final class RealHealthKitDataProvider: HealthKitDataProvider, @unchecked Sendabl
 // MARK: - ResourceManageable conformance for RealHealthKitDataProvider
 
 extension RealHealthKitDataProvider: ResourceManageable {
-    func start() async throws {
+    nonisolated func start() async throws {
         // No initialisation required - HKHealthStore is ready on creation
     }
 
-    func cleanup() {
+    nonisolated func cleanup() {
+        // Delegate to actor-isolated cleanup
+        Task {
+            await _cleanup()
+        }
+    }
+
+    private func _cleanup() {
         activeQueries.forEach { store.stop($0) }
         activeQueries.removeAll()
     }
 }
 
 /// Service that wraps HealthKit queries with timeout handling and provides high-level data access
-final class HealthKitQueryService: HealthKitQueryServiceProtocol, @unchecked Sendable {
+/// Actor provides thread-safe access to HealthKit queries
+actor HealthKitQueryService: HealthKitQueryServiceProtocol {
     private let logger = Logger(subsystem: "app.murmur", category: "HealthKitQuery")
     let dataProvider: HealthKitDataProvider
 
-    private lazy var hrvType: HKQuantityType? = HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN)
-    private lazy var restingHeartType: HKQuantityType? = HKQuantityType.quantityType(forIdentifier: .restingHeartRate)
-    private lazy var sleepType: HKCategoryType? = HKCategoryType.categoryType(forIdentifier: .sleepAnalysis)
+    private let hrvType: HKQuantityType? = HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN)
+    private let restingHeartType: HKQuantityType? = HKQuantityType.quantityType(forIdentifier: .restingHeartRate)
+    private let sleepType: HKCategoryType? = HKCategoryType.categoryType(forIdentifier: .sleepAnalysis)
     private let workoutType = HKObjectType.workoutType()
-    private lazy var menstrualFlowType: HKCategoryType? = HKCategoryType.categoryType(forIdentifier: .menstrualFlow)
+    private let menstrualFlowType: HKCategoryType? = HKCategoryType.categoryType(forIdentifier: .menstrualFlow)
 
-    var isHealthDataAvailable: Bool { HKHealthStore.isHealthDataAvailable() }
+    nonisolated var isHealthDataAvailable: Bool { HKHealthStore.isHealthDataAvailable() }
 
-    init(dataProvider: HealthKitDataProvider = RealHealthKitDataProvider()) {
+    init(dataProvider: HealthKitDataProvider) {
         self.dataProvider = dataProvider
+    }
+
+    // Convenience initializer for creating with default provider
+    init() async {
+        self.dataProvider = RealHealthKitDataProvider()
     }
 
     func requestPermissions() async throws {
@@ -279,14 +300,13 @@ final class HealthKitQueryService: HealthKitQueryServiceProtocol, @unchecked Sen
         limit: Int,
         sortDescriptors: [NSSortDescriptor]?
     ) async throws -> [HKQuantitySample] {
-        nonisolated(unsafe) let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
-        nonisolated(unsafe) let sortDescriptorsCopy = sortDescriptors
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
         return try await withTimeout {
             try await self.dataProvider.fetchQuantitySamples(
                 type: type,
                 predicate: predicate,
                 limit: limit,
-                sortDescriptors: sortDescriptorsCopy
+                sortDescriptors: sortDescriptors
             )
         }
     }
@@ -298,14 +318,13 @@ final class HealthKitQueryService: HealthKitQueryServiceProtocol, @unchecked Sen
         limit: Int,
         sortDescriptors: [NSSortDescriptor]?
     ) async throws -> [HKCategorySample] {
-        nonisolated(unsafe) let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
-        nonisolated(unsafe) let sortDescriptorsCopy = sortDescriptors
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
         return try await withTimeout {
             try await self.dataProvider.fetchCategorySamples(
                 type: type,
                 predicate: predicate,
                 limit: limit,
-                sortDescriptors: sortDescriptorsCopy
+                sortDescriptors: sortDescriptors
             )
         }
     }
@@ -316,13 +335,12 @@ final class HealthKitQueryService: HealthKitQueryServiceProtocol, @unchecked Sen
         limit: Int,
         sortDescriptors: [NSSortDescriptor]?
     ) async throws -> [HKWorkout] {
-        nonisolated(unsafe) let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
-        nonisolated(unsafe) let sortDescriptorsCopy = sortDescriptors
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
         return try await withTimeout {
             try await self.dataProvider.fetchWorkouts(
                 predicate: predicate,
                 limit: limit,
-                sortDescriptors: sortDescriptorsCopy
+                sortDescriptors: sortDescriptors
             )
         }
     }
@@ -333,7 +351,7 @@ final class HealthKitQueryService: HealthKitQueryServiceProtocol, @unchecked Sen
         end: Date,
         options: HKStatisticsOptions
     ) async throws -> HKStatistics? {
-        nonisolated(unsafe) let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
         return try await withTimeout {
             try await self.dataProvider.fetchStatistics(
                 quantityType: quantityType,
@@ -366,12 +384,11 @@ final class HealthKitQueryService: HealthKitQueryServiceProtocol, @unchecked Sen
         }
         let sleepPredicate = NSCompoundPredicate(orPredicateWithSubpredicates: sleepPredicates)
         let combinedPredicate = NSCompoundPredicate(andPredicateWithSubpredicates: [timePredicate, sleepPredicate])
-        nonisolated(unsafe) let predicateCopy = combinedPredicate
 
         return try await withTimeout {
             try await self.dataProvider.fetchCategorySamples(
                 type: sleepType,
-                predicate: predicateCopy,
+                predicate: combinedPredicate,
                 limit: HKObjectQueryNoLimit,
                 sortDescriptors: nil
             )
@@ -467,13 +484,15 @@ final class HealthKitQueryService: HealthKitQueryServiceProtocol, @unchecked Sen
 // MARK: - ResourceManageable conformance for HealthKitQueryService
 
 extension HealthKitQueryService: ResourceManageable {
-    func start() async throws {
+    nonisolated func start() async throws {
         // No initialisation required - queries are executed on-demand
     }
 
-    func cleanup() {
-        if let realProvider = dataProvider as? RealHealthKitDataProvider {
-            realProvider.cleanup()
+    nonisolated func cleanup() {
+        Task {
+            if let realProvider = await dataProvider as? RealHealthKitDataProvider {
+                await realProvider.cleanup()
+            }
         }
     }
 }
