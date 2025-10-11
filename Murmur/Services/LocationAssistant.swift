@@ -93,10 +93,10 @@ final class LocationAssistant: NSObject, LocationAssistantProtocol, ObservableOb
 extension LocationAssistant: CLLocationManagerDelegate {
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         Task { @MainActor in
-            switch manager.authorizationStatus {
+            switch self.manager.authorizationStatus {
             case .authorizedAlways, .authorizedWhenInUse:
                 state = .requesting
-                manager.requestLocation()
+                self.manager.requestLocation()
             case .denied, .restricted:
                 state = .denied
             case .notDetermined:

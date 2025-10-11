@@ -6,7 +6,7 @@
 //  Refactored: 10/10/2025 - Extracted random generation and HealthKit reads into separate services
 //
 
-@preconcurrency import CoreData
+import CoreData
 import Foundation
 import HealthKit
 import os.log

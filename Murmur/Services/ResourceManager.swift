@@ -28,7 +28,7 @@ import os.log
 ///     }
 /// }
 /// ```
-public protocol ResourceManageable: AnyObject {
+public protocol ResourceManageable: AnyObject, Sendable {
     /// Initialises or starts the resource.
     ///
     /// This method is called when the resource is registered or when explicitly
@@ -65,9 +65,9 @@ public protocol ResourceManageable: AnyObject {
 ///     }
 /// )
 /// ```
-public final class ResourceHandle: ResourceManageable {
-    private let startClosure: (() async throws -> Void)?
-    private let cleanupClosure: () -> Void
+public final class ResourceHandle: ResourceManageable, @unchecked Sendable {
+    private let startClosure: (@Sendable () async throws -> Void)?
+    private let cleanupClosure: @Sendable () -> Void
     private var hasStarted = false
     private var hasCleaned = false
 
@@ -77,8 +77,8 @@ public final class ResourceHandle: ResourceManageable {
     ///   - onStart: Optional closure called during ``start()``. Defaults to nil.
     ///   - onCleanup: Closure called during ``cleanup()``. Required.
     public init(
-        onStart: (() async throws -> Void)? = nil,
-        onCleanup: @escaping () -> Void
+        onStart: (@Sendable () async throws -> Void)? = nil,
+        onCleanup: @escaping @Sendable () -> Void
     ) {
         self.startClosure = onStart
         self.cleanupClosure = onCleanup
@@ -302,8 +302,8 @@ extension ResourceManager {
     public func registerHandle(
         scope: String? = nil,
         autoStart: Bool = false,
-        onStart: (() async throws -> Void)? = nil,
-        onCleanup: @escaping () -> Void
+        onStart: (@Sendable () async throws -> Void)? = nil,
+        onCleanup: @escaping @Sendable () -> Void
     ) async throws -> ResourceHandle {
         let handle = ResourceHandle(onStart: onStart, onCleanup: onCleanup)
         try await register(handle, scope: scope, autoStart: autoStart)

@@ -283,13 +283,9 @@ final class TimelineDataController: NSObject, ObservableObject {
 extension TimelineDataController: NSFetchedResultsControllerDelegate {
     nonisolated func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         Task { @MainActor in
-            // Determine what changed and invalidate cache accordingly
-            if controller === entriesFRC || controller === activitiesFRC {
-                // Changes to entries or activities affect load scores
-                // Invalidate from the earliest changed date forward
-                loadScoreCache.invalidateAll() // Conservative approach for now
-            }
-
+            // Changes to any data affect the timeline
+            // Invalidate cache and rebuild (conservative approach)
+            loadScoreCache.invalidateAll()
             rebuildDaySections()
         }
     }

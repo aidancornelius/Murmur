@@ -6,7 +6,7 @@
 //
 
 import AppIntents
-@preconcurrency import CoreData
+import CoreData
 import Foundation
 
 // MARK: - Symptom Entry Entity
