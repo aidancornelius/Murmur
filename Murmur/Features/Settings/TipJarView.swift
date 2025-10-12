@@ -177,8 +177,11 @@ struct TipJarView: View {
             Spacer()
         }
         .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-                store.resetPurchaseState()
+            Task {
+                try? await Task.sleep(nanoseconds: 5_000_000_000)
+                await MainActor.run {
+                    store.resetPurchaseState()
+                }
             }
         }
     }

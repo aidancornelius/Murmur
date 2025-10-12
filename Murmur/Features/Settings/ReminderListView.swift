@@ -57,7 +57,7 @@ struct ReminderListView: View {
                                 if newValue {
                                     try? await NotificationScheduler.schedule(reminder: reminder)
                                 } else {
-                                    NotificationScheduler.remove(reminder: reminder)
+                                    await NotificationScheduler.remove(reminder: reminder)
                                 }
                             }
                         }
@@ -104,7 +104,9 @@ struct ReminderListView: View {
 
     private func delete(at offsets: IndexSet) {
         offsets.map { reminders[$0] }.forEach { reminder in
-            NotificationScheduler.remove(reminder: reminder)
+            Task {
+                await NotificationScheduler.remove(reminder: reminder)
+            }
             context.delete(reminder)
         }
         try? context.save()

@@ -11,7 +11,7 @@ options:
 packages:
   HealthKitUtility:
     url: https://github.com/aidancornelius/HealthKitUtility
-    from: 1.0.7
+    from: 2.01
 
 settings:
   base:
@@ -190,6 +190,111 @@ schemes:
       config: Debug
     archive:
       config: Release
+
+  # HealthKit test mode schemes for simulator testing
+  Murmur (HealthKit Normal):
+    build:
+      targets:
+        Murmur: all
+        MurmurWidgetsExtension: all
+    run:
+      config: Debug
+      commandLineArguments:
+        "-UITestMode":
+          enabled: true
+        "-SeedHealthKitNormal":
+          enabled: true
+        "-HealthKitHistoryDays 7":
+          enabled: true
+        "-HealthKitSeed 42":
+          enabled: true
+
+  Murmur (HealthKit Lower Stress):
+    build:
+      targets:
+        Murmur: all
+        MurmurWidgetsExtension: all
+    run:
+      config: Debug
+      commandLineArguments:
+        "-UITestMode":
+          enabled: true
+        "-SeedHealthKitLowerStress":
+          enabled: true
+        "-HealthKitHistoryDays 7":
+          enabled: true
+        "-HealthKitSeed 42":
+          enabled: true
+
+  Murmur (HealthKit Higher Stress):
+    build:
+      targets:
+        Murmur: all
+        MurmurWidgetsExtension: all
+    run:
+      config: Debug
+      commandLineArguments:
+        "-UITestMode":
+          enabled: true
+        "-SeedHealthKitHigherStress":
+          enabled: true
+        "-HealthKitHistoryDays 7":
+          enabled: true
+        "-HealthKitSeed 42":
+          enabled: true
+
+  Murmur (HealthKit Edge Cases):
+    build:
+      targets:
+        Murmur: all
+        MurmurWidgetsExtension: all
+    run:
+      config: Debug
+      commandLineArguments:
+        "-UITestMode":
+          enabled: true
+        "-SeedHealthKitEdgeCases":
+          enabled: true
+        "-HealthKitHistoryDays 7":
+          enabled: true
+        "-HealthKitSeed 42":
+          enabled: true
+
+  Murmur (HealthKit Live Data):
+    build:
+      targets:
+        Murmur: all
+        MurmurWidgetsExtension: all
+    run:
+      config: Debug
+      commandLineArguments:
+        "-UITestMode":
+          enabled: true
+        "-SeedHealthKitNormal":
+          enabled: true
+        "-EnableLiveHealthData":
+          enabled: true
+        "-HealthKitHistoryDays 7":
+          enabled: true
+        "-HealthKitSeed 42":
+          enabled: true
+
+  Murmur (HealthKit 30 Days):
+    build:
+      targets:
+        Murmur: all
+        MurmurWidgetsExtension: all
+    run:
+      config: Debug
+      commandLineArguments:
+        "-UITestMode":
+          enabled: true
+        "-SeedHealthKitNormal":
+          enabled: true
+        "-HealthKitHistoryDays 30":
+          enabled: true
+        "-HealthKitSeed 42":
+          enabled: true
 
   MurmurWidgetsExtension:
     build:

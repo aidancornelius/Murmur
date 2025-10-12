@@ -308,6 +308,7 @@ struct UnifiedEventView: View {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel", role: .cancel) { dismiss() }
                     .foregroundStyle(.primary)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.cancelButton)
             }
             ToolbarItem(placement: .confirmationAction) {
                 Button {
@@ -967,8 +968,11 @@ struct UnifiedEventView: View {
 
                     // Auto-focus the notes field when expanding
                     if showNotesCard {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            isNotesFocused = true
+                        Task {
+                            try? await Task.sleep(nanoseconds: 300_000_000)
+                            await MainActor.run {
+                                isNotesFocused = true
+                            }
                         }
                     }
                 }

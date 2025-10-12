@@ -11,12 +11,45 @@ import HealthKit
 import HealthKitTestData
 import os.log
 
+// MARK: - HKHealthStore Extension
+// Helper extension to disambiguate requestAuthorization in Swift 6 when HealthKitTestData is imported
+private extension HKHealthStore {
+    func requestHealthKitAuthorization(toShare writeTypes: Set<HKSampleType>, read readTypes: Set<HKObjectType>) async throws {
+        // Explicitly call the HealthKit framework method by using a local wrapper
+        let store = self
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            store.requestAuthorization(toShare: writeTypes, read: readTypes) { success, error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume()
+                }
+            }
+        }
+    }
+}
+
 /// Errors that can occur during HealthKit data seeding
-enum HealthKitError: Error {
+enum HealthKitError: Error, Equatable {
     case notAvailable
     case authorizationFailed
     case writeFailed(Error)
     case invalidDateRange
+
+    static func == (lhs: HealthKitError, rhs: HealthKitError) -> Bool {
+        switch (lhs, rhs) {
+        case (.notAvailable, .notAvailable):
+            return true
+        case (.authorizationFailed, .authorizationFailed):
+            return true
+        case (.invalidDateRange, .invalidDateRange):
+            return true
+        case let (.writeFailed(lhsError), .writeFailed(rhsError)):
+            return lhsError.localizedDescription == rhsError.localizedDescription
+        default:
+            return false
+        }
+    }
 }
 
 /// Seeds the simulator's HealthKit store with realistic synthetic data for testing
@@ -54,7 +87,7 @@ final class HealthKitDataSeeder {
         // Request authorization for the data types we'll be writing
         let writeTypes = getRequiredWriteTypes()
         let emptyReadTypes: Set<HKObjectType> = []
-        try await healthStore.requestAuthorization(toShare: writeTypes, read: emptyReadTypes)
+        try await healthStore.requestHealthKitAuthorization(toShare: writeTypes, read: emptyReadTypes)
 
         logger.info("HealthKit authorization granted, generating synthetic data...")
 
@@ -124,7 +157,7 @@ final class HealthKitDataSeeder {
         // Request authorization
         let writeTypes = getRequiredWriteTypes()
         let emptyReadTypes: Set<HKObjectType> = []
-        try await healthStore.requestAuthorization(toShare: writeTypes, read: emptyReadTypes)
+        try await healthStore.requestHealthKitAuthorization(toShare: writeTypes, read: emptyReadTypes)
 
         // Create writer
         let writer = HealthKitWriter(healthStore: healthStore)

@@ -21,7 +21,7 @@ protocol LocationAssistantProtocol: AnyObject {
 // MARK: - Implementation
 
 @MainActor
-final class LocationAssistant: NSObject, LocationAssistantProtocol, ObservableObject, @unchecked Sendable {
+final class LocationAssistant: NSObject, LocationAssistantProtocol, ObservableObject {
     enum State {
         case idle
         case requesting

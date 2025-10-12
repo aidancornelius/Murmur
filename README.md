@@ -58,4 +58,4 @@ If you find Murmur helpful, the app includes an optional tip jar. There's no pre
 
 ---
 
-*Remember: Murmur is a tracking tool, not medical advice. Always consult with healthcare professionals about your symptoms and treatment.*
+Murmur is a tracking tool, not medical advice. Always consult with healthcare professionals about your symptoms and treatment.

@@ -53,10 +53,12 @@ final class HealthKitAssistantErrorHandlingTests: HealthKitAssistantTestCase {
         try await assistant.requestPermissions()
 
         // Assert
-        let requestAuthorizationCalled = provider.requestAuthorizationCalled
+        let requestAuthorizationCalled = await provider.requestAuthorizationCalled
         XCTAssertTrue(requestAuthorizationCalled)
-        let readTypes = try XCTUnwrap(provider.requestedReadTypes)
-        let shareTypesCount = provider.requestedShareTypes?.count ?? 0
+        let requestedReadTypes = await provider.requestedReadTypes
+        let readTypes = try XCTUnwrap(requestedReadTypes)
+        let shareTypes = await provider.requestedShareTypes
+        let shareTypesCount = shareTypes?.count ?? 0
         XCTAssertEqual(shareTypesCount, 0) // No write access
 
         // Verify specific types requested
@@ -101,10 +103,10 @@ final class HealthKitAssistantErrorHandlingTests: HealthKitAssistantTestCase {
         try await waitForAsyncOperations()
 
         // Assert: Should have requested permissions
-        let requestAuthorizationCalled = provider.requestAuthorizationCalled
+        let requestAuthorizationCalled = await provider.requestAuthorizationCalled
         XCTAssertTrue(requestAuthorizationCalled)
         // Should have executed queries for context refresh
-        let executeCount = provider.executeCount
+        let executeCount = await provider.executeCount
         XCTAssertGreaterThan(executeCount, 0)
     }
 

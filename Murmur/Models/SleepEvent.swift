@@ -143,16 +143,16 @@ extension SleepEvent {
             )
         }
 
-        // Validate sleep times are within reasonable range (1 week)
+        // Validate sleep times are within reasonable range (1 year)
         if let bedTime = bedTime {
-            let oneWeekAgo = Calendar.current.date(byAdding: .day, value: -7, to: now) ?? now
+            let oneYearAgo = Calendar.current.date(byAdding: .year, value: -1, to: now) ?? now
             let oneDayFuture = Calendar.current.date(byAdding: .day, value: 1, to: now) ?? now
 
-            guard bedTime >= oneWeekAgo && bedTime <= oneDayFuture else {
+            guard bedTime >= oneYearAgo && bedTime <= oneDayFuture else {
                 throw NSError(
                     domain: "SleepEvent",
                     code: 5008,
-                    userInfo: [NSLocalizedDescriptionKey: "Bed time must be within the past week"]
+                    userInfo: [NSLocalizedDescriptionKey: "Bed time must be within the past year"]
                 )
             }
         }

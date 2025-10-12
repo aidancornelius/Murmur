@@ -37,7 +37,9 @@ class HealthKitAssistantTestCase: XCTestCase {
 
     override func tearDown() async throws {
         // Clean up mock data
-        mockDataProvider?.reset()
+        if let provider = mockDataProvider {
+            await provider.reset()
+        }
         mockDataProvider = nil
 
         // Clean up assistant instance

@@ -152,10 +152,11 @@ final class ManualCycleTrackerTests: XCTestCase {
     func testMultipleEntriesOverTime() throws {
         let calendar = Calendar.current
 
-        // Create entries for different days
-        for i in 0..<5 {
+        // Create entries for different days using valid flow levels
+        let validFlowLevels = ["light", "medium", "heavy", "spotting"]
+        for i in 0..<4 {
             let date = calendar.date(byAdding: .day, value: -i, to: Date())!
-            let flowLevel = ["light", "medium", "heavy", "spotting", "none"][i]
+            let flowLevel = validFlowLevels[i]
             _ = ManualCycleEntry.create(date: date, flowLevel: flowLevel, in: testStack!.context)
         }
 
@@ -164,6 +165,6 @@ final class ManualCycleTrackerTests: XCTestCase {
         // Verify all entries were created
         let request = ManualCycleEntry.fetchRequest()
         let entries = try testStack!.context.fetch(request)
-        XCTAssertEqual(entries.count, 5)
+        XCTAssertEqual(entries.count, 4)
     }
 }

@@ -147,33 +147,35 @@ final class DaySummaryTests: XCTestCase {
         var summaries: [DaySummary] = []
 
         // Create a trend: severity decreasing over time (improvement)
+        // Working backwards from today: today=1, yesterday=2, ..., 4 days ago=5
+        // After sorting by date ascending: 4 days ago=5, 3 days ago=4, ..., today=1
         for i in 0..<5 {
             let date = calendar.date(byAdding: .day, value: -i, to: Date())!
             let summary = DaySummary(
                 date: date,
                 entryCount: 3,
                 uniqueSymptoms: 2,
-                averageSeverity: Double(5 - i), // 5, 4, 3, 2, 1
-                rawAverageSeverity: Double(5 - i),
-                severityLevel: 5 - i,
+                averageSeverity: Double(i + 1), // today=1, yesterday=2, 2 days ago=3, 3 days ago=4, 4 days ago=5
+                rawAverageSeverity: Double(i + 1),
+                severityLevel: i + 1,
                 appleHealthMoodUUID: nil,
                 loadScore: nil
             )
             summaries.append(summary)
         }
 
-        // Sort by date ascending
+        // Sort by date ascending (oldest to newest)
         summaries.sort { $0.date < $1.date }
 
         let severities = summaries.map { $0.averageSeverity }
-        let firstHalf = Array(severities.prefix(2))
-        let secondHalf = Array(severities.suffix(2))
+        let firstHalf = Array(severities.prefix(2)) // First 2 days (oldest): [5, 4]
+        let secondHalf = Array(severities.suffix(2)) // Last 2 days (newest): [2, 1]
 
-        let firstAvg = firstHalf.reduce(0, +) / Double(firstHalf.count)
-        let secondAvg = secondHalf.reduce(0, +) / Double(secondHalf.count)
+        let firstAvg = firstHalf.reduce(0, +) / Double(firstHalf.count) // (5+4)/2 = 4.5
+        let secondAvg = secondHalf.reduce(0, +) / Double(secondHalf.count) // (2+1)/2 = 1.5
 
-        // Trend should show improvement (lower severity)
-        XCTAssertLessThan(secondAvg, firstAvg)
+        // Trend should show improvement (lower severity in recent days)
+        XCTAssertLessThan(secondAvg, firstAvg) // 1.5 < 4.5
     }
 }
 

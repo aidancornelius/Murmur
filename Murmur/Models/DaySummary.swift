@@ -41,9 +41,11 @@ struct DaySummary: Hashable, Identifiable {
 
         let severityLevel = entries.isEmpty ? 0 : max(1, min(5, Int(round(averageSeverity))))
 
-        let loadScore = LoadScore.calculate(
+        // Use new LoadCalculator with activities only (no meals/sleep for this legacy method)
+        let contributors: [LoadContributor] = activities as [LoadContributor]
+        let loadScore = LoadCalculator.shared.calculate(
             for: date,
-            activities: activities,
+            contributors: contributors,
             symptoms: entries,
             previousLoad: previousLoad
         )

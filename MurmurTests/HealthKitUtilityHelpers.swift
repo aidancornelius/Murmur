@@ -214,7 +214,7 @@ final class HealthKitUtilityTestHelper {
         startDate: Date = Date().addingTimeInterval(-7 * 86400),
         endDate: Date = Date(),
         seed: Int = 42
-    ) {
+    ) async {
         let bundle = SyntheticDataGenerator.generateHealthData(
             preset: preset,
             manipulation: .smoothReplace,
@@ -227,9 +227,11 @@ final class HealthKitUtilityTestHelper {
         let (quantitySamples, categorySamples, workouts) = convertToHKSamples(bundle: bundle)
 
         // Populate the mock provider
-        provider.mockQuantitySamples = quantitySamples
-        provider.mockCategorySamples = categorySamples
-        provider.mockWorkouts = workouts
+        await provider.setMockData(
+            quantitySamples: quantitySamples,
+            categorySamples: categorySamples,
+            workouts: workouts
+        )
     }
 }
 
@@ -250,9 +252,9 @@ extension XCTestCase {
         startDate: Date = Date().addingTimeInterval(-7 * 86400),
         endDate: Date = Date(),
         seed: Int = 42
-    ) -> MockHealthKitDataProvider {
+    ) async -> MockHealthKitDataProvider {
         let provider = MockHealthKitDataProvider()
-        HealthKitUtilityTestHelper.populateMockProvider(
+        await HealthKitUtilityTestHelper.populateMockProvider(
             provider,
             preset: preset,
             startDate: startDate,

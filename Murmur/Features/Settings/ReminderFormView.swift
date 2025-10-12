@@ -108,7 +108,7 @@ struct ReminderFormView: View {
                     _ = try? await NotificationScheduler.requestAuthorization()
                     try? await NotificationScheduler.schedule(reminder: reminder)
                 } else {
-                    NotificationScheduler.remove(reminder: reminder)
+                    await NotificationScheduler.remove(reminder: reminder)
                 }
             }
             dismiss()

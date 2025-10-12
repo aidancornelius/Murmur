@@ -293,8 +293,10 @@ final class CalendarAssistantTests: XCTestCase {
 
         // Then: Should have correct properties
         XCTAssertEqual(event.title, "Test Event")
-        XCTAssertEqual(event.startDate, start)
-        XCTAssertEqual(event.endDate, start.addingTimeInterval(duration))
+        // Date comparison with tolerance for potential precision loss in EKEvent
+        // EKEvent may round dates to whole seconds
+        XCTAssertEqual(event.startDate.timeIntervalSince1970, start.timeIntervalSince1970, accuracy: 1.0)
+        XCTAssertEqual(event.endDate.timeIntervalSince1970, start.addingTimeInterval(duration).timeIntervalSince1970, accuracy: 1.0)
         XCTAssertEqual(event.notes, "Test notes")
         XCTAssertFalse(event.isAllDay)
     }

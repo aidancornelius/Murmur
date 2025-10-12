@@ -318,7 +318,8 @@ final class UnifiedEventViewTests: XCTestCase {
         let hour = calendar.component(.hour, from: date)
 
         // Check time-based suggestion
-        let shouldSuggestBasedOnTime = (hour >= 5 && hour < 8) || hour > 21
+        // Suggest sleep: 9pm-5am (21:00-05:00) OR 5am-8am (05:00-08:00)
+        let shouldSuggestBasedOnTime = (hour >= 5 && hour < 8) || hour >= 21 || hour < 5
 
         guard shouldSuggestBasedOnTime else {
             return false

@@ -179,14 +179,28 @@ final class TimelineDataController: NSObject, ObservableObject {
         }
 
         // Calculate load score range using cache
-        let allDataDates = Set(groupedEntries.keys).union(groupedActivities.keys)
+        // Combine all contributors (activities, meals, sleep) into a single dictionary
+        let allDataDates = Set(groupedEntries.keys)
+            .union(groupedActivities.keys)
+            .union(groupedMealEvents.keys)
+            .union(groupedSleepEvents.keys)
         let firstDate = allDataDates.min() ?? displayStartDate
         let lastDate = displayDates.max() ?? displayStartDate
+
+        // Merge all contributors by date
+        var contributorsByDate: [Date: [LoadContributor]] = [:]
+        for date in allDataDates {
+            var contributors: [LoadContributor] = []
+            contributors.append(contentsOf: groupedActivities[date] ?? [])
+            contributors.append(contentsOf: groupedMealEvents[date] ?? [])
+            contributors.append(contentsOf: groupedSleepEvents[date] ?? [])
+            contributorsByDate[date] = contributors
+        }
 
         let loadScores = loadScoreCache.calculateRange(
             from: firstDate,
             to: lastDate,
-            activitiesByDate: groupedActivities,
+            contributorsByDate: contributorsByDate,
             symptomsByDate: groupedEntries
         )
 

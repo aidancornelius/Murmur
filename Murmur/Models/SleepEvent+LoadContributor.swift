@@ -9,6 +9,7 @@ import Foundation
 
 // MARK: - LoadContributor Conformance
 
+@MainActor
 extension SleepEvent: RecoveryModifier {
     /// Effective date for load calculations (use wake time for when sleep impacts the day)
     public var effectiveDate: Date {
@@ -17,8 +18,8 @@ extension SleepEvent: RecoveryModifier {
     }
 
     /// Sleep quality as Double (converting from Int16)
-    public var quality: Double {
-        return Double(self.quality)
+    public var qualityValue: Double {
+        return Double(quality)
     }
 
     /// Duration in hours calculated from bed and wake times
@@ -40,7 +41,7 @@ extension SleepEvent: RecoveryModifier {
     public var recoveryModifier: Double? {
         if isMainRecoveryPeriod {
             // Main sleep block significantly impacts recovery
-            switch Int(quality) {
+            switch Int(qualityValue) {
             case 1: return 0.5  // Very poor sleep - 50% slower recovery
             case 2: return 0.7  // Poor sleep - 30% slower recovery
             case 3: return 1.0  // Normal recovery
@@ -51,7 +52,7 @@ extension SleepEvent: RecoveryModifier {
         } else {
             // Naps have minor impact on recovery
             // Good nap slightly helps, poor nap slightly hinders
-            return quality >= 4 ? 1.1 : 0.95
+            return qualityValue >= 4 ? 1.1 : 0.95
         }
     }
 
@@ -59,10 +60,10 @@ extension SleepEvent: RecoveryModifier {
     /// Override the default implementation to provide sleep-specific logic
     public var loadContribution: Double {
         // Only very poor main sleep adds load burden
-        if isMainRecoveryPeriod && quality <= 2 {
+        if isMainRecoveryPeriod && qualityValue <= 2 {
             // Quality 1 = 10 load points (significant impact)
             // Quality 2 = 5 load points (moderate impact)
-            return (3.0 - quality) * 5.0
+            return (3.0 - qualityValue) * 5.0
         }
         return 0.0
     }
@@ -70,6 +71,7 @@ extension SleepEvent: RecoveryModifier {
 
 // MARK: - Computed Properties
 
+@MainActor
 extension SleepEvent {
     /// Get a formatted duration string
     public var formattedDuration: String {
@@ -87,12 +89,12 @@ extension SleepEvent {
 
     /// Check if this represents poor quality sleep
     public var isPoorQuality: Bool {
-        return quality <= 2
+        return qualityValue <= 2
     }
 
     /// Check if this represents good quality sleep
     public var isGoodQuality: Bool {
-        return quality >= 4
+        return qualityValue >= 4
     }
 
     /// Get a description of the sleep type
@@ -112,7 +114,7 @@ extension SleepEvent {
 
     /// Get a quality description
     public var qualityDescription: String {
-        switch Int(quality) {
+        switch Int(qualityValue) {
         case 1: return "Very poor"
         case 2: return "Poor"
         case 3: return "Fair"

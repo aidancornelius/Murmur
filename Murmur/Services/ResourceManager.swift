@@ -183,7 +183,19 @@ public actor ResourceManager {
             weakResource.resource == nil || ObjectIdentifier(weakResource.resource!) == ObjectIdentifier(resource)
         }
 
-        // Add new registration
+        // If autoStart is requested, start the resource first before registering
+        if autoStart {
+            do {
+                try await resource.start()
+                logger.debug("Auto-started resource: \(identifier)")
+            } catch {
+                logger.error("Failed to auto-start resource \(identifier): \(error.localizedDescription)")
+                // Don't register the resource if start fails
+                throw error
+            }
+        }
+
+        // Add new registration only after successful start (if autoStart was true)
         let weakResource = WeakResource(
             resource: resource,
             scope: scope,
@@ -192,16 +204,6 @@ public actor ResourceManager {
         resources.append(weakResource)
 
         logger.debug("Registered resource: \(identifier)\(scope.map { " (scope: \($0))" } ?? "")")
-
-        if autoStart {
-            do {
-                try await resource.start()
-                logger.debug("Auto-started resource: \(identifier)")
-            } catch {
-                logger.error("Failed to auto-start resource \(identifier): \(error.localizedDescription)")
-                throw error
-            }
-        }
     }
 
     /// Cleans up resources within a specific scope.

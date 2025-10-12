@@ -75,6 +75,7 @@ struct AllSymptomsSheet: View {
                     .textFieldStyle(.plain)
                     .autocorrectionDisabled()
                     .focused($isSearchFocused)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.symptomSearchField)
                     .accessibilityLabel("Search symptoms")
                     .accessibilityHint("Type to filter symptoms by name")
                 if !searchText.isEmpty {

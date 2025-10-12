@@ -37,7 +37,7 @@ final class HealthKitAssistantManualTrackingTests: HealthKitAssistantTestCase {
         // Assert: Should use manual tracker value
         XCTAssertEqual(cycleDay, 15)
         // Should not have queried HealthKit
-        let executeCount = provider.executeCount
+        let executeCount = await provider.executeCount
         XCTAssertEqual(executeCount, 0)
     }
 
@@ -61,7 +61,7 @@ final class HealthKitAssistantManualTrackingTests: HealthKitAssistantTestCase {
 
         // Assert: Should use manual tracker
         XCTAssertEqual(flowLevel, "heavy")
-        let executeCount = provider.executeCount
+        let executeCount = await provider.executeCount
         XCTAssertEqual(executeCount, 0)
     }
 
@@ -87,7 +87,7 @@ final class HealthKitAssistantManualTrackingTests: HealthKitAssistantTestCase {
 
         // Assert: Should use HealthKit
         XCTAssertEqual(cycleDay, 8) // 7 days ago + 1
-        let executeCount = provider.executeCount
+        let executeCount = await provider.executeCount
         XCTAssertGreaterThan(executeCount, 0)
     }
 }

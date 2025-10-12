@@ -6,8 +6,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/aidancornelius/HealthKitUtility",
       "state" : {
-        "revision" : "f0bb10abe2f3e0a657af5bb646604c78c0adfccc",
-        "version" : "1.0.7"
+        "revision" : "b91efc67aad940c6938b36bc9676e1143472b66e",
+        "version" : "2.1.0"
       }
     }
   ],

@@ -19,7 +19,7 @@ final class HealthKitUtilityExampleTests: XCTestCase {
 
     func testNormalDataGenerationAndConversion() async throws {
         // Arrange: Create a mock provider populated with normal health data
-        let mockProvider = createMockProviderWithRealisticData(preset: .normal)
+        let mockProvider = await createMockProviderWithRealisticData(preset: .normal)
         let healthKit = HealthKitAssistant(dataProvider: mockProvider)
 
         // Act: Fetch recent HRV
@@ -36,8 +36,8 @@ final class HealthKitUtilityExampleTests: XCTestCase {
 
     func testStressComparisonDemonstration() async throws {
         // Arrange: Create two different stress profiles
-        let normalProvider = createMockProviderWithRealisticData(preset: .normal, seed: 12345)
-        let stressProvider = createMockProviderWithRealisticData(preset: .higherStress, seed: 12345)
+        let normalProvider = await createMockProviderWithRealisticData(preset: .normal, seed: 12345)
+        let stressProvider = await createMockProviderWithRealisticData(preset: .higherStress, seed: 12345)
 
         let normalHealthKit = HealthKitAssistant(dataProvider: normalProvider)
         let stressHealthKit = HealthKitAssistant(dataProvider: stressProvider)
@@ -61,7 +61,7 @@ final class HealthKitUtilityExampleTests: XCTestCase {
 
     func testBaselineCalculationWithSyntheticData() async throws {
         // Arrange: Create a realistic 30-day dataset
-        let mockProvider = createMockProviderWithRealisticData(
+        let mockProvider = await createMockProviderWithRealisticData(
             preset: .normal,
             startDate: .daysAgo(30),
             endDate: Date(),

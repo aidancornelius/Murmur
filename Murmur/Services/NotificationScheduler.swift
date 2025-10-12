@@ -65,11 +65,16 @@ struct NotificationScheduler {
         }
     }
 
-    static func remove(reminder: Reminder) {
+    static func remove(reminder: Reminder) async {
         guard let id = reminder.id else { return }
-        var identifiers = [id.uuidString]
-        identifiers.append(contentsOf: weekdayLookup.keys.map { "\(id.uuidString)-\($0)" })
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: identifiers)
+        let center = UNUserNotificationCenter.current()
+
+        // Get all pending requests and filter by ID prefix
+        let allRequests = await center.pendingNotificationRequests()
+        let identifiersToRemove = allRequests
+            .filter { $0.identifier.starts(with: id.uuidString) }
+            .map { $0.identifier }
+        center.removePendingNotificationRequests(withIdentifiers: identifiersToRemove)
     }
 
     enum SchedulerError: Error {

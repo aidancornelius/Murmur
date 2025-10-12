@@ -24,7 +24,7 @@ final class HealthKitBaselineCalculatorTests: XCTestCase {
     }
 
     override func tearDown() async throws {
-        mockDataProvider?.reset()
+        await mockDataProvider?.reset()
         mockDataProvider = nil
         mockQueryService = nil
         baselineCalculator = nil
@@ -34,13 +34,18 @@ final class HealthKitBaselineCalculatorTests: XCTestCase {
     // MARK: - Update HRV Baseline Tests
 
     func testUpdateHRVBaseline_Success() async {
-        // Given
+        // Given - Need at least 10 samples for baseline calculation
         let mockSamples = [
             HKQuantitySample.mockHRV(value: 45.0, date: .daysAgo(1)),
-            HKQuantitySample.mockHRV(value: 50.0, date: .daysAgo(5)),
-            HKQuantitySample.mockHRV(value: 42.0, date: .daysAgo(10)),
-            HKQuantitySample.mockHRV(value: 48.0, date: .daysAgo(15)),
-            HKQuantitySample.mockHRV(value: 46.0, date: .daysAgo(20))
+            HKQuantitySample.mockHRV(value: 50.0, date: .daysAgo(3)),
+            HKQuantitySample.mockHRV(value: 42.0, date: .daysAgo(5)),
+            HKQuantitySample.mockHRV(value: 48.0, date: .daysAgo(7)),
+            HKQuantitySample.mockHRV(value: 46.0, date: .daysAgo(9)),
+            HKQuantitySample.mockHRV(value: 44.0, date: .daysAgo(11)),
+            HKQuantitySample.mockHRV(value: 47.0, date: .daysAgo(13)),
+            HKQuantitySample.mockHRV(value: 49.0, date: .daysAgo(15)),
+            HKQuantitySample.mockHRV(value: 43.0, date: .daysAgo(17)),
+            HKQuantitySample.mockHRV(value: 45.0, date: .daysAgo(19))
         ]
         await mockDataProvider!.setMockData(quantitySamples: mockSamples, categorySamples: [], workouts: [])
 
@@ -48,7 +53,7 @@ final class HealthKitBaselineCalculatorTests: XCTestCase {
         await baselineCalculator!.updateHRVBaseline()
 
         // Then
-        let fetchCount = mockDataProvider!.fetchQuantityCount
+        let fetchCount = await mockDataProvider!.fetchQuantityCount
         XCTAssertEqual(fetchCount, 1)
 
         // Verify baseline was updated (check singleton)
@@ -69,7 +74,7 @@ final class HealthKitBaselineCalculatorTests: XCTestCase {
         await baselineCalculator!.updateHRVBaseline()
 
         // Then
-        let fetchCount = mockDataProvider!.fetchQuantityCount
+        let fetchCount = await mockDataProvider!.fetchQuantityCount
         XCTAssertEqual(fetchCount, 1)
         // Baseline should remain unchanged or be nil
     }
@@ -91,13 +96,18 @@ final class HealthKitBaselineCalculatorTests: XCTestCase {
     // MARK: - Update Resting HR Baseline Tests
 
     func testUpdateRestingHRBaseline_Success() async {
-        // Given
+        // Given - Need at least 10 samples for baseline calculation
         let mockSamples = [
             HKQuantitySample.mockRestingHR(value: 62.0, date: .daysAgo(1)),
-            HKQuantitySample.mockRestingHR(value: 64.0, date: .daysAgo(5)),
-            HKQuantitySample.mockRestingHR(value: 60.0, date: .daysAgo(10)),
-            HKQuantitySample.mockRestingHR(value: 63.0, date: .daysAgo(15)),
-            HKQuantitySample.mockRestingHR(value: 61.0, date: .daysAgo(20))
+            HKQuantitySample.mockRestingHR(value: 64.0, date: .daysAgo(3)),
+            HKQuantitySample.mockRestingHR(value: 60.0, date: .daysAgo(5)),
+            HKQuantitySample.mockRestingHR(value: 63.0, date: .daysAgo(7)),
+            HKQuantitySample.mockRestingHR(value: 61.0, date: .daysAgo(9)),
+            HKQuantitySample.mockRestingHR(value: 65.0, date: .daysAgo(11)),
+            HKQuantitySample.mockRestingHR(value: 59.0, date: .daysAgo(13)),
+            HKQuantitySample.mockRestingHR(value: 62.0, date: .daysAgo(15)),
+            HKQuantitySample.mockRestingHR(value: 63.0, date: .daysAgo(17)),
+            HKQuantitySample.mockRestingHR(value: 61.0, date: .daysAgo(19))
         ]
         await mockDataProvider!.setMockData(quantitySamples: mockSamples, categorySamples: [], workouts: [])
 
@@ -105,7 +115,7 @@ final class HealthKitBaselineCalculatorTests: XCTestCase {
         await baselineCalculator!.updateRestingHRBaseline()
 
         // Then
-        let fetchCount = mockDataProvider!.fetchQuantityCount
+        let fetchCount = await mockDataProvider!.fetchQuantityCount
         XCTAssertEqual(fetchCount, 1)
 
         // Verify baseline was updated
@@ -126,7 +136,7 @@ final class HealthKitBaselineCalculatorTests: XCTestCase {
         await baselineCalculator!.updateRestingHRBaseline()
 
         // Then
-        let fetchCount = mockDataProvider!.fetchQuantityCount
+        let fetchCount = await mockDataProvider!.fetchQuantityCount
         XCTAssertEqual(fetchCount, 1)
     }
 
@@ -165,7 +175,7 @@ final class HealthKitBaselineCalculatorTests: XCTestCase {
 
         // Then
         // Should call both HRV and resting HR fetches
-        let fetchCount = mockDataProvider!.fetchQuantityCount
+        let fetchCount = await mockDataProvider!.fetchQuantityCount
         XCTAssertEqual(fetchCount, 2, "Should fetch both HRV and resting HR")
     }
 
@@ -186,7 +196,7 @@ final class HealthKitBaselineCalculatorTests: XCTestCase {
         let duration = Date().timeIntervalSince(startTime)
 
         // Then
-        let fetchCount = mockDataProvider!.fetchQuantityCount
+        let fetchCount = await mockDataProvider!.fetchQuantityCount
         XCTAssertEqual(fetchCount, 2)
         // Should complete quickly since it's concurrent (not a strict test, but validates structure)
         XCTAssertLessThan(duration, 1.0, "Should execute concurrently")
@@ -202,8 +212,8 @@ final class HealthKitBaselineCalculatorTests: XCTestCase {
         }
         await mockDataProvider!.setMockData(quantitySamples: mockSamples, categorySamples: [], workouts: [])
 
-        // Clear existing baseline
-        HealthMetricBaselines.shared.updateHRVBaseline(from: [])
+        // Clear existing baseline (resetAll clears both HRV and resting HR)
+        HealthMetricBaselines.shared.resetAll()
 
         // When
         await baselineCalculator!.updateHRVBaseline()
@@ -231,8 +241,8 @@ final class HealthKitBaselineCalculatorTests: XCTestCase {
         }
         await mockDataProvider!.setMockData(quantitySamples: mockSamples, categorySamples: [], workouts: [])
 
-        // Clear existing baseline
-        HealthMetricBaselines.shared.updateRestingHRBaseline(from: [])
+        // Clear existing baseline (resetAll clears both HRV and resting HR)
+        HealthMetricBaselines.shared.resetAll()
 
         // When
         await baselineCalculator!.updateRestingHRBaseline()
@@ -268,7 +278,7 @@ final class HealthKitBaselineCalculatorTests: XCTestCase {
         await baselineCalculator!.updateHRVBaseline()
 
         // Then
-        let fetchCount = mockDataProvider!.fetchQuantityCount
+        let fetchCount = await mockDataProvider!.fetchQuantityCount
         XCTAssertEqual(fetchCount, 1)
         // Note: We can't directly verify the date range in mock, but the implementation
         // should query 30 days. This could be enhanced with more sophisticated mocking.

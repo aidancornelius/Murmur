@@ -54,19 +54,19 @@ final class LoadScoreCacheTests: XCTestCase {
         let config = LoadCapacityManager.shared.configuration
 
         // Calculate and cache
-        let firstScore = LoadScore.calculate(
+        let firstScore = LoadCalculator.shared.calculate(
             for: today,
-            activities: [activity],
+            contributors: [activity],
             symptoms: [entry],
             previousLoad: 0.0,
             configuration: config
         )
 
-        cache.set(firstScore, for: today, activities: [activity],
+        cache.set(firstScore, for: today, contributors: [activity],
                  symptoms: [entry], previousLoad: 0.0, config: config)
 
         // Verify cache hit
-        let cachedScore = cache.get(for: today, activities: [activity],
+        let cachedScore = cache.get(for: today, contributors: [activity],
                                     symptoms: [entry], previousLoad: 0.0, config: config)
 
         XCTAssertNotNil(cachedScore)
@@ -80,7 +80,7 @@ final class LoadScoreCacheTests: XCTestCase {
         let today = calendar.startOfDay(for: Date())
         let config = LoadCapacityManager.shared.configuration
 
-        let result = cache.get(for: today, activities: [], symptoms: [],
+        let result = cache.get(for: today, contributors: [], symptoms: [],
                               previousLoad: 0.0, config: config)
 
         XCTAssertNil(result)
@@ -103,9 +103,9 @@ final class LoadScoreCacheTests: XCTestCase {
         let config = LoadCapacityManager.shared.configuration
 
         // Cache with first entry
-        let firstScore = LoadScore.calculate(for: today, activities: [], symptoms: [entry1],
+        let firstScore = LoadCalculator.shared.calculate(for: today, contributors: [], symptoms: [entry1],
                                             previousLoad: 0.0, configuration: config)
-        cache.set(firstScore, for: today, activities: [], symptoms: [entry1],
+        cache.set(firstScore, for: today, contributors: [], symptoms: [entry1],
                  previousLoad: 0.0, config: config)
 
         // Try to get with different entry
@@ -117,7 +117,7 @@ final class LoadScoreCacheTests: XCTestCase {
 
         try testStack!.context.save()
 
-        let cachedScore = cache.get(for: today, activities: [], symptoms: [entry2],
+        let cachedScore = cache.get(for: today, contributors: [], symptoms: [entry2],
                                     previousLoad: 0.0, config: config)
 
         XCTAssertNil(cachedScore, "Should miss cache when entry data changes")
@@ -133,7 +133,7 @@ final class LoadScoreCacheTests: XCTestCase {
         let scores = cache.calculateRange(
             from: startDate,
             to: endDate,
-            activitiesByDate: [:],
+            contributorsByDate: [:],
             symptomsByDate: [:]
         )
 
@@ -150,7 +150,7 @@ final class LoadScoreCacheTests: XCTestCase {
         let firstScores = cache.calculateRange(
             from: startDate,
             to: endDate,
-            activitiesByDate: [:],
+            contributorsByDate: [:],
             symptomsByDate: [:]
         )
 
@@ -163,7 +163,7 @@ final class LoadScoreCacheTests: XCTestCase {
         let secondScores = cache.calculateRange(
             from: startDate,
             to: endDate,
-            activitiesByDate: [:],
+            contributorsByDate: [:],
             symptomsByDate: [:]
         )
 
@@ -190,14 +190,14 @@ final class LoadScoreCacheTests: XCTestCase {
 
         try testStack!.context.save()
 
-        let activitiesByDate: [Date: [ActivityEvent]] = [
+        let contributorsByDate: [Date: [ActivityEvent]] = [
             calendar.startOfDay(for: day1): [activity]
         ]
 
         let scores = cache.calculateRange(
             from: day1,
             to: day3,
-            activitiesByDate: activitiesByDate,
+            contributorsByDate: contributorsByDate,
             symptomsByDate: [:]
         )
 
@@ -222,7 +222,7 @@ final class LoadScoreCacheTests: XCTestCase {
         let day3 = calendar.date(byAdding: .day, value: -1, to: Date())!
 
         // Populate cache
-        _ = cache.calculateRange(from: day1, to: day3, activitiesByDate: [:], symptomsByDate: [:])
+        _ = cache.calculateRange(from: day1, to: day3, contributorsByDate: [:], symptomsByDate: [:])
 
         cache.resetStatistics()
 
@@ -230,7 +230,7 @@ final class LoadScoreCacheTests: XCTestCase {
         cache.invalidateFrom(date: day2)
 
         // day1 should hit, day2 and day3 should miss
-        _ = cache.calculateRange(from: day1, to: day3, activitiesByDate: [:], symptomsByDate: [:])
+        _ = cache.calculateRange(from: day1, to: day3, contributorsByDate: [:], symptomsByDate: [:])
 
         XCTAssertEqual(cache.hits, 1, "Day 1 should be cached")
         XCTAssertEqual(cache.misses, 2, "Day 2 and 3 should be recalculated")
@@ -242,7 +242,7 @@ final class LoadScoreCacheTests: XCTestCase {
         let day3 = Date()
 
         // Populate cache
-        _ = cache.calculateRange(from: day1, to: day3, activitiesByDate: [:], symptomsByDate: [:])
+        _ = cache.calculateRange(from: day1, to: day3, contributorsByDate: [:], symptomsByDate: [:])
 
         cache.resetStatistics()
 
@@ -250,7 +250,7 @@ final class LoadScoreCacheTests: XCTestCase {
         cache.invalidate(date: day2)
 
         // day1 and day3 should hit, day2 should miss
-        _ = cache.calculateRange(from: day1, to: day3, activitiesByDate: [:], symptomsByDate: [:])
+        _ = cache.calculateRange(from: day1, to: day3, contributorsByDate: [:], symptomsByDate: [:])
 
         XCTAssertEqual(cache.hits, 2, "Day 1 and 3 should be cached")
         XCTAssertEqual(cache.misses, 1, "Day 2 should be recalculated")
@@ -261,13 +261,13 @@ final class LoadScoreCacheTests: XCTestCase {
         let endDate = Date()
 
         // Populate cache
-        _ = cache.calculateRange(from: startDate, to: endDate, activitiesByDate: [:], symptomsByDate: [:])
+        _ = cache.calculateRange(from: startDate, to: endDate, contributorsByDate: [:], symptomsByDate: [:])
 
         cache.invalidateAll()
         cache.resetStatistics()
 
         // All should miss
-        _ = cache.calculateRange(from: startDate, to: endDate, activitiesByDate: [:], symptomsByDate: [:])
+        _ = cache.calculateRange(from: startDate, to: endDate, contributorsByDate: [:], symptomsByDate: [:])
 
         XCTAssertEqual(cache.hits, 0)
         XCTAssertEqual(cache.misses, 6) // 6 days
@@ -280,8 +280,8 @@ final class LoadScoreCacheTests: XCTestCase {
         let recentDate = calendar.date(byAdding: .day, value: -5, to: Date())!
 
         // Populate cache with old and recent dates
-        _ = cache.calculateRange(from: oldDate, to: oldDate, activitiesByDate: [:], symptomsByDate: [:])
-        _ = cache.calculateRange(from: recentDate, to: recentDate, activitiesByDate: [:], symptomsByDate: [:])
+        _ = cache.calculateRange(from: oldDate, to: oldDate, contributorsByDate: [:], symptomsByDate: [:])
+        _ = cache.calculateRange(from: recentDate, to: recentDate, contributorsByDate: [:], symptomsByDate: [:])
 
         let statsBefore = cache.statistics()
         XCTAssertEqual(statsBefore.entries, 2)
@@ -300,10 +300,10 @@ final class LoadScoreCacheTests: XCTestCase {
         let endDate = Date()
 
         // First pass - 3 misses
-        _ = cache.calculateRange(from: startDate, to: endDate, activitiesByDate: [:], symptomsByDate: [:])
+        _ = cache.calculateRange(from: startDate, to: endDate, contributorsByDate: [:], symptomsByDate: [:])
 
         // Second pass - 3 hits
-        _ = cache.calculateRange(from: startDate, to: endDate, activitiesByDate: [:], symptomsByDate: [:])
+        _ = cache.calculateRange(from: startDate, to: endDate, contributorsByDate: [:], symptomsByDate: [:])
 
         let stats = cache.statistics()
         XCTAssertEqual(stats.entries, 3)
@@ -313,7 +313,7 @@ final class LoadScoreCacheTests: XCTestCase {
     }
 
     func testResetStatisticsClearsCounters() throws {
-        _ = cache.calculateRange(from: Date(), to: Date(), activitiesByDate: [:], symptomsByDate: [:])
+        _ = cache.calculateRange(from: Date(), to: Date(), contributorsByDate: [:], symptomsByDate: [:])
 
         cache.resetStatistics()
 

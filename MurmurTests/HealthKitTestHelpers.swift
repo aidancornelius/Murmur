@@ -17,22 +17,22 @@ actor MockHealthKitDataProvider: HealthKitDataProvider {
 
     // MARK: - Mock Configuration
 
-    nonisolated(unsafe) var mockQuantitySamples: [HKQuantitySample] = []
-    nonisolated(unsafe) var mockCategorySamples: [HKCategorySample] = []
-    nonisolated(unsafe) var mockWorkouts: [HKWorkout] = []
-    nonisolated(unsafe) var mockStatistics: HKStatistics?
-    nonisolated(unsafe) var shouldThrowError: Error?
-    nonisolated(unsafe) var authorizationError: Error?
+    var mockQuantitySamples: [HKQuantitySample] = []
+    var mockCategorySamples: [HKCategorySample] = []
+    var mockWorkouts: [HKWorkout] = []
+    var mockStatistics: HKStatistics?
+    var shouldThrowError: Error?
+    var authorizationError: Error?
 
     // MARK: - Tracking
 
-    nonisolated(unsafe) private(set) var fetchQuantityCount = 0
-    nonisolated(unsafe) private(set) var fetchCategoryCount = 0
-    nonisolated(unsafe) private(set) var fetchWorkoutsCount = 0
-    nonisolated(unsafe) private(set) var fetchStatisticsCount = 0
-    nonisolated(unsafe) private(set) var requestAuthorizationCalled = false
-    nonisolated(unsafe) private(set) var requestedReadTypes: Set<HKObjectType>?
-    nonisolated(unsafe) private(set) var requestedShareTypes: Set<HKSampleType>?
+    private(set) var fetchQuantityCount = 0
+    private(set) var fetchCategoryCount = 0
+    private(set) var fetchWorkoutsCount = 0
+    private(set) var fetchStatisticsCount = 0
+    private(set) var requestAuthorizationCalled = false
+    private(set) var requestedReadTypes: Set<HKObjectType>?
+    private(set) var requestedShareTypes: Set<HKSampleType>?
 
     // MARK: - HealthKitDataProvider Implementation
 
@@ -162,7 +162,7 @@ actor MockHealthKitDataProvider: HealthKitDataProvider {
 
     // MARK: - Reset
 
-    nonisolated func reset() {
+    func reset() {
         mockQuantitySamples.removeAll()
         mockCategorySamples.removeAll()
         mockWorkouts.removeAll()
@@ -179,7 +179,7 @@ actor MockHealthKitDataProvider: HealthKitDataProvider {
     }
 
     /// Property for backwards compatibility with existing tests
-    nonisolated var executeCount: Int {
+    var executeCount: Int {
         fetchQuantityCount + fetchCategoryCount + fetchWorkoutsCount + fetchStatisticsCount
     }
 }
@@ -398,7 +398,8 @@ actor MockHealthKitQueryService: HealthKitQueryServiceProtocol {
     // MARK: - HealthKitQueryServiceProtocol Properties
 
     var dataProvider: HealthKitDataProvider
-    nonisolated(unsafe) var isHealthDataAvailable: Bool = true
+    private let _isHealthDataAvailable: Bool
+    nonisolated var isHealthDataAvailable: Bool { _isHealthDataAvailable }
 
     // MARK: - Mock Configuration
 
@@ -419,8 +420,9 @@ actor MockHealthKitQueryService: HealthKitQueryServiceProtocol {
 
     // MARK: - Init
 
-    init(dataProvider: HealthKitDataProvider) {
+    init(dataProvider: HealthKitDataProvider, isHealthDataAvailable: Bool = true) {
         self.dataProvider = dataProvider
+        self._isHealthDataAvailable = isHealthDataAvailable
     }
 
     // MARK: - HealthKitQueryServiceProtocol Implementation
@@ -438,6 +440,21 @@ actor MockHealthKitQueryService: HealthKitQueryServiceProtocol {
             throw error
         }
 
+        // Delegate to the data provider if it's a mock
+        if let mockProvider = dataProvider as? MockHealthKitDataProvider {
+            let predicate = NSPredicate { object, _ in
+                guard let sample = object as? HKQuantitySample else { return false }
+                return sample.startDate >= start && sample.startDate < end
+            }
+            return try await mockProvider.fetchQuantitySamples(
+                type: quantityType,
+                predicate: predicate,
+                limit: limit,
+                sortDescriptors: sortDescriptors
+            )
+        }
+
+        // Fallback to internal mock data if not using MockHealthKitDataProvider
         var filtered = mockQuantitySamples.filter { $0.startDate >= start && $0.startDate < end }
 
         if let sortDescriptors = sortDescriptors, !sortDescriptors.isEmpty {
@@ -464,6 +481,21 @@ actor MockHealthKitQueryService: HealthKitQueryServiceProtocol {
             throw error
         }
 
+        // Delegate to the data provider if it's a mock
+        if let mockProvider = dataProvider as? MockHealthKitDataProvider {
+            let predicate = NSPredicate { object, _ in
+                guard let sample = object as? HKCategorySample else { return false }
+                return sample.startDate >= start && sample.startDate < end
+            }
+            return try await mockProvider.fetchCategorySamples(
+                type: categoryType,
+                predicate: predicate,
+                limit: limit,
+                sortDescriptors: sortDescriptors
+            )
+        }
+
+        // Fallback to internal mock data if not using MockHealthKitDataProvider
         var filtered = mockCategorySamples.filter { $0.startDate >= start && $0.startDate < end }
 
         if let sortDescriptors = sortDescriptors, !sortDescriptors.isEmpty {
@@ -489,6 +521,20 @@ actor MockHealthKitQueryService: HealthKitQueryServiceProtocol {
             throw error
         }
 
+        // Delegate to the data provider if it's a mock
+        if let mockProvider = dataProvider as? MockHealthKitDataProvider {
+            let predicate = NSPredicate { object, _ in
+                guard let workout = object as? HKWorkout else { return false }
+                return workout.startDate >= start && workout.startDate < end
+            }
+            return try await mockProvider.fetchWorkouts(
+                predicate: predicate,
+                limit: limit,
+                sortDescriptors: sortDescriptors
+            )
+        }
+
+        // Fallback to internal mock data if not using MockHealthKitDataProvider
         var filtered = mockWorkouts.filter { $0.startDate >= start && $0.startDate < end }
 
         if let sortDescriptors = sortDescriptors, !sortDescriptors.isEmpty {

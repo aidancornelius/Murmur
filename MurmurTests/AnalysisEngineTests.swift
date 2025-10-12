@@ -170,14 +170,16 @@ final class AnalysisEngineTests: XCTestCase {
 
     func testAnalyseActivityCorrelationsDetectsPositiveCorrelation() throws {
         let calendar = Calendar.current
-        let now = Date()
+        let now = Date().addingTimeInterval(-120) // Ensure dates are safely in the past
         let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
         symptomType.category = "Physical"
         symptomType.name = "Headache"
 
-        // Create activities followed by symptoms
+        // Create activities followed by symptoms - work backwards from now
         for i in 0..<10 {
-            let activityDate = calendar.date(byAdding: .day, value: -i, to: now)!
+            // Create symptom date first, then activity before it
+            let symptomDate = calendar.date(byAdding: .day, value: -i, to: now)!
+            let activityDate = symptomDate.addingTimeInterval(-12 * 3600) // Activity 12 hours before symptom
 
             let activity = ActivityEvent(context: testStack!.context)
             activity.id = UUID()
@@ -187,8 +189,6 @@ final class AnalysisEngineTests: XCTestCase {
             activity.cognitiveExertion = 4
             activity.emotionalLoad = 2
 
-            // Create symptom 12 hours after activity (within 24hr window)
-            let symptomDate = activityDate.addingTimeInterval(12 * 3600)
             let symptom = SymptomEntry(context: testStack!.context)
             symptom.id = UUID()
             symptom.createdAt = symptomDate
@@ -218,14 +218,16 @@ final class AnalysisEngineTests: XCTestCase {
 
     func testAnalyseActivityCorrelationsWithPositiveSymptom() throws {
         let calendar = Calendar.current
-        let now = Date()
+        let now = Date().addingTimeInterval(-120) // Ensure dates are safely in the past
         let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
         symptomType.category = "Positive wellbeing"
         symptomType.name = "Mood"
 
-        // Create activities followed by improved positive symptoms
+        // Create activities followed by improved positive symptoms - work backwards from now
         for i in 0..<10 {
-            let activityDate = calendar.date(byAdding: .day, value: -i, to: now)!
+            // Create symptom date first, then activity before it
+            let symptomDate = calendar.date(byAdding: .day, value: -i, to: now)!
+            let activityDate = symptomDate.addingTimeInterval(-6 * 3600) // Activity 6 hours before symptom
 
             let activity = ActivityEvent(context: testStack!.context)
             activity.id = UUID()
@@ -233,7 +235,6 @@ final class AnalysisEngineTests: XCTestCase {
             activity.name = "Exercise"
             activity.physicalExertion = 4
 
-            let symptomDate = activityDate.addingTimeInterval(6 * 3600)
             let symptom = SymptomEntry(context: testStack!.context)
             symptom.id = UUID()
             symptom.createdAt = symptomDate

@@ -162,6 +162,38 @@ struct UITestConfiguration {
         // Seed HealthKit data FIRST, before any other configuration
         #if targetEnvironment(simulator)
         await configureHealthKitSeeding()
+
+        // If we seeded HealthKit data, also generate Core Data sample entries for analysis views
+        // Only do this once to avoid duplicates
+        if (shouldSeedHealthKitNormal || shouldSeedHealthKitLowerStress ||
+           shouldSeedHealthKitHigherStress || shouldSeedHealthKitEdgeCases) {
+            let hasGeneratedSampleData = UserDefaults.standard.bool(forKey: UserDefaultsKeys.hasGeneratedSampleData)
+            logger.info("HealthKit test mode: hasGeneratedSampleData = \(hasGeneratedSampleData)")
+
+            if !hasGeneratedSampleData {
+                logger.info("Seeding Core Data sample entries to complement HealthKit data")
+                await context.perform {
+                    SampleDataSeeder.seedIfNeeded(in: context, forceSeed: true)
+                    // Generate sample data matching the history days
+                    if healthKitHistoryDays >= 30 {
+                        SampleDataSeeder.generateLongHistory(in: context)
+                    } else {
+                        SampleDataSeeder.generateSampleEntries(in: context)
+                    }
+                }
+                UserDefaults.standard.set(true, forKey: UserDefaultsKeys.hasGeneratedSampleData)
+                logger.info("Core Data sample entries seeded successfully")
+            } else {
+                logger.info("Core Data sample entries already seeded, checking entry count...")
+                await context.perform {
+                    let entryRequest: NSFetchRequest<SymptomEntry> = SymptomEntry.fetchRequest()
+                    let activityRequest: NSFetchRequest<ActivityEvent> = ActivityEvent.fetchRequest()
+                    let entryCount = (try? context.count(for: entryRequest)) ?? 0
+                    let activityCount = (try? context.count(for: activityRequest)) ?? 0
+                    logger.info("Found \(entryCount) symptom entries and \(activityCount) activities in database")
+                }
+            }
+        }
         #endif
 
         // Always skip onboarding in UI test mode unless explicitly told to show it
@@ -234,6 +266,13 @@ struct UITestConfiguration {
             return
         }
 
+        // Check if we've already seeded HealthKit data to avoid clearing it on subsequent launches
+        let hasSeededKey = UserDefaultsKeys.hasSeededHealthKitData
+        if UserDefaults.standard.bool(forKey: hasSeededKey) {
+            logger.info("HealthKit data already seeded, skipping re-seed to preserve data")
+            return
+        }
+
         logger.info("Configuring HealthKit data seeding for UI tests")
 
         // Determine which preset to use
@@ -261,6 +300,9 @@ struct UITestConfiguration {
                 seed: seed
             )
             logger.info("Successfully seeded \(healthKitHistoryDays) days of HealthKit data with seed: \(seed)")
+
+            // Mark as seeded so we don't clear it on next launch
+            UserDefaults.standard.set(true, forKey: UserDefaultsKeys.hasSeededHealthKitData)
 
             // Start live data stream if requested
             if shouldEnableLiveHealthData {
@@ -319,6 +361,8 @@ struct UITestConfiguration {
         }
         UserDefaults.standard.removePersistentDomain(forName: domain)
         UserDefaults.standard.synchronize()
+        // Also clear the HealthKit seeded flag to allow re-seeding
+        UserDefaults.standard.removeObject(forKey: UserDefaultsKeys.hasSeededHealthKitData)
         logger.debug("Cleared UserDefaults")
     }
 }

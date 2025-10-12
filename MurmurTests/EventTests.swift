@@ -770,15 +770,15 @@ final class EventTests: XCTestCase {
         let sleep = SleepEvent(context: testStack!.context)
         sleep.id = UUID()
         sleep.createdAt = Date()
-        sleep.bedTime = Date().addingTimeInterval(-10 * 24 * 3600) // 10 days ago - outside 1 week range
-        sleep.wakeTime = Date().addingTimeInterval(-10 * 24 * 3600 + 3600)
+        sleep.bedTime = Date().addingTimeInterval(-400 * 24 * 3600) // Over 1 year ago - invalid
+        sleep.wakeTime = Date().addingTimeInterval(-400 * 24 * 3600 + 8 * 3600) // 8 hours later
         sleep.quality = 3
 
         XCTAssertThrowsError(try testStack!.context.save()) { error in
             let nsError = error as NSError
             XCTAssertEqual(nsError.domain, "SleepEvent")
             XCTAssertEqual(nsError.code, 5008)
-            XCTAssertTrue(nsError.localizedDescription.contains("within the past week"))
+            XCTAssertTrue(nsError.localizedDescription.contains("within the past year"))
         }
     }
 

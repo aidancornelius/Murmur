@@ -41,4 +41,7 @@ enum UserDefaultsKeys {
 
     // MARK: - Data Management
     static let symptomSeedVersion = "symptomSeedVersion"
+
+    // MARK: - UI Testing
+    static let hasSeededHealthKitData = "hasSeededHealthKitData"
 }

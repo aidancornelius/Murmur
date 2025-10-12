@@ -203,10 +203,13 @@ class AudioGraphController: NSObject, ObservableObject {
             let frequency = frequencyForSeverity(Int(entry.severity))
 
             let workItem = DispatchWorkItem { [weak self] in
-                self?.playTone(frequency: frequency, duration: timePerEntry * 0.8)
+                Task { @MainActor [weak self] in
+                    try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                    self?.playTone(frequency: frequency, duration: timePerEntry * 0.8)
+                }
             }
             scheduledTones.append(workItem)
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
+            workItem.perform()
         }
     }
 
@@ -223,10 +226,13 @@ class AudioGraphController: NSObject, ObservableObject {
             let frequency = frequencyForSeverity(exertion)
 
             let workItem = DispatchWorkItem { [weak self] in
-                self?.playTone(frequency: frequency, duration: timePerEntry * 0.8)
+                Task { @MainActor [weak self] in
+                    try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                    self?.playTone(frequency: frequency, duration: timePerEntry * 0.8)
+                }
             }
             scheduledTones.append(workItem)
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
+            workItem.perform()
         }
     }
 

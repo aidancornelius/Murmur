@@ -9,6 +9,7 @@ import Foundation
 
 // MARK: - LoadContributor Conformance
 
+@MainActor
 extension MealEvent: ExertionEvent {
     /// Effective date for load calculations
     public var effectiveDate: Date {
@@ -67,6 +68,7 @@ extension MealEvent: ExertionEvent {
 
 // MARK: - Computed Properties
 
+@MainActor
 extension MealEvent {
     /// Check if this meal has any exertion data
     public var hasExertionData: Bool {

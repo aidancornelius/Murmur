@@ -11,7 +11,7 @@ import Foundation
 
 /// Base protocol for any event that contributes to or modifies load calculations
 @MainActor
-public protocol LoadContributor {
+protocol LoadContributor {
     /// The effective date for this contribution (backdatedAt or createdAt)
     var effectiveDate: Date { get }
 
@@ -26,7 +26,7 @@ public protocol LoadContributor {
 
 /// Protocol for events with physical, cognitive, and emotional exertion properties
 @MainActor
-public protocol ExertionEvent: LoadContributor {
+protocol ExertionEvent: LoadContributor {
     /// Physical exertion level (1-5 scale)
     var physicalExertionValue: Double { get }
 
@@ -47,7 +47,7 @@ public protocol ExertionEvent: LoadContributor {
 
 extension ExertionEvent {
     /// Default load contribution calculation for exertion-based events
-    public var loadContribution: Double {
+    var loadContribution: Double {
         // Average the three exertion types
         let averageExertion = (physicalExertionValue + cognitiveExertionValue + emotionalLoadValue) / 3.0
 
@@ -67,7 +67,7 @@ extension ExertionEvent {
     }
 
     /// Exertion events don't modify recovery by default
-    public var recoveryModifier: Double? {
+    var recoveryModifier: Double? {
         return nil
     }
 }
@@ -76,9 +76,9 @@ extension ExertionEvent {
 
 /// Protocol for events that primarily affect recovery rate (like sleep)
 @MainActor
-public protocol RecoveryModifier: LoadContributor {
+protocol RecoveryModifier: LoadContributor {
     /// Quality or effectiveness rating (1-5 scale)
-    var quality: Double { get }
+    var qualityValue: Double { get }
 
     /// Duration in hours
     var durationHours: Double { get }
@@ -91,10 +91,10 @@ public protocol RecoveryModifier: LoadContributor {
 
 extension RecoveryModifier {
     /// Calculate recovery impact based on quality and duration
-    public var recoveryModifier: Double? {
+    var recoveryModifier: Double? {
         if isMainRecoveryPeriod {
             // Main sleep/recovery periods have significant impact
-            switch Int(quality) {
+            switch Int(qualityValue) {
             case 1: return 0.5  // Very poor - 50% slower recovery
             case 2: return 0.7  // Poor - 30% slower recovery
             case 3: return 1.0  // Normal recovery
@@ -104,16 +104,16 @@ extension RecoveryModifier {
             }
         } else {
             // Naps and short recovery periods have minor impact
-            return quality >= 4 ? 1.1 : 0.95
+            return qualityValue >= 4 ? 1.1 : 0.95
         }
     }
 
     /// Poor quality main recovery periods add load burden
-    public var loadContribution: Double {
+    var loadContribution: Double {
         // Only very poor main sleep/recovery adds load
-        if isMainRecoveryPeriod && quality <= 2 {
+        if isMainRecoveryPeriod && qualityValue <= 2 {
             // Quality 1 = 10 load points, Quality 2 = 5 load points
-            return (3.0 - quality) * 5.0
+            return (3.0 - qualityValue) * 5.0
         }
         return 0
     }
@@ -122,7 +122,7 @@ extension RecoveryModifier {
 // MARK: - Event Type Enum
 
 /// Categorises different types of load contributors for processing
-public enum LoadContributorType {
+enum LoadContributorType {
     case activity
     case meal
     case sleep
@@ -134,7 +134,7 @@ public enum LoadContributorType {
 
 extension LoadContributor {
     /// Identify the type of contributor (used for analytics and configuration)
-    public var contributorType: LoadContributorType {
+    var contributorType: LoadContributorType {
         switch self {
         case is ActivityEvent:
             return .activity

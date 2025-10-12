@@ -100,15 +100,15 @@ struct VoiceSelector {
 
 // MARK: - Speech Service
 /// Centralised service for text-to-speech functionality
-class SpeechService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate, @unchecked Sendable {
-    @MainActor static let shared = SpeechService()
+@MainActor
+class SpeechService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
+    static let shared = SpeechService()
 
     private let synthesizer = AVSpeechSynthesizer()
     private let logger = Logger(subsystem: "app.murmur", category: "SpeechService")
 
     // Pending action to execute after speech completes
-    private let pendingActionLock = NSLock()
-    private var _pendingAction: (() -> Void)?
+    private var pendingAction: (() -> Void)?
 
     private override init() {
         super.init()
@@ -116,34 +116,25 @@ class SpeechService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate, @u
     }
 
     /// Speak text using the best available voice
-    @MainActor
     func speak(_ text: String, completion: (() -> Void)? = nil) {
         let utterance = AVSpeechUtterance(string: text)
         utterance.voice = VoiceSelector.bestAvailableVoice()
         utterance.rate = AVSpeechUtteranceDefaultSpeechRate
 
-        if let completion = completion {
-            pendingActionLock.lock()
-            _pendingAction = completion
-            pendingActionLock.unlock()
-        }
+        pendingAction = completion
 
         synthesizer.speak(utterance)
         logger.debug("Speaking: \(text)")
     }
 
     /// Stop all speech immediately
-    @MainActor
     func stopSpeaking() {
         synthesizer.stopSpeaking(at: .immediate)
-        pendingActionLock.lock()
-        _pendingAction = nil
-        pendingActionLock.unlock()
+        pendingAction = nil
         logger.debug("Stopped speaking")
     }
 
     /// Check if currently speaking
-    @MainActor
     var isSpeaking: Bool {
         synthesizer.isSpeaking
     }
@@ -152,13 +143,13 @@ class SpeechService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate, @u
 
     nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
         // Execute any pending action after speech completes with a small delay to ensure audio is clear
-        pendingActionLock.lock()
-        let action = _pendingAction
-        _pendingAction = nil
-        pendingActionLock.unlock()
+        Task { @MainActor in
+            let action = self.pendingAction
+            self.pendingAction = nil
 
-        if let action = action {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            if let action = action {
+                // Small delay to ensure audio is clear
+                try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
                 action()
             }
         }

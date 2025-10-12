@@ -21,19 +21,7 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 [bundle exec] fastlane ios test
 ```
 
-    Unit Tests
-
-    Runs all unit tests for the Murmur scheme with code coverage.
-
-    What this tests:
-    - Core business logic and data models
-    - Service layer functionality
-    - Helper utilities and extensions
-
-    Duration: <1 minute
-    Device: iPhone 17 Pro
-    Coverage: Enabled (generates code coverage report)
-
+Run unit tests with code coverage (<1 min, iPhone 17 Pro)
 
 ### ios test_ui
 
@@ -41,19 +29,7 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 [bundle exec] fastlane ios test_ui
 ```
 
-    UI Tests - Standard Devices
-
-    Runs UI tests on standard devices (iPhone and iPad).
-
-    What this tests:
-    - User interface interactions
-    - Navigation flows
-    - Accessibility features
-    - Visual layouts on different form factors
-
-    Duration: ~2-3 minutes
-    Devices: iPhone 17 Pro, iPad Pro 13-inch (M4)
-
+Run UI tests on iPhone and iPad (2-3 mins, 2 devices)
 
 ### ios test_ui_full
 
@@ -61,25 +37,7 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 [bundle exec] fastlane ios test_ui_full
 ```
 
-    UI Tests - Full Device Coverage
-
-    Runs UI tests across comprehensive device matrix (5 devices).
-
-    What this tests:
-    - Compatibility across device generations (iPhone 13-17)
-    - Form factor variations (mini, standard, Pro, iPad sizes)
-    - Screen size adaptations
-
-    Duration: ~8-12 minutes
-    Devices:
-    - iPhone 17 Pro
-    - iPhone 16 Pro
-    - iPhone 15 Pro
-    - iPad Pro 13-inch (M4)
-    - iPad mini (A17 Pro)
-
-    Use when: Pre-release validation or testing layout changes
-
+Run UI tests across 5 devices including multiple iPhone and iPad models (8-12 mins)
 
 ### ios test_smoke
 
@@ -87,20 +45,7 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 [bundle exec] fastlane ios test_smoke
 ```
 
-    Smoke Tests - Critical User Journeys
-
-    Quick validation of essential app functionality.
-
-    What this tests:
-    - Complete symptom entry flow
-    - Navigate to day detail view
-    - View trends chart
-    - Add custom symptom type
-
-    Duration: ~1 minute
-    Device: iPhone 17 Pro
-    Use when: Quick validation after small changes or before commits
-
+Run smoke tests for critical user journeys (~1 min, iPhone 17 Pro)
 
 ### ios test_healthkit
 
@@ -108,18 +53,7 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 [bundle exec] fastlane ios test_healthkit
 ```
 
-    HealthKit Integration Tests - Normal Profile
-
-    Runs core HealthKit integration tests with a normal health profile (7 days of data).
-
-    What this tests:
-    - App correctly imports synthetic HealthKit data (HRV, sleep, workouts, cycle tracking)
-    - UI displays health metrics accurately
-    - Data flows from HealthKit → SampleDataSeeder → Core Data → UI
-
-    Duration: ~1-2 minutes
-    Use when: Verifying basic HealthKit integration after changes
-
+Run HealthKit integration tests with 7 days of synthetic data (1-2 mins)
 
 ### ios test_healthkit_extended
 
@@ -127,18 +61,7 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 [bundle exec] fastlane ios test_healthkit_extended
 ```
 
-    HealthKit Integration Tests - Extended Historical Data
-
-    Runs tests with 30 days of synthetic health data to verify historical data handling.
-
-    What this tests:
-    - App handles larger datasets (30 days vs standard 7 days)
-    - Historical trends display correctly
-    - Performance with extended data range
-
-    Duration: ~3-5 minutes (longer due to data seeding)
-    Use when: Testing historical data features or performance with larger datasets
-
+Run HealthKit integration tests with 30 days of synthetic data (3-5 mins)
 
 ### ios test_healthkit_deterministic
 
@@ -146,19 +69,7 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 [bundle exec] fastlane ios test_healthkit_deterministic
 ```
 
-    HealthKit Deterministic Fixture Tests
-
-    Verifies deterministic data generation - same seed produces identical results.
-
-    What this tests:
-    - Synthetic data generator produces identical output with seed=42
-    - UI displays exact expected values from fixture data
-    - Determinism is maintained across test runs
-
-    Duration: ~1 minute
-    Use when: Verifying deterministic behaviour after changing data generation logic
-    Critical for: Reproducible test results and debugging
-
+Verify deterministic data generation with seed=42 (~1 min)
 
 ### ios test_healthkit_utility
 
@@ -166,19 +77,7 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 [bundle exec] fastlane ios test_healthkit_utility
 ```
 
-    HealthKitUtility Library Smoke Tests
-
-    Low-level tests of the HealthKitUtility synthetic data library (not UI tests).
-
-    What this tests:
-    - SyntheticDataGenerator produces deterministic output
-    - HKSample conversion preserves data accuracy
-    - Library functions work correctly in isolation
-
-    Duration: <30 seconds
-    Use when: Verifying the underlying data library before UI testing
-    Test suite: MurmurTests (unit tests, not UI tests)
-
+Run unit tests for HealthKitUtility synthetic data library (<30 secs)
 
 ### ios test_healthkit_full
 
@@ -186,18 +85,7 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 [bundle exec] fastlane ios test_healthkit_full
 ```
 
-    Comprehensive HealthKit Test Suite
-
-    Runs all HealthKit-related tests in sequence:
-    1. Library smoke tests (HealthKitUtility)
-    2. Normal integration tests (7 days)
-    3. Deterministic fixture tests (seed validation)
-    4. Extended historical data tests (30 days)
-
-    Duration: ~5-8 minutes
-    Use when: Full validation before merging HealthKit changes
-    Recommended: Run this before releasing features that touch health data
-
+Run all HealthKit tests: utility + integration + deterministic + extended (5-8 mins)
 
 ### ios test_all
 
@@ -205,16 +93,7 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 [bundle exec] fastlane ios test_all
 ```
 
-    Standard Test Suite (Unit + UI + HealthKit)
-
-    Runs the standard test suite:
-    1. Unit tests (Murmur scheme)
-    2. UI tests (MurmurUITests scheme)
-    3. HealthKit integration tests (7 days)
-
-    Duration: ~3-5 minutes
-    Use when: General validation before commits
-
+Run standard test suite: unit + UI + HealthKit integration (3-5 mins)
 
 ### ios test_complete
 
@@ -222,19 +101,7 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 [bundle exec] fastlane ios test_complete
 ```
 
-    Complete Test Suite (Unit + UI + Full HealthKit)
-
-    The most comprehensive test suite, including:
-    1. All unit tests
-    2. All UI tests
-    3. Complete HealthKit test suite (utility + integration + deterministic + extended)
-
-    Duration: ~10-15 minutes
-    Use when:
-    - Pre-release validation
-    - Before merging major HealthKit features
-    - Weekly regression testing
-
+Run complete test suite: unit + UI + full HealthKit (10-15 mins)
 
 ### ios screenshots
 

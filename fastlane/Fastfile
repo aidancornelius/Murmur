@@ -9,20 +9,7 @@ platform :ios do
   # Testing Lanes
   # =================
 
-  desc <<-DESC
-    Unit Tests
-
-    Runs all unit tests for the Murmur scheme with code coverage.
-
-    What this tests:
-    - Core business logic and data models
-    - Service layer functionality
-    - Helper utilities and extensions
-
-    Duration: <1 minute
-    Device: iPhone 17 Pro
-    Coverage: Enabled (generates code coverage report)
-  DESC
+  desc "Run unit tests with code coverage (<1 min, iPhone 17 Pro)"
   lane :test do
     UI.header("Unit Tests")
     UI.message("Running unit tests with code coverage...")
@@ -38,20 +25,7 @@ platform :ios do
     UI.success("✓ Unit tests passed")
   end
 
-  desc <<-DESC
-    UI Tests - Standard Devices
-
-    Runs UI tests on standard devices (iPhone and iPad).
-
-    What this tests:
-    - User interface interactions
-    - Navigation flows
-    - Accessibility features
-    - Visual layouts on different form factors
-
-    Duration: ~2-3 minutes
-    Devices: iPhone 17 Pro, iPad Pro 13-inch (M4)
-  DESC
+  desc "Run UI tests on iPhone and iPad (2-3 mins, 2 devices)"
   lane :test_ui do
     UI.header("UI Tests - Standard Devices")
     UI.message("Testing on: iPhone 17 Pro, iPad Pro 13-inch (M4)")
@@ -66,26 +40,7 @@ platform :ios do
     UI.success("✓ UI tests passed on standard devices")
   end
 
-  desc <<-DESC
-    UI Tests - Full Device Coverage
-
-    Runs UI tests across comprehensive device matrix (5 devices).
-
-    What this tests:
-    - Compatibility across device generations (iPhone 13-17)
-    - Form factor variations (mini, standard, Pro, iPad sizes)
-    - Screen size adaptations
-
-    Duration: ~8-12 minutes
-    Devices:
-    - iPhone 17 Pro
-    - iPhone 16 Pro
-    - iPhone 15 Pro
-    - iPad Pro 13-inch (M4)
-    - iPad mini (A17 Pro)
-
-    Use when: Pre-release validation or testing layout changes
-  DESC
+  desc "Run UI tests across 5 devices including multiple iPhone and iPad models (8-12 mins)"
   lane :test_ui_full do
     UI.header("UI Tests - Full Device Coverage")
     UI.message("Testing across 5 devices (iPhones and iPads)...")
@@ -107,21 +62,7 @@ platform :ios do
     UI.success("✓ UI tests passed on all devices")
   end
 
-  desc <<-DESC
-    Smoke Tests - Critical User Journeys
-
-    Quick validation of essential app functionality.
-
-    What this tests:
-    - Complete symptom entry flow
-    - Navigate to day detail view
-    - View trends chart
-    - Add custom symptom type
-
-    Duration: ~1 minute
-    Device: iPhone 17 Pro
-    Use when: Quick validation after small changes or before commits
-  DESC
+  desc "Run smoke tests for critical user journeys (~1 min, iPhone 17 Pro)"
   lane :test_smoke do
     UI.header("Smoke Tests - Critical User Journeys")
     UI.message("Running quick validation of core functionality...")
@@ -150,19 +91,7 @@ platform :ios do
   # synthetic health data from the HealthKitUtility library. Tests use deterministic
   # seeds to ensure reproducible results across runs.
 
-  desc <<-DESC
-    HealthKit Integration Tests - Normal Profile
-
-    Runs core HealthKit integration tests with a normal health profile (7 days of data).
-
-    What this tests:
-    - App correctly imports synthetic HealthKit data (HRV, sleep, workouts, cycle tracking)
-    - UI displays health metrics accurately
-    - Data flows from HealthKit → SampleDataSeeder → Core Data → UI
-
-    Duration: ~1-2 minutes
-    Use when: Verifying basic HealthKit integration after changes
-  DESC
+  desc "Run HealthKit integration tests with 7 days of synthetic data (1-2 mins)"
   lane :test_healthkit do
     UI.header("HealthKit Integration Tests - Normal Profile")
     UI.message("Testing: 7 days of synthetic health data with normal profile")
@@ -179,19 +108,7 @@ platform :ios do
     UI.success("✓ HealthKit integration tests passed")
   end
 
-  desc <<-DESC
-    HealthKit Integration Tests - Extended Historical Data
-
-    Runs tests with 30 days of synthetic health data to verify historical data handling.
-
-    What this tests:
-    - App handles larger datasets (30 days vs standard 7 days)
-    - Historical trends display correctly
-    - Performance with extended data range
-
-    Duration: ~3-5 minutes (longer due to data seeding)
-    Use when: Testing historical data features or performance with larger datasets
-  DESC
+  desc "Run HealthKit integration tests with 30 days of synthetic data (3-5 mins)"
   lane :test_healthkit_extended do
     UI.header("HealthKit Integration Tests - Extended Historical Data")
     UI.message("Testing: 30 days of synthetic health data")
@@ -211,20 +128,7 @@ platform :ios do
     UI.success("✓ Extended historical data tests passed")
   end
 
-  desc <<-DESC
-    HealthKit Deterministic Fixture Tests
-
-    Verifies deterministic data generation - same seed produces identical results.
-
-    What this tests:
-    - Synthetic data generator produces identical output with seed=42
-    - UI displays exact expected values from fixture data
-    - Determinism is maintained across test runs
-
-    Duration: ~1 minute
-    Use when: Verifying deterministic behaviour after changing data generation logic
-    Critical for: Reproducible test results and debugging
-  DESC
+  desc "Verify deterministic data generation with seed=42 (~1 min)"
   lane :test_healthkit_deterministic do
     UI.header("HealthKit Deterministic Fixture Tests")
     UI.message("Testing: Deterministic data generation with seed=42")
@@ -244,20 +148,7 @@ platform :ios do
     UI.success("✓ Deterministic fixture tests passed - data generation is reproducible")
   end
 
-  desc <<-DESC
-    HealthKitUtility Library Smoke Tests
-
-    Low-level tests of the HealthKitUtility synthetic data library (not UI tests).
-
-    What this tests:
-    - SyntheticDataGenerator produces deterministic output
-    - HKSample conversion preserves data accuracy
-    - Library functions work correctly in isolation
-
-    Duration: <30 seconds
-    Use when: Verifying the underlying data library before UI testing
-    Test suite: MurmurTests (unit tests, not UI tests)
-  DESC
+  desc "Run unit tests for HealthKitUtility synthetic data library (<30 secs)"
   lane :test_healthkit_utility do
     UI.header("HealthKitUtility Library Smoke Tests")
     UI.message("Testing: Synthetic data library in isolation")
@@ -275,19 +166,7 @@ platform :ios do
     UI.success("✓ HealthKitUtility smoke tests passed - library working correctly")
   end
 
-  desc <<-DESC
-    Comprehensive HealthKit Test Suite
-
-    Runs all HealthKit-related tests in sequence:
-    1. Library smoke tests (HealthKitUtility)
-    2. Normal integration tests (7 days)
-    3. Deterministic fixture tests (seed validation)
-    4. Extended historical data tests (30 days)
-
-    Duration: ~5-8 minutes
-    Use when: Full validation before merging HealthKit changes
-    Recommended: Run this before releasing features that touch health data
-  DESC
+  desc "Run all HealthKit tests: utility + integration + deterministic + extended (5-8 mins)"
   lane :test_healthkit_full do
     UI.header("Comprehensive HealthKit Test Suite")
     UI.message("Running all HealthKit tests in sequence:")
@@ -306,17 +185,7 @@ platform :ios do
     UI.success("✓ All HealthKit tests passed successfully")
   end
 
-  desc <<-DESC
-    Standard Test Suite (Unit + UI + HealthKit)
-
-    Runs the standard test suite:
-    1. Unit tests (Murmur scheme)
-    2. UI tests (MurmurUITests scheme)
-    3. HealthKit integration tests (7 days)
-
-    Duration: ~3-5 minutes
-    Use when: General validation before commits
-  DESC
+  desc "Run standard test suite: unit + UI + HealthKit integration (3-5 mins)"
   lane :test_all do
     UI.header("Standard Test Suite")
     UI.message("Running: Unit tests → UI tests → HealthKit integration")
@@ -328,20 +197,7 @@ platform :ios do
     UI.success("✓ All standard tests passed")
   end
 
-  desc <<-DESC
-    Complete Test Suite (Unit + UI + Full HealthKit)
-
-    The most comprehensive test suite, including:
-    1. All unit tests
-    2. All UI tests
-    3. Complete HealthKit test suite (utility + integration + deterministic + extended)
-
-    Duration: ~10-15 minutes
-    Use when:
-    - Pre-release validation
-    - Before merging major HealthKit features
-    - Weekly regression testing
-  DESC
+  desc "Run complete test suite: unit + UI + full HealthKit (10-15 mins)"
   lane :test_complete do
     UI.header("Complete Test Suite")
     UI.message("Running comprehensive test suite:")

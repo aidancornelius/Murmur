@@ -27,6 +27,7 @@ protocol CalendarAssistantProtocol: AnyObject {
 /// Protocol abstraction for EKEventStore to enable testing with mock implementations
 @MainActor
 protocol CalendarStoreProtocol {
+    var authorizationStatus: EKAuthorizationStatus { get }
     func requestAccess() async throws -> Bool
     func events(matching predicate: NSPredicate) -> [EKEvent]
     func predicateForEvents(withStart startDate: Date, end endDate: Date, calendars: [EKCalendar]?) -> NSPredicate
@@ -36,6 +37,10 @@ protocol CalendarStoreProtocol {
 @MainActor
 final class EventStoreWrapper: CalendarStoreProtocol {
     private let store = EKEventStore()
+
+    var authorizationStatus: EKAuthorizationStatus {
+        EKEventStore.authorizationStatus(for: .event)
+    }
 
     func requestAccess() async throws -> Bool {
         return try await store.requestFullAccessToEvents()
@@ -47,10 +52,6 @@ final class EventStoreWrapper: CalendarStoreProtocol {
 
     func predicateForEvents(withStart startDate: Date, end endDate: Date, calendars: [EKCalendar]?) -> NSPredicate {
         store.predicateForEvents(withStart: startDate, end: endDate, calendars: calendars)
-    }
-
-    static var authorizationStatus: EKAuthorizationStatus {
-        EKEventStore.authorizationStatus(for: .event)
     }
 }
 
@@ -71,7 +72,7 @@ final class CalendarAssistant: CalendarAssistantProtocol, ObservableObject {
     }
 
     private func updateAuthorizationStatus() {
-        authorizationStatus = EKEventStore.authorizationStatus(for: .event)
+        authorizationStatus = eventStore.authorizationStatus
     }
 
     private var hasCalendarAccess: Bool {

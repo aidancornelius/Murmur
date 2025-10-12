@@ -40,7 +40,7 @@ class VoiceCommandController: NSObject, ObservableObject {
 
     func requestAuthorization() {
         SFSpeechRecognizer.requestAuthorization { [weak self] status in
-            DispatchQueue.main.async {
+            Task { @MainActor in
                 self?.authorizationStatus = status
             }
         }
@@ -123,7 +123,7 @@ class VoiceCommandController: NSObject, ObservableObject {
 
             if let result = result {
                 let text = result.bestTranscription.formattedString
-                DispatchQueue.main.async {
+                Task { @MainActor in
                     self.recognisedText = text
                     if result.isFinal {
                         self.processCommand(text)
@@ -133,7 +133,9 @@ class VoiceCommandController: NSObject, ObservableObject {
             }
 
             if error != nil {
-                self.stopListening()
+                Task { @MainActor in
+                    self.stopListening()
+                }
             }
         }
 
@@ -319,10 +321,7 @@ class VoiceCommandController: NSObject, ObservableObject {
 
     private func speak(_ text: String) {
         speechService.speak(text)
-
-        DispatchQueue.main.async {
-            self.feedbackMessage = text
-        }
+        feedbackMessage = text
     }
 }
 

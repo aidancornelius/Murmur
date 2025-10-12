@@ -11,9 +11,20 @@ import os.log
 
 // MARK: - Sendable Conformances
 
-/// NSPredicate and NSSortDescriptor are not marked as Sendable by Apple, but they're immutable and thread-safe
-/// We use @unchecked Sendable to allow passing them across actor boundaries
-/// @retroactive indicates these are retroactive conformances that may conflict with future Apple conformances
+/// NSPredicate and NSSortDescriptor retroactive Sendable conformances
+///
+/// These Foundation types are not marked as Sendable by Apple, but they are:
+/// - Immutable value types after construction
+/// - Thread-safe for concurrent read access (documented by Apple)
+/// - Commonly used across concurrency boundaries in HealthKit queries
+///
+/// Using @unchecked Sendable here is acceptable because:
+/// 1. Apple's documentation guarantees thread-safety for these types
+/// 2. We only pass them to HealthKit APIs, not mutating them
+/// 3. The risk is minimal compared to the benefit of proper actor isolation
+///
+/// @retroactive indicates these are retroactive conformances that may conflict
+/// with future Apple conformances (at which point we can remove these)
 extension NSPredicate: @retroactive @unchecked Sendable {}
 extension NSSortDescriptor: @retroactive @unchecked Sendable {}
 
@@ -110,6 +121,15 @@ protocol HealthKitQueryServiceProtocol: Actor {
 // MARK: - Real Implementation
 
 /// Helper box to hold query reference across closure boundaries
+///
+/// This is a workaround for HKQuery's callback-based API not being fully async/await compatible.
+/// The box allows us to capture the query reference in the continuation closure before the query
+/// is actually created, enabling proper cleanup when queries complete.
+///
+/// This @unchecked Sendable is acceptable because:
+/// 1. The query property is only accessed within actor-isolated contexts
+/// 2. It's a bridge pattern for Apple's pre-async/await API
+/// 3. Once HKQuery has full async/await support, this can be removed
 private final class QueryBox: @unchecked Sendable {
     var query: HKQuery?
     init() {}

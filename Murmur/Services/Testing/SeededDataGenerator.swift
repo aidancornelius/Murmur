@@ -58,7 +58,18 @@ enum DayType {
 struct SeededDataGenerator {
     /// Generate fallback HRV value based on day type
     static func getFallbackHRV(for dayType: DayType, seed: Int) -> Double {
-        var rng = SeededRandom(seed: seed)
+        // Use different seed offsets for each day type to ensure unique values
+        let dayOffset: Int
+        switch dayType {
+        case .pem: dayOffset = 0
+        case .flare: dayOffset = 100
+        case .menstrual: dayOffset = 200
+        case .rest: dayOffset = 300
+        case .better: dayOffset = 400
+        case .normal: dayOffset = 500
+        }
+
+        var rng = SeededRandom(seed: seed + dayOffset)
 
         switch dayType {
         case .pem, .flare:
@@ -72,7 +83,18 @@ struct SeededDataGenerator {
 
     /// Generate fallback resting heart rate based on day type
     static func getFallbackRestingHR(for dayType: DayType, seed: Int) -> Double {
-        var rng = SeededRandom(seed: seed + 1) // Different offset for variety
+        // Use different seed offsets for each day type to ensure unique values
+        let dayOffset: Int
+        switch dayType {
+        case .pem: dayOffset = 0
+        case .flare: dayOffset = 100
+        case .menstrual: dayOffset = 200
+        case .rest: dayOffset = 300
+        case .better: dayOffset = 400
+        case .normal: dayOffset = 500
+        }
+
+        var rng = SeededRandom(seed: seed + 1 + dayOffset) // +1 for different base from HRV
 
         switch dayType {
         case .pem, .flare:

@@ -182,10 +182,7 @@ final class NotificationSchedulerTests: XCTestCase {
         XCTAssertEqual(pendingRequests.count, 2) // Monday and Wednesday
 
         // Remove it
-        NotificationScheduler.remove(reminder: reminder)
-
-        // Wait a moment for removal to process
-        try await Task.sleep(nanoseconds: 100_000_000)
+        await NotificationScheduler.remove(reminder: reminder)
 
         pendingRequests = await center.pendingNotificationRequests()
         let reminderId = reminder.id?.uuidString ?? ""
@@ -240,8 +237,7 @@ final class NotificationSchedulerTests: XCTestCase {
             }
 
             // Clean up for next iteration
-            NotificationScheduler.remove(reminder: reminder)
-            try await Task.sleep(nanoseconds: 50_000_000)
+            await NotificationScheduler.remove(reminder: reminder)
         }
     }
 

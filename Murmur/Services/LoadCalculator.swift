@@ -11,11 +11,11 @@ import CoreData
 /// Modern load calculation service using protocol-based contributors
 /// Replaces the legacy LoadScore.calculate methods with a more flexible approach
 @MainActor
-public final class LoadCalculator {
+final class LoadCalculator {
 
     // MARK: - Singleton
 
-    public static let shared = LoadCalculator()
+    static let shared = LoadCalculator()
     private init() {}
 
     // MARK: - Main Calculation Method
@@ -28,7 +28,7 @@ public final class LoadCalculator {
     ///   - previousLoad: The decayed load from the previous day
     ///   - configuration: Optional configuration override (uses LoadCapacityManager if nil)
     /// - Returns: LoadScore for the day
-    public func calculate(
+    func calculate(
         for date: Date,
         contributors: [LoadContributor],
         symptoms: [SymptomEntry],
@@ -95,7 +95,7 @@ public final class LoadCalculator {
     ///   - symptomsByDate: Dictionary of symptoms grouped by day
     ///   - configuration: Optional configuration override
     /// - Returns: Array of LoadScores, one per day
-    public func calculateRange(
+    func calculateRange(
         from startDate: Date,
         to endDate: Date,
         contributorsByDate: [Date: [LoadContributor]],
@@ -136,7 +136,7 @@ public final class LoadCalculator {
     // MARK: - Legacy Compatibility Methods
 
     /// Calculate using separate arrays (for backward compatibility)
-    public func calculate(
+    func calculate(
         for date: Date,
         activities: [ActivityEvent],
         meals: [MealEvent],
@@ -182,8 +182,11 @@ public final class LoadCalculator {
         let symptomLoad = baseSymptomLoad * config.symptomMultiplier
 
         // Calculate symptom severity modifier (affects decay rate)
-        // High symptoms = slower recovery (lower decay)
-        let symptomModifier = max(0.4, 1.2 - (avgSeverity * 0.16))
+        // High symptoms = slower recovery (more load retained, so higher modifier on remaining load)
+        // Formula: as severity increases, we want to retain more load
+        // Severity 0: modifier ~1.0 (normal decay)
+        // Severity 5: modifier ~1.8 (retain more load, slower recovery)
+        let symptomModifier = 1.0 + (avgSeverity * 0.16)
 
         return (load: symptomLoad, modifier: symptomModifier)
     }
@@ -228,7 +231,7 @@ public final class LoadCalculator {
 
 extension LoadCalculator {
     /// Group contributors by date for range calculations
-    public func groupContributorsByDate(
+    func groupContributorsByDate(
         _ contributors: [LoadContributor]
     ) -> [Date: [LoadContributor]] {
         let calendar = Calendar.current
@@ -238,7 +241,7 @@ extension LoadCalculator {
     }
 
     /// Analyse load contribution breakdown for a day
-    public func analyseContributions(
+    func analyseContributions(
         contributors: [LoadContributor],
         symptoms: [SymptomEntry],
         config: LoadConfiguration? = nil
@@ -271,26 +274,26 @@ extension LoadCalculator {
 // MARK: - Supporting Types
 
 /// Breakdown of load contributions by type
-public struct LoadBreakdown {
-    public let activityLoad: Double
-    public let mealLoad: Double
-    public let sleepLoad: Double
-    public let symptomLoad: Double
-    public let totalLoad: Double
+struct LoadBreakdown {
+    let activityLoad: Double
+    let mealLoad: Double
+    let sleepLoad: Double
+    let symptomLoad: Double
+    let totalLoad: Double
 
-    public var activityPercentage: Double {
+    var activityPercentage: Double {
         totalLoad > 0 ? (activityLoad / totalLoad) * 100 : 0
     }
 
-    public var mealPercentage: Double {
+    var mealPercentage: Double {
         totalLoad > 0 ? (mealLoad / totalLoad) * 100 : 0
     }
 
-    public var sleepPercentage: Double {
+    var sleepPercentage: Double {
         totalLoad > 0 ? (sleepLoad / totalLoad) * 100 : 0
     }
 
-    public var symptomPercentage: Double {
+    var symptomPercentage: Double {
         totalLoad > 0 ? (symptomLoad / totalLoad) * 100 : 0
     }
 }

@@ -151,9 +151,10 @@ final class CoreDataMigrationTests: XCTestCase {
         // Create new entity types
         let sleep = SleepEvent(context: testStack!.context)
         sleep.id = UUID()
-        sleep.createdAt = Date()
-        sleep.bedTime = Date().addingTimeInterval(-8 * 3600)
-        sleep.wakeTime = Date()
+        let now = Date()
+        sleep.createdAt = now
+        sleep.bedTime = now.addingTimeInterval(-8 * 3600)
+        sleep.wakeTime = now
         sleep.quality = 4
 
         let meal = MealEvent(context: testStack!.context)
@@ -189,9 +190,10 @@ final class CoreDataMigrationTests: XCTestCase {
         // Create SleepEvent with symptom (new relationship)
         let sleep = SleepEvent(context: testStack!.context)
         sleep.id = UUID()
-        sleep.createdAt = Date()
-        sleep.bedTime = Date().addingTimeInterval(-8 * 3600)
-        sleep.wakeTime = Date()
+        let now = Date()
+        sleep.createdAt = now
+        sleep.bedTime = now.addingTimeInterval(-8 * 3600)
+        sleep.wakeTime = now
         sleep.quality = 3
         sleep.addToSymptoms(symptomType)
 
@@ -217,9 +219,10 @@ final class CoreDataMigrationTests: XCTestCase {
         // Test SleepEvent required attributes
         let sleep = SleepEvent(context: testStack!.context)
         sleep.id = UUID()
-        sleep.createdAt = Date()
-        sleep.bedTime = Date()
-        sleep.wakeTime = Date()
+        let now = Date()
+        sleep.createdAt = now
+        sleep.bedTime = now.addingTimeInterval(-8 * 3600) // 8 hours before wake time
+        sleep.wakeTime = now
         sleep.quality = 3
         // Note is optional
 
@@ -239,9 +242,10 @@ final class CoreDataMigrationTests: XCTestCase {
     func testOptionalAttributesAllowNil() throws {
         let sleep = SleepEvent(context: testStack!.context)
         sleep.id = UUID()
-        sleep.createdAt = Date()
-        sleep.bedTime = Date()
-        sleep.wakeTime = Date()
+        let now = Date()
+        sleep.createdAt = now
+        sleep.bedTime = now.addingTimeInterval(-8 * 3600) // 8 hours before wake time
+        sleep.wakeTime = now
         sleep.quality = 3
         // All HealthKit fields are optional (nil)
 
@@ -262,9 +266,10 @@ final class CoreDataMigrationTests: XCTestCase {
 
         let sleep = SleepEvent(context: testStack!.context)
         sleep.id = UUID()
-        sleep.createdAt = Date()
-        sleep.bedTime = Date()
-        sleep.wakeTime = Date()
+        let now = Date()
+        sleep.createdAt = now
+        sleep.bedTime = now.addingTimeInterval(-8 * 3600) // 8 hours before wake time
+        sleep.wakeTime = now
         sleep.quality = 3
         sleep.addToSymptoms(symptomType)
 
@@ -288,9 +293,10 @@ final class CoreDataMigrationTests: XCTestCase {
     func testHealthKitAttributeTypes() throws {
         let sleep = SleepEvent(context: testStack!.context)
         sleep.id = UUID()
-        sleep.createdAt = Date()
-        sleep.bedTime = Date()
-        sleep.wakeTime = Date()
+        let now = Date()
+        sleep.createdAt = now
+        sleep.bedTime = now.addingTimeInterval(-8 * 3600) // 8 hours before wake time
+        sleep.wakeTime = now
         sleep.quality = 3
         sleep.hkSleepHours = NSNumber(value: 7.5)
         sleep.hkHRV = NSNumber(value: 45.2)
@@ -310,9 +316,10 @@ final class CoreDataMigrationTests: XCTestCase {
         // Quality should be Int16 with valid range 1-5
         let sleep = SleepEvent(context: testStack!.context)
         sleep.id = UUID()
-        sleep.createdAt = Date()
-        sleep.bedTime = Date()
-        sleep.wakeTime = Date()
+        let now = Date()
+        sleep.createdAt = now
+        sleep.bedTime = now.addingTimeInterval(-8 * 3600) // 8 hours before wake time
+        sleep.wakeTime = now
         sleep.quality = 3
 
         try testStack!.context.save()
@@ -381,8 +388,8 @@ final class CoreDataMigrationTests: XCTestCase {
                 let sleep = SleepEvent(context: context)
                 sleep.id = UUID()
                 sleep.createdAt = Date().addingTimeInterval(TimeInterval(-i * 3600))
-                sleep.bedTime = Date()
-                sleep.wakeTime = Date()
+                sleep.bedTime = Date().addingTimeInterval(TimeInterval(-i * 3600 - 28800)) // 8 hours before wake time
+                sleep.wakeTime = Date().addingTimeInterval(TimeInterval(-i * 3600))
                 sleep.quality = 3
 
                 // Add relationships

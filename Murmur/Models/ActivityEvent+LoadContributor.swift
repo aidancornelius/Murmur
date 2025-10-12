@@ -9,6 +9,7 @@ import Foundation
 
 // MARK: - LoadContributor Conformance
 
+@MainActor
 extension ActivityEvent: ExertionEvent {
     /// Effective date for load calculations
     public var effectiveDate: Date {
@@ -43,6 +44,7 @@ extension ActivityEvent: ExertionEvent {
 
 // MARK: - Computed Properties
 
+@MainActor
 extension ActivityEvent {
     /// Convenience property to access the calculated load contribution
     public var calculatedLoad: Double {

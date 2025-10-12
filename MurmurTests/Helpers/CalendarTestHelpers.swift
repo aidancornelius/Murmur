@@ -20,12 +20,21 @@ final class MockCalendarStore: CalendarStoreProtocol {
     var mockEvents: [EKEvent] = []
     var shouldGrantAccess = true
     var accessError: Error?
+    private var _authorizationStatus: EKAuthorizationStatus = .notDetermined
+
+    // MARK: - CalendarStoreProtocol Properties
+
+    var authorizationStatus: EKAuthorizationStatus {
+        return _authorizationStatus
+    }
 
     // MARK: - Tracking
 
     private(set) var requestAccessCallCount = 0
     private(set) var eventsCallCount = 0
     private(set) var lastPredicate: NSPredicate?
+    private(set) var lastStartDate: Date?
+    private(set) var lastEndDate: Date?
 
     // MARK: - CalendarStoreProtocol Implementation
 
@@ -36,6 +45,13 @@ final class MockCalendarStore: CalendarStoreProtocol {
             throw error
         }
 
+        // Update authorization status based on whether access was granted
+        if shouldGrantAccess {
+            _authorizationStatus = .fullAccess
+        } else {
+            _authorizationStatus = .denied
+        }
+
         return shouldGrantAccess
     }
 
@@ -43,14 +59,30 @@ final class MockCalendarStore: CalendarStoreProtocol {
         eventsCallCount += 1
         lastPredicate = predicate
 
-        // Filter events using the predicate
-        return mockEvents.filter { event in
-            predicate.evaluate(with: event)
+        // Since we can't easily inspect block-based predicates,
+        // use the stored date range from predicateForEvents
+        if let start = lastStartDate, let end = lastEndDate {
+            return mockEvents.filter { event in
+                guard let eventStart = event.startDate, let eventEnd = event.endDate else {
+                    return false
+                }
+                // Check if event overlaps with the requested range
+                return eventEnd >= start && eventStart < end
+            }
         }
+
+        // Fallback: return all events if no date range was set
+        return mockEvents
     }
 
     func predicateForEvents(withStart startDate: Date, end endDate: Date, calendars: [EKCalendar]?) -> NSPredicate {
+        // Store the date range for use in events(matching:)
+        lastStartDate = startDate
+        lastEndDate = endDate
+
         // Create a predicate that checks if event overlaps with date range
+        // Note: This predicate won't actually be evaluated in tests since
+        // we use the stored date range directly in events(matching:)
         return NSPredicate { object, _ in
             guard let event = object as? EKEvent else { return false }
 
@@ -58,7 +90,7 @@ final class MockCalendarStore: CalendarStoreProtocol {
             let eventStart = event.startDate ?? Date.distantPast
             let eventEnd = event.endDate ?? eventStart
 
-            return eventEnd >= startDate && eventStart <= endDate
+            return eventEnd >= startDate && eventStart < endDate
         }
     }
 
@@ -68,9 +100,12 @@ final class MockCalendarStore: CalendarStoreProtocol {
         mockEvents.removeAll()
         shouldGrantAccess = true
         accessError = nil
+        _authorizationStatus = .notDetermined
         requestAccessCallCount = 0
         eventsCallCount = 0
         lastPredicate = nil
+        lastStartDate = nil
+        lastEndDate = nil
     }
 }
 

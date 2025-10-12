@@ -32,9 +32,9 @@ final class LoadScoreTests: XCTestCase {
         let symptoms: [SymptomEntry] = []
         let previousLoad = 0.0
 
-        let score = LoadScore.calculate(
+        let score = LoadCalculator.shared.calculate(
             for: date,
-            activities: activities,
+            contributors: activities,
             symptoms: symptoms,
             previousLoad: previousLoad
         )
@@ -55,9 +55,9 @@ final class LoadScoreTests: XCTestCase {
         activity.emotionalLoad = 1
         activity.durationMinutes = 60
 
-        let score = LoadScore.calculate(
+        let score = LoadCalculator.shared.calculate(
             for: date,
-            activities: [activity],
+            contributors: [activity],
             symptoms: [],
             previousLoad: 0.0
         )
@@ -79,9 +79,9 @@ final class LoadScoreTests: XCTestCase {
         activity.emotionalLoad = 5
         activity.durationMinutes = 120
 
-        let score = LoadScore.calculate(
+        let score = LoadCalculator.shared.calculate(
             for: date,
-            activities: [activity],
+            contributors: [activity],
             symptoms: [],
             previousLoad: 0.0
         )
@@ -103,9 +103,9 @@ final class LoadScoreTests: XCTestCase {
         symptom.severity = 5
         symptom.symptomType = symptomType
 
-        let score = LoadScore.calculate(
+        let score = LoadCalculator.shared.calculate(
             for: date,
-            activities: [],
+            contributors: [],
             symptoms: [symptom],
             previousLoad: 0.0
         )
@@ -128,9 +128,9 @@ final class LoadScoreTests: XCTestCase {
         symptom.severity = 2
         symptom.symptomType = symptomType
 
-        let score = LoadScore.calculate(
+        let score = LoadCalculator.shared.calculate(
             for: date,
-            activities: [],
+            contributors: [],
             symptoms: [symptom],
             previousLoad: 0.0
         )
@@ -152,9 +152,9 @@ final class LoadScoreTests: XCTestCase {
         symptom.severity = 5
         symptom.symptomType = symptomType
 
-        let score = LoadScore.calculate(
+        let score = LoadCalculator.shared.calculate(
             for: date,
-            activities: [],
+            contributors: [],
             symptoms: [symptom],
             previousLoad: 0.0
         )
@@ -169,9 +169,9 @@ final class LoadScoreTests: XCTestCase {
         let date = Date()
         let previousLoad = 50.0
 
-        let score = LoadScore.calculate(
+        let score = LoadCalculator.shared.calculate(
             for: date,
-            activities: [],
+            contributors: [],
             symptoms: [],
             previousLoad: previousLoad
         )
@@ -195,16 +195,16 @@ final class LoadScoreTests: XCTestCase {
 
         let previousLoad = 50.0
 
-        let scoreWithSymptom = LoadScore.calculate(
+        let scoreWithSymptom = LoadCalculator.shared.calculate(
             for: date,
-            activities: [],
+            contributors: [],
             symptoms: [highSeveritySymptom],
             previousLoad: previousLoad
         )
 
-        let scoreWithoutSymptom = LoadScore.calculate(
+        let scoreWithoutSymptom = LoadCalculator.shared.calculate(
             for: date,
-            activities: [],
+            contributors: [],
             symptoms: [],
             previousLoad: previousLoad
         )
@@ -225,9 +225,9 @@ final class LoadScoreTests: XCTestCase {
         activity.emotionalLoad = 1
         activity.durationMinutes = 30
 
-        let score = LoadScore.calculate(
+        let score = LoadCalculator.shared.calculate(
             for: date,
-            activities: [activity],
+            contributors: [activity],
             symptoms: [],
             previousLoad: 0.0
         )
@@ -252,9 +252,9 @@ final class LoadScoreTests: XCTestCase {
             activities.append(activity)
         }
 
-        let score = LoadScore.calculate(
+        let score = LoadCalculator.shared.calculate(
             for: date,
-            activities: activities,
+            contributors: activities,
             symptoms: [],
             previousLoad: 0.0
         )
@@ -287,10 +287,10 @@ final class LoadScoreTests: XCTestCase {
             activitiesByDate[dayStart] = [activity]
         }
 
-        let scores = LoadScore.calculateRange(
+        let scores = LoadCalculator.shared.calculateRange(
             from: startDate,
             to: endDate,
-            activitiesByDate: activitiesByDate,
+            contributorsByDate: activitiesByDate,
             symptomsByDate: [:]
         )
 
@@ -325,10 +325,10 @@ final class LoadScoreTests: XCTestCase {
             activitiesByDate[dayStart] = [activity]
         }
 
-        let scores = LoadScore.calculateRange(
+        let scores = LoadCalculator.shared.calculateRange(
             from: startDate,
             to: endDate,
-            activitiesByDate: activitiesByDate,
+            contributorsByDate: activitiesByDate,
             symptomsByDate: [:]
         )
 
@@ -357,10 +357,10 @@ final class LoadScoreTests: XCTestCase {
         // Days 1-4: no activities (recovery)
         // activitiesByDate entries will be empty for these days
 
-        let scores = LoadScore.calculateRange(
+        let scores = LoadCalculator.shared.calculateRange(
             from: startDate,
             to: endDate,
-            activitiesByDate: activitiesByDate,
+            contributorsByDate: activitiesByDate,
             symptomsByDate: [:]
         )
 
@@ -388,9 +388,9 @@ final class LoadScoreTests: XCTestCase {
             activities.append(activity)
         }
 
-        let score = LoadScore.calculate(
+        let score = LoadCalculator.shared.calculate(
             for: date,
-            activities: activities,
+            contributors: activities,
             symptoms: [],
             previousLoad: 0.0
         )

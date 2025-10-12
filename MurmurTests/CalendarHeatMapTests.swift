@@ -167,7 +167,7 @@ final class CalendarHeatMapTests: XCTestCase {
         let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
         let baseDate = calendar.startOfDay(for: Date())
 
-        // Day 1: 1 entry
+        // Day 1: 1 entry (today)
         let day1 = baseDate
         let entry1 = SymptomEntry(context: testStack!.context)
         entry1.id = UUID()
@@ -175,8 +175,8 @@ final class CalendarHeatMapTests: XCTestCase {
         entry1.symptomType = symptomType
         entry1.severity = 3
 
-        // Day 2: 5 entries
-        let day2 = calendar.date(byAdding: .day, value: 1, to: baseDate)!
+        // Day 2: 5 entries (yesterday)
+        let day2 = calendar.date(byAdding: .day, value: -1, to: baseDate)!
         for i in 0..<5 {
             let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
@@ -185,8 +185,8 @@ final class CalendarHeatMapTests: XCTestCase {
             entry.severity = 4
         }
 
-        // Day 3: 10 entries
-        let day3 = calendar.date(byAdding: .day, value: 2, to: baseDate)!
+        // Day 3: 10 entries (2 days ago)
+        let day3 = calendar.date(byAdding: .day, value: -2, to: baseDate)!
         for i in 0..<10 {
             let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
@@ -224,7 +224,7 @@ final class CalendarHeatMapTests: XCTestCase {
         let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
         let baseDate = calendar.startOfDay(for: Date())
 
-        // Create day with high severity entries
+        // Create day with high severity entries (today)
         let highSeverityDay = baseDate
         for _ in 0..<3 {
             let entry = SymptomEntry(context: testStack!.context)
@@ -234,8 +234,8 @@ final class CalendarHeatMapTests: XCTestCase {
             entry.severity = 5 // High severity
         }
 
-        // Create day with low severity entries
-        let lowSeverityDay = calendar.date(byAdding: .day, value: 1, to: baseDate)!
+        // Create day with low severity entries (yesterday)
+        let lowSeverityDay = calendar.date(byAdding: .day, value: -1, to: baseDate)!
         for _ in 0..<3 {
             let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
@@ -313,9 +313,9 @@ final class CalendarHeatMapTests: XCTestCase {
         let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
         let baseDate = calendar.startOfDay(for: Date())
 
-        // Create entries on 5 different days
+        // Create entries on 5 different days (going backwards from today)
         for i in 0..<5 {
-            let day = calendar.date(byAdding: .day, value: i, to: baseDate)!
+            let day = calendar.date(byAdding: .day, value: -i, to: baseDate)!
             let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
             entry.createdAt = day
@@ -353,7 +353,7 @@ final class CalendarHeatMapTests: XCTestCase {
         let baseDate = calendar.startOfDay(for: Date())
 
         // Create entries with varying severities across multiple days
-        // Day 1: avg = 2
+        // Day 1: avg = 2 (today)
         let day1 = baseDate
         for _ in 0..<2 {
             let entry = SymptomEntry(context: testStack!.context)
@@ -363,8 +363,8 @@ final class CalendarHeatMapTests: XCTestCase {
             entry.severity = 2
         }
 
-        // Day 2: avg = 4
-        let day2 = calendar.date(byAdding: .day, value: 1, to: baseDate)!
+        // Day 2: avg = 4 (yesterday)
+        let day2 = calendar.date(byAdding: .day, value: -1, to: baseDate)!
         for _ in 0..<2 {
             let entry = SymptomEntry(context: testStack!.context)
             entry.id = UUID()
@@ -415,9 +415,9 @@ final class CalendarHeatMapTests: XCTestCase {
         let symptomType = try XCTUnwrap(fetchFirstObject(SymptomType.fetchRequest(), in: testStack!.context))
         let baseDate = calendar.startOfDay(for: Date())
 
-        // Create varying number of entries across days
+        // Create varying number of entries across days (going backwards from today)
         for day in 0..<3 {
-            let dayDate = calendar.date(byAdding: .day, value: day, to: baseDate)!
+            let dayDate = calendar.date(byAdding: .day, value: -day, to: baseDate)!
             let entriesForDay = day + 1 // 1, 2, 3 entries
 
             for _ in 0..<entriesForDay {

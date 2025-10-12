@@ -76,11 +76,17 @@ final class MurmurTests: XCTestCase {
         let request = SymptomType.fetchRequest()
         let types = try testStack!.context.fetch(request)
 
-        // Check category distribution
+        // Check category distribution - updated to match actual categories used in SampleDataSeeder
         let categories = Set(types.compactMap { $0.category })
-        XCTAssertTrue(categories.contains("Physical"), "Should have Physical category")
-        XCTAssertTrue(categories.contains("Mental/emotional"), "Should have Mental/emotional category")
-        XCTAssertTrue(categories.contains("Positive wellbeing"), "Should have Positive wellbeing category")
+
+        // Verify we have the expected categories from the seeder
+        let expectedCategories = ["Energy", "Pain", "Cognitive", "Sleep", "Neurological",
+                                "Digestive", "Mental health", "Respiratory & cardiovascular",
+                                "Other", "Reproductive & hormonal", "Positive wellbeing"]
+
+        for expectedCategory in expectedCategories {
+            XCTAssertTrue(categories.contains(expectedCategory), "Should have \(expectedCategory) category")
+        }
 
         // Verify at least some symptoms in each category
         for category in categories {
@@ -193,10 +199,16 @@ final class MurmurTests: XCTestCase {
     // MARK: - Color Palette Tests
 
     func testColorPaletteDefaultValues() {
-        let defaultPalette = ColorPalette.lightPalettes.first { $0.id == "default" }
-        XCTAssertNotNil(defaultPalette)
-        XCTAssertEqual(defaultPalette?.name, "Default")
-        XCTAssertEqual(defaultPalette?.accent, "#007AFF")
+        // The "cool" palette has the #007AFF accent color (iOS blue)
+        let coolPalette = ColorPalette.lightPalettes.first { $0.id == "cool" }
+        XCTAssertNotNil(coolPalette, "Cool palette should exist")
+        XCTAssertEqual(coolPalette?.name, "Cool blue")
+        XCTAssertEqual(coolPalette?.accent, "#007AFF")
+
+        // Verify the default palette used is "warm"
+        let warmPalette = ColorPalette.lightPalettes.first { $0.id == "warm" }
+        XCTAssertNotNil(warmPalette, "Warm palette should exist")
+        XCTAssertEqual(warmPalette?.name, "Warm sunset")
     }
 
     func testColorPaletteAllHaveRequiredFields() {

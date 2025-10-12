@@ -35,7 +35,7 @@ final class HealthKitQueryServiceTests: XCTestCase {
             HKQuantitySample.mockHRV(value: 45.0, date: .daysAgo(1)),
             HKQuantitySample.mockHRV(value: 50.0, date: .daysAgo(2))
         ]
-        mockDataProvider!.mockQuantitySamples = mockSamples
+        await mockDataProvider!.setMockData(quantitySamples: mockSamples, categorySamples: [], workouts: [])
 
         guard let hrvType = HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN) else {
             XCTFail("HRV type unavailable")
@@ -56,7 +56,8 @@ final class HealthKitQueryServiceTests: XCTestCase {
 
         // Then
         XCTAssertEqual(samples.count, 2)
-        XCTAssertEqual(mockDataProvider!.fetchQuantityCount, 1)
+        let fetchCount = await mockDataProvider!.fetchQuantityCount
+        XCTAssertEqual(fetchCount, 1)
     }
 
     func testFetchQuantitySamples_WithLimit() async throws {
@@ -66,7 +67,7 @@ final class HealthKitQueryServiceTests: XCTestCase {
             HKQuantitySample.mockHRV(value: 50.0, date: .daysAgo(2)),
             HKQuantitySample.mockHRV(value: 42.0, date: .daysAgo(3))
         ]
-        mockDataProvider!.mockQuantitySamples = mockSamples
+        await mockDataProvider!.setMockData(quantitySamples: mockSamples, categorySamples: [], workouts: [])
 
         guard let hrvType = HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN) else {
             XCTFail("HRV type unavailable")
@@ -90,7 +91,7 @@ final class HealthKitQueryServiceTests: XCTestCase {
 
     func testFetchQuantitySamples_Error() async {
         // Given
-        mockDataProvider!.shouldThrowError = NSError(domain: "TestError", code: 1)
+        await mockDataProvider!.setShouldThrowError(NSError(domain: "TestError", code: 1))
 
         guard let hrvType = HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN) else {
             XCTFail("HRV type unavailable")
@@ -123,7 +124,7 @@ final class HealthKitQueryServiceTests: XCTestCase {
                 duration: 8 * 3600
             )
         ]
-        mockDataProvider!.mockCategorySamples = mockSamples
+        await mockDataProvider!.setMockData(quantitySamples: [], categorySamples: mockSamples, workouts: [])
 
         guard let sleepType = HKCategoryType.categoryType(forIdentifier: .sleepAnalysis) else {
             XCTFail("Sleep type unavailable")
@@ -143,7 +144,8 @@ final class HealthKitQueryServiceTests: XCTestCase {
 
         // Then
         XCTAssertEqual(samples.count, 1)
-        XCTAssertEqual(mockDataProvider!.fetchCategoryCount, 1)
+        let fetchCount = await mockDataProvider!.fetchCategoryCount
+        XCTAssertEqual(fetchCount, 1)
     }
 
     // MARK: - Workout Tests
@@ -157,7 +159,7 @@ final class HealthKitQueryServiceTests: XCTestCase {
                 duration: 30 * 60
             )
         ]
-        mockDataProvider!.mockWorkouts = mockWorkouts
+        await mockDataProvider!.setMockData(quantitySamples: [], categorySamples: [], workouts: mockWorkouts)
 
         // When
         let start = Date.hoursAgo(5)
@@ -171,7 +173,8 @@ final class HealthKitQueryServiceTests: XCTestCase {
 
         // Then
         XCTAssertEqual(workouts.count, 1)
-        XCTAssertEqual(mockDataProvider!.fetchWorkoutsCount, 1)
+        let fetchCount = await mockDataProvider!.fetchWorkoutsCount
+        XCTAssertEqual(fetchCount, 1)
     }
 
     // MARK: - Statistics Tests
@@ -188,7 +191,7 @@ final class HealthKitQueryServiceTests: XCTestCase {
 
         // Note: HKStatistics has no public initializer, so we test with nil
         // The important part is verifying the query method is called correctly
-        mockDataProvider!.mockStatistics = nil
+        await mockDataProvider!.setMockData(quantitySamples: [], categorySamples: [], workouts: [])
 
         // When
         let stats = try await queryService!.fetchStatistics(
@@ -199,7 +202,8 @@ final class HealthKitQueryServiceTests: XCTestCase {
         )
 
         // Then
-        XCTAssertEqual(mockDataProvider!.fetchStatisticsCount, 1)
+        let fetchCount = await mockDataProvider!.fetchStatisticsCount
+        XCTAssertEqual(fetchCount, 1)
         // With mock returning nil, stats should be nil
         XCTAssertNil(stats)
     }
@@ -211,12 +215,13 @@ final class HealthKitQueryServiceTests: XCTestCase {
         try await queryService!.requestPermissions()
 
         // Then
-        XCTAssertTrue(mockDataProvider!.requestAuthorizationCalled)
+        let authCalled = await mockDataProvider!.requestAuthorizationCalled
+        XCTAssertTrue(authCalled)
     }
 
     func testRequestPermissions_Error() async {
         // Given
-        mockDataProvider!.authorizationError = NSError(domain: "AuthError", code: 2)
+        await mockDataProvider!.setAuthorizationError(NSError(domain: "AuthError", code: 2))
 
         // When/Then
         do {

@@ -277,8 +277,17 @@ final class DataExporterTests: XCTestCase {
 
         let storeURL = tempDir.appendingPathComponent("TestStore.sqlite")
 
-        let container = NSPersistentContainer(name: "Murmur", managedObjectModel: CoreDataStack.shared.container.managedObjectModel)
+        // Load the model from the bundle to ensure we get the correct version
+        guard let modelURL = Bundle.main.url(forResource: "Murmur", withExtension: "momd"),
+              let model = NSManagedObjectModel(contentsOf: modelURL) else {
+            throw NSError(domain: "TestError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to load Core Data model"])
+        }
+
+        let container = NSPersistentContainer(name: "Murmur", managedObjectModel: model)
         let description = NSPersistentStoreDescription(url: storeURL)
+        // Enable automatic migration for tests
+        description.shouldMigrateStoreAutomatically = true
+        description.shouldInferMappingModelAutomatically = true
         container.persistentStoreDescriptions = [description]
 
         var loadError: Error?
