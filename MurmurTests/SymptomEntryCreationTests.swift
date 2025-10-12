@@ -25,10 +25,11 @@ final class SymptomEntryCreationTests: XCTestCase {
         mockLocation = MockLocationAssistant()
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
         testStack = nil
         mockHealthKit = nil
         mockLocation = nil
+        try await super.tearDown()
     }
 
     // MARK: - Basic Entry Creation Tests
@@ -279,7 +280,7 @@ final class SymptomEntryCreationTests: XCTestCase {
 
     func testAllHealthKitMetricsFetchedInParallel() async throws {
         // Given: Mock HealthKit with all metrics
-        mockHealthKit.configureAllMetrics(
+        mockHealthKit!.configureAllMetrics(
             hrv: 45.2,
             restingHR: 62.0,
             sleepHours: 7.5,
@@ -303,17 +304,17 @@ final class SymptomEntryCreationTests: XCTestCase {
         )
 
         // Then: All metrics should have been fetched
-        XCTAssertEqual(mockHealthKit.hrvCallCount, 1)
-        XCTAssertEqual(mockHealthKit.restingHRCallCount, 1)
-        XCTAssertEqual(mockHealthKit.sleepCallCount, 1)
-        XCTAssertEqual(mockHealthKit.workoutCallCount, 1)
-        XCTAssertEqual(mockHealthKit.cycleDayCallCount, 1)
-        XCTAssertEqual(mockHealthKit.flowLevelCallCount, 1)
+        XCTAssertEqual(mockHealthKit!.hrvCallCount, 1)
+        XCTAssertEqual(mockHealthKit!.restingHRCallCount, 1)
+        XCTAssertEqual(mockHealthKit!.sleepCallCount, 1)
+        XCTAssertEqual(mockHealthKit!.workoutCallCount, 1)
+        XCTAssertEqual(mockHealthKit!.cycleDayCallCount, 1)
+        XCTAssertEqual(mockHealthKit!.flowLevelCallCount, 1)
     }
 
     func testHRVAttachedWhenAvailable() async throws {
         // Given: Mock HealthKit with HRV
-        mockHealthKit.mockHRV = 45.2
+        mockHealthKit!.mockHRV = 45.2
 
         let symptomType = try testStack!.context.fetch(SymptomType.fetchRequest()).first!
         let selectedSymptom = SelectedSymptom(symptomType: symptomType, severity: 3)
@@ -335,7 +336,7 @@ final class SymptomEntryCreationTests: XCTestCase {
 
     func testRestingHRAttachedWhenAvailable() async throws {
         // Given: Mock HealthKit with resting HR
-        mockHealthKit.mockRestingHR = 62.0
+        mockHealthKit!.mockRestingHR = 62.0
 
         let symptomType = try testStack!.context.fetch(SymptomType.fetchRequest()).first!
         let selectedSymptom = SelectedSymptom(symptomType: symptomType, severity: 3)
@@ -357,7 +358,7 @@ final class SymptomEntryCreationTests: XCTestCase {
 
     func testSleepHoursAttachedWhenAvailable() async throws {
         // Given: Mock HealthKit with sleep data
-        mockHealthKit.mockSleepHours = 7.5
+        mockHealthKit!.mockSleepHours = 7.5
 
         let symptomType = try testStack!.context.fetch(SymptomType.fetchRequest()).first!
         let selectedSymptom = SelectedSymptom(symptomType: symptomType, severity: 3)
@@ -379,7 +380,7 @@ final class SymptomEntryCreationTests: XCTestCase {
 
     func testWorkoutMinutesAttachedWhenAvailable() async throws {
         // Given: Mock HealthKit with workout data
-        mockHealthKit.mockWorkoutMinutes = 30.0
+        mockHealthKit!.mockWorkoutMinutes = 30.0
 
         let symptomType = try testStack!.context.fetch(SymptomType.fetchRequest()).first!
         let selectedSymptom = SelectedSymptom(symptomType: symptomType, severity: 3)
@@ -401,7 +402,7 @@ final class SymptomEntryCreationTests: XCTestCase {
 
     func testCycleDayAttachedWhenAvailable() async throws {
         // Given: Mock HealthKit with cycle data
-        mockHealthKit.mockCycleDay = 14
+        mockHealthKit!.mockCycleDay = 14
 
         let symptomType = try testStack!.context.fetch(SymptomType.fetchRequest()).first!
         let selectedSymptom = SelectedSymptom(symptomType: symptomType, severity: 3)
@@ -423,7 +424,7 @@ final class SymptomEntryCreationTests: XCTestCase {
 
     func testFlowLevelAttachedWhenAvailable() async throws {
         // Given: Mock HealthKit with flow data
-        mockHealthKit.mockFlowLevel = "light"
+        mockHealthKit!.mockFlowLevel = "light"
 
         let symptomType = try testStack!.context.fetch(SymptomType.fetchRequest()).first!
         let selectedSymptom = SelectedSymptom(symptomType: symptomType, severity: 3)
@@ -445,7 +446,7 @@ final class SymptomEntryCreationTests: XCTestCase {
 
     func testAllEntriesGetSameHealthKitData() async throws {
         // Given: Multiple symptoms and HealthKit data
-        mockHealthKit.configureAllMetrics(
+        mockHealthKit!.configureAllMetrics(
             hrv: 45.2,
             restingHR: 62.0,
             sleepHours: 7.5,
@@ -481,14 +482,14 @@ final class SymptomEntryCreationTests: XCTestCase {
         }
 
         // HealthKit should only be queried once per metric
-        XCTAssertEqual(mockHealthKit.hrvCallCount, 1)
-        XCTAssertEqual(mockHealthKit.restingHRCallCount, 1)
-        XCTAssertEqual(mockHealthKit.sleepCallCount, 1)
+        XCTAssertEqual(mockHealthKit!.hrvCallCount, 1)
+        XCTAssertEqual(mockHealthKit!.restingHRCallCount, 1)
+        XCTAssertEqual(mockHealthKit!.sleepCallCount, 1)
     }
 
     func testMissingHealthKitDataHandledGracefully() async throws {
         // Given: Mock HealthKit with no data (all nil)
-        mockHealthKit.reset() // All metrics are nil
+        mockHealthKit!.reset() // All metrics are nil
 
         let symptomType = try testStack!.context.fetch(SymptomType.fetchRequest()).first!
         let selectedSymptom = SelectedSymptom(symptomType: symptomType, severity: 3)
@@ -519,7 +520,7 @@ final class SymptomEntryCreationTests: XCTestCase {
     func testLocationAttachedWhenEnabled() async throws {
         // Given: Location enabled with mock placemark
         let placemark = CLPlacemark.mockSydney()
-        mockLocation.mockPlacemark = placemark
+        mockLocation!.mockPlacemark = placemark
 
         let symptomType = try testStack!.context.fetch(SymptomType.fetchRequest()).first!
         let selectedSymptom = SelectedSymptom(symptomType: symptomType, severity: 3)
@@ -543,7 +544,7 @@ final class SymptomEntryCreationTests: XCTestCase {
     func testLocationNotAttachedWhenDisabled() async throws {
         // Given: Location disabled
         let placemark = CLPlacemark.mockSydney()
-        mockLocation.mockPlacemark = placemark
+        mockLocation!.mockPlacemark = placemark
 
         let symptomType = try testStack!.context.fetch(SymptomType.fetchRequest()).first!
         let selectedSymptom = SelectedSymptom(symptomType: symptomType, severity: 3)
@@ -566,7 +567,7 @@ final class SymptomEntryCreationTests: XCTestCase {
     func testSamePlacemarkSharedAcrossAllEntries() async throws {
         // Given: Multiple symptoms with location enabled
         let placemark = CLPlacemark.mockMelbourne()
-        mockLocation.mockPlacemark = placemark
+        mockLocation!.mockPlacemark = placemark
 
         let symptomTypes = try testStack!.context.fetch(SymptomType.fetchRequest())
         let selectedSymptoms = symptomTypes.prefix(3).map {
@@ -650,8 +651,8 @@ final class SymptomEntryCreationTests: XCTestCase {
                 note: "",
                 timestamp: Date(),
                 includeLocation: false,
-                healthKit: mockHealthKit,
-                location: mockLocation,
+                healthKit: mockHealthKit!,
+                location: mockLocation!,
                 context: testStack!.context
             )
             XCTFail("Should have thrown error")
@@ -667,16 +668,20 @@ final class SymptomEntryCreationTests: XCTestCase {
         let symptomType = try testStack!.context.fetch(SymptomType.fetchRequest()).first!
         let selectedSymptom = SelectedSymptom(symptomType: symptomType, severity: 3)
 
+        let context = testStack!.context
+        let healthKit = mockHealthKit!
+        let location = mockLocation!
+
         // When: Create task and cancel it immediately
-        let task = Task {
-            try await SymptomEntryService.createEntries(
+        let task = Task { @MainActor in
+            _ = try await SymptomEntryService.createEntries(
                 selectedSymptoms: [selectedSymptom],
                 note: "Should be cancelled",
                 timestamp: Date(),
                 includeLocation: false,
-                healthKit: mockHealthKit,
-                location: mockLocation,
-                context: testStack!.context
+                healthKit: healthKit,
+                location: location,
+                context: context
             )
         }
 
@@ -687,11 +692,11 @@ final class SymptomEntryCreationTests: XCTestCase {
 
         // Then: No entries should be saved
         let fetchRequest: NSFetchRequest<SymptomEntry> = SymptomEntry.fetchRequest()
-        let saved = try testStack!.context.fetch(fetchRequest)
+        let saved = try context.fetch(fetchRequest)
         XCTAssertEqual(saved.count, 0)
 
         // Context should have no changes
-        XCTAssertFalse(testStack!.context.hasChanges)
+        XCTAssertFalse(context.hasChanges)
     }
 
     // MARK: - Edge Cases
@@ -740,8 +745,8 @@ final class SymptomEntryCreationTests: XCTestCase {
 
     func testPartialHealthKitData() async throws {
         // Given: Mock HealthKit with only some metrics
-        mockHealthKit.mockHRV = 45.2
-        mockHealthKit.mockSleepHours = 7.5
+        mockHealthKit!.mockHRV = 45.2
+        mockHealthKit!.mockSleepHours = 7.5
         // Other metrics are nil
 
         let symptomType = try testStack!.context.fetch(SymptomType.fetchRequest()).first!

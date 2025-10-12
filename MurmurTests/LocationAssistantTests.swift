@@ -363,11 +363,15 @@ private class TestLocationManagerDelegate: NSObject, CLLocationManagerDelegate {
     var receivedLocations: [CLLocation]?
     var receivedError: Error?
 
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        receivedLocations = locations
+    nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        Task { @MainActor in
+            receivedLocations = locations
+        }
     }
 
-    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        receivedError = error
+    nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        Task { @MainActor in
+            receivedError = error
+        }
     }
 }

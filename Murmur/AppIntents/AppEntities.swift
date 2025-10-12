@@ -50,10 +50,12 @@ struct SymptomEntryEntity: AppEntity, Identifiable {
 struct SymptomEntryQuery: EntityQuery {
     func entities(for identifiers: [UUID]) async throws -> [SymptomEntryEntity] {
         let context = await MainActor.run { CoreDataStack.shared.context }
-        let fetchRequest: NSFetchRequest<SymptomEntry> = SymptomEntry.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "id IN %@", identifiers)
 
-        guard let entries = try? await context.perform({ try context.fetch(fetchRequest) }) else {
+        guard let entries = try? await context.perform({
+            let fetchRequest: NSFetchRequest<SymptomEntry> = SymptomEntry.fetchRequest()
+            fetchRequest.predicate = NSPredicate(format: "id IN %@", identifiers)
+            return try context.fetch(fetchRequest)
+        }) else {
             return []
         }
 
@@ -62,11 +64,13 @@ struct SymptomEntryQuery: EntityQuery {
 
     func suggestedEntities() async throws -> [SymptomEntryEntity] {
         let context = await MainActor.run { CoreDataStack.shared.context }
-        let fetchRequest: NSFetchRequest<SymptomEntry> = SymptomEntry.fetchRequest()
-        fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \SymptomEntry.backdatedAt, ascending: false)]
-        fetchRequest.fetchLimit = 5
 
-        guard let entries = try? await context.perform({ [fetchRequest] in try context.fetch(fetchRequest) }) else {
+        guard let entries = try? await context.perform({
+            let fetchRequest: NSFetchRequest<SymptomEntry> = SymptomEntry.fetchRequest()
+            fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \SymptomEntry.backdatedAt, ascending: false)]
+            fetchRequest.fetchLimit = 5
+            return try context.fetch(fetchRequest)
+        }) else {
             return []
         }
 
@@ -120,10 +124,12 @@ struct ActivityEventEntity: AppEntity, Identifiable {
 struct ActivityEventQuery: EntityQuery {
     func entities(for identifiers: [UUID]) async throws -> [ActivityEventEntity] {
         let context = await MainActor.run { CoreDataStack.shared.context }
-        let fetchRequest: NSFetchRequest<ActivityEvent> = ActivityEvent.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "id IN %@", identifiers)
 
-        guard let activities = try? await context.perform({ try context.fetch(fetchRequest) }) else {
+        guard let activities = try? await context.perform({
+            let fetchRequest: NSFetchRequest<ActivityEvent> = ActivityEvent.fetchRequest()
+            fetchRequest.predicate = NSPredicate(format: "id IN %@", identifiers)
+            return try context.fetch(fetchRequest)
+        }) else {
             return []
         }
 
@@ -132,11 +138,13 @@ struct ActivityEventQuery: EntityQuery {
 
     func suggestedEntities() async throws -> [ActivityEventEntity] {
         let context = await MainActor.run { CoreDataStack.shared.context }
-        let fetchRequest: NSFetchRequest<ActivityEvent> = ActivityEvent.fetchRequest()
-        fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \ActivityEvent.backdatedAt, ascending: false)]
-        fetchRequest.fetchLimit = 5
 
-        guard let activities = try? await context.perform({ [fetchRequest] in try context.fetch(fetchRequest) }) else {
+        guard let activities = try? await context.perform({
+            let fetchRequest: NSFetchRequest<ActivityEvent> = ActivityEvent.fetchRequest()
+            fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \ActivityEvent.backdatedAt, ascending: false)]
+            fetchRequest.fetchLimit = 5
+            return try context.fetch(fetchRequest)
+        }) else {
             return []
         }
 
@@ -178,10 +186,12 @@ struct SymptomTypeEntity: AppEntity, Identifiable {
 struct SymptomTypeQuery: EntityQuery {
     func entities(for identifiers: [UUID]) async throws -> [SymptomTypeEntity] {
         let context = await MainActor.run { CoreDataStack.shared.context }
-        let fetchRequest: NSFetchRequest<SymptomType> = SymptomType.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "id IN %@", identifiers)
 
-        guard let types = try? await context.perform({ try context.fetch(fetchRequest) }) else {
+        guard let types = try? await context.perform({
+            let fetchRequest: NSFetchRequest<SymptomType> = SymptomType.fetchRequest()
+            fetchRequest.predicate = NSPredicate(format: "id IN %@", identifiers)
+            return try context.fetch(fetchRequest)
+        }) else {
             return []
         }
 
@@ -190,14 +200,16 @@ struct SymptomTypeQuery: EntityQuery {
 
     func suggestedEntities() async throws -> [SymptomTypeEntity] {
         let context = await MainActor.run { CoreDataStack.shared.context }
-        let fetchRequest: NSFetchRequest<SymptomType> = SymptomType.fetchRequest()
-        fetchRequest.sortDescriptors = [
-            NSSortDescriptor(keyPath: \SymptomType.isStarred, ascending: false),
-            NSSortDescriptor(keyPath: \SymptomType.name, ascending: true)
-        ]
-        fetchRequest.fetchLimit = 10
 
-        guard let types = try? await context.perform({ [fetchRequest] in try context.fetch(fetchRequest) }) else {
+        guard let types = try? await context.perform({
+            let fetchRequest: NSFetchRequest<SymptomType> = SymptomType.fetchRequest()
+            fetchRequest.sortDescriptors = [
+                NSSortDescriptor(keyPath: \SymptomType.isStarred, ascending: false),
+                NSSortDescriptor(keyPath: \SymptomType.name, ascending: true)
+            ]
+            fetchRequest.fetchLimit = 10
+            return try context.fetch(fetchRequest)
+        }) else {
             return []
         }
 

@@ -125,14 +125,16 @@ struct SymptomHistoryView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
+    @MainActor
     private func loadSymptomCounts() async {
         isLoading = true
 
-        let counts: [SymptomCount] = await context.perform {
+        let ctx = context
+        let counts: [SymptomCount] = await ctx.perform {
             let request = SymptomType.fetchRequest()
             request.sortDescriptors = [NSSortDescriptor(keyPath: \SymptomType.name, ascending: true)]
 
-            guard let symptomTypes = try? context.fetch(request) else { return [] }
+            guard let symptomTypes = try? ctx.fetch(request) else { return [] }
 
             return symptomTypes.compactMap { symptomType -> SymptomCount? in
                 guard let entries = symptomType.entries as? Set<SymptomEntry>, !entries.isEmpty else { return nil }
@@ -181,10 +183,13 @@ struct SymptomHistoryView: View {
     private func loadMoreEntries(for symptomType: SymptomType) {
         loadingMore = true
         let symptomTypeID = symptomType.objectID
+        let ctx = context
+        let page = currentPage
+        let size = pageSize
 
-        Task {
-            let newEntries: [SymptomEntry] = await context.perform {
-                guard let symptomType = try? context.existingObject(with: symptomTypeID) as? SymptomType else {
+        Task { @MainActor in
+            let newEntries: [SymptomEntry] = await ctx.perform {
+                guard let symptomType = try? ctx.existingObject(with: symptomTypeID) as? SymptomType else {
                     return []
                 }
                 let request = SymptomEntry.fetchRequest()
@@ -193,10 +198,10 @@ struct SymptomHistoryView: View {
                     NSSortDescriptor(keyPath: \SymptomEntry.backdatedAt, ascending: false),
                     NSSortDescriptor(keyPath: \SymptomEntry.createdAt, ascending: false)
                 ]
-                request.fetchLimit = pageSize
-                request.fetchOffset = currentPage * pageSize
+                request.fetchLimit = size
+                request.fetchOffset = page * size
 
-                return (try? context.fetch(request)) ?? []
+                return (try? ctx.fetch(request)) ?? []
             }
 
             await MainActor.run {

@@ -17,22 +17,22 @@ actor MockHealthKitDataProvider: HealthKitDataProvider {
 
     // MARK: - Mock Configuration
 
-    var mockQuantitySamples: [HKQuantitySample] = []
-    var mockCategorySamples: [HKCategorySample] = []
-    var mockWorkouts: [HKWorkout] = []
-    var mockStatistics: HKStatistics?
-    var shouldThrowError: Error?
-    var authorizationError: Error?
+    nonisolated(unsafe) var mockQuantitySamples: [HKQuantitySample] = []
+    nonisolated(unsafe) var mockCategorySamples: [HKCategorySample] = []
+    nonisolated(unsafe) var mockWorkouts: [HKWorkout] = []
+    nonisolated(unsafe) var mockStatistics: HKStatistics?
+    nonisolated(unsafe) var shouldThrowError: Error?
+    nonisolated(unsafe) var authorizationError: Error?
 
     // MARK: - Tracking
 
-    private(set) var fetchQuantityCount = 0
-    private(set) var fetchCategoryCount = 0
-    private(set) var fetchWorkoutsCount = 0
-    private(set) var fetchStatisticsCount = 0
-    private(set) var requestAuthorizationCalled = false
-    private(set) var requestedReadTypes: Set<HKObjectType>?
-    private(set) var requestedShareTypes: Set<HKSampleType>?
+    nonisolated(unsafe) private(set) var fetchQuantityCount = 0
+    nonisolated(unsafe) private(set) var fetchCategoryCount = 0
+    nonisolated(unsafe) private(set) var fetchWorkoutsCount = 0
+    nonisolated(unsafe) private(set) var fetchStatisticsCount = 0
+    nonisolated(unsafe) private(set) var requestAuthorizationCalled = false
+    nonisolated(unsafe) private(set) var requestedReadTypes: Set<HKObjectType>?
+    nonisolated(unsafe) private(set) var requestedShareTypes: Set<HKSampleType>?
 
     // MARK: - HealthKitDataProvider Implementation
 
@@ -162,7 +162,7 @@ actor MockHealthKitDataProvider: HealthKitDataProvider {
 
     // MARK: - Reset
 
-    func reset() {
+    nonisolated func reset() {
         mockQuantitySamples.removeAll()
         mockCategorySamples.removeAll()
         mockWorkouts.removeAll()
@@ -179,7 +179,7 @@ actor MockHealthKitDataProvider: HealthKitDataProvider {
     }
 
     /// Property for backwards compatibility with existing tests
-    var executeCount: Int {
+    nonisolated var executeCount: Int {
         fetchQuantityCount + fetchCategoryCount + fetchWorkoutsCount + fetchStatisticsCount
     }
 }
@@ -398,7 +398,7 @@ actor MockHealthKitQueryService: HealthKitQueryServiceProtocol {
     // MARK: - HealthKitQueryServiceProtocol Properties
 
     var dataProvider: HealthKitDataProvider
-    nonisolated var isHealthDataAvailable: Bool = true
+    nonisolated(unsafe) var isHealthDataAvailable: Bool = true
 
     // MARK: - Mock Configuration
 

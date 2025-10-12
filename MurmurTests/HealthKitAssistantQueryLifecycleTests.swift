@@ -38,7 +38,7 @@ final class HealthKitAssistantQueryLifecycleTests: HealthKitAssistantTestCase {
 
         // Assert: All metrics should be queried
         // Note: We expect 5 queries (HRV, HR, Sleep, Workout, Cycle)
-        XCTAssertGreaterThanOrEqual(await provider.executeCount, 5)
+        XCTAssertGreaterThanOrEqual(provider.executeCount, 5)
     }
 
     func testForceRefreshAllBypassesCaches() async throws {
@@ -52,7 +52,7 @@ final class HealthKitAssistantQueryLifecycleTests: HealthKitAssistantTestCase {
             workouts: []
         )
         _ = await assistant.recentHRV()
-        XCTAssertEqual(await provider.executeCount, 1)
+        XCTAssertEqual(provider.executeCount, 1)
 
         // Update mock data
         await provider.setMockData(
@@ -65,7 +65,7 @@ final class HealthKitAssistantQueryLifecycleTests: HealthKitAssistantTestCase {
         await assistant.forceRefreshAll()
 
         // Assert: Should have executed new query
-        XCTAssertGreaterThan(await provider.executeCount, 1)
+        XCTAssertGreaterThan(provider.executeCount, 1)
     }
 
     // MARK: - Query Lifecycle Tests
@@ -86,7 +86,7 @@ final class HealthKitAssistantQueryLifecycleTests: HealthKitAssistantTestCase {
 
         // Assert: Query should have been added and then removed
         XCTAssertEqual(assistant._activeQueriesCount, 0) // Should be cleaned up
-        XCTAssertEqual(await provider.executeCount, 1)
+        XCTAssertEqual(provider.executeCount, 1)
     }
 
     func testQueriesRemovedAfterCompletion() async throws {

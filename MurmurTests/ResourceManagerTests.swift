@@ -224,12 +224,12 @@ final class ResourceManagerTests: XCTestCase {
 
     func testResourceHandle() async throws {
         // Arrange
-        var didStart = false
-        var didCleanup = false
+        let didStart = Box(false)
+        let didCleanup = Box(false)
 
         let handle = ResourceHandle(
-            onStart: { didStart = true },
-            onCleanup: { didCleanup = true }
+            onStart: { didStart.value = true },
+            onCleanup: { didCleanup.value = true }
         )
 
         // Act
@@ -237,31 +237,31 @@ final class ResourceManagerTests: XCTestCase {
         handle.cleanup()
 
         // Assert
-        XCTAssertTrue(didStart)
-        XCTAssertTrue(didCleanup)
+        XCTAssertTrue(didStart.value)
+        XCTAssertTrue(didCleanup.value)
     }
 
     func testResourceHandleWithoutStart() async throws {
         // Arrange
-        var didCleanup = false
+        let didCleanup = Box(false)
 
         let handle = ResourceHandle(
-            onCleanup: { didCleanup = true }
+            onCleanup: { didCleanup.value = true }
         )
 
         // Act
         handle.cleanup()
 
         // Assert
-        XCTAssertTrue(didCleanup)
+        XCTAssertTrue(didCleanup.value)
     }
 
     func testResourceHandleIdempotentStart() async throws {
         // Arrange
-        var startCount = 0
+        let startCount = Box(0)
 
         let handle = ResourceHandle(
-            onStart: { startCount += 1 },
+            onStart: { startCount.value += 1 },
             onCleanup: {}
         )
 
@@ -271,15 +271,15 @@ final class ResourceManagerTests: XCTestCase {
         try await handle.start()
 
         // Assert
-        XCTAssertEqual(startCount, 1)
+        XCTAssertEqual(startCount.value, 1)
     }
 
     func testResourceHandleIdempotentCleanup() async throws {
         // Arrange
-        var cleanupCount = 0
+        let cleanupCount = Box(0)
 
         let handle = ResourceHandle(
-            onCleanup: { cleanupCount += 1 }
+            onCleanup: { cleanupCount.value += 1 }
         )
 
         // Act
@@ -288,23 +288,23 @@ final class ResourceManagerTests: XCTestCase {
         handle.cleanup()
 
         // Assert
-        XCTAssertEqual(cleanupCount, 1)
+        XCTAssertEqual(cleanupCount.value, 1)
     }
 
     func testResourceHandleDeinitCallsCleanup() async throws {
         // Arrange
-        var didCleanup = false
+        let didCleanup = Box(false)
 
         // Act
         do {
             let handle = ResourceHandle(
-                onCleanup: { didCleanup = true }
+                onCleanup: { didCleanup.value = true }
             )
             _ = handle // Use handle to avoid warning
         } // handle deallocated here
 
         // Assert
-        XCTAssertTrue(didCleanup)
+        XCTAssertTrue(didCleanup.value)
     }
 
     // MARK: - Extension method tests
@@ -347,34 +347,34 @@ final class ResourceManagerTests: XCTestCase {
 
     func testRegisterHandle() async throws {
         // Arrange
-        var didCleanup = false
+        let didCleanup = Box(false)
 
         // Act
         let handle = try await manager!.registerHandle(
-            onCleanup: { didCleanup = true }
+            onCleanup: { didCleanup.value = true }
         )
 
         await manager!.cleanupAll()
 
         // Assert
         XCTAssertNotNil(handle)
-        XCTAssertTrue(didCleanup)
+        XCTAssertTrue(didCleanup.value)
     }
 
     func testRegisterHandleWithScope() async throws {
         // Arrange
-        var didCleanup = false
+        let didCleanup = Box(false)
 
         // Act
         _ = try await manager!.registerHandle(
             scope: "handle-scope",
-            onCleanup: { didCleanup = true }
+            onCleanup: { didCleanup.value = true }
         )
 
         await manager!.cleanup(scope: "handle-scope")
 
         // Assert
-        XCTAssertTrue(didCleanup)
+        XCTAssertTrue(didCleanup.value)
     }
 
     // MARK: - Error handling tests
@@ -430,7 +430,7 @@ final class ResourceManagerTests: XCTestCase {
 
 // MARK: - Mock resources
 
-private final class MockResource: ResourceManageable {
+private final class MockResource: ResourceManageable, @unchecked Sendable {
     var didStart = false
     var didCleanup = false
     var cleanupCallback: (() -> Void)?
@@ -449,7 +449,7 @@ private final class MockResource: ResourceManageable {
     }
 }
 
-private final class ThrowingResource: ResourceManageable {
+private final class ThrowingResource: ResourceManageable, @unchecked Sendable {
     var shouldThrow: Bool
 
     init(shouldThrow: Bool) {
@@ -463,4 +463,13 @@ private final class ThrowingResource: ResourceManageable {
     }
 
     func cleanup() {}
+}
+
+// Helper class for capturing mutable state in closures
+private final class Box<T>: @unchecked Sendable {
+    var value: T
+
+    init(_ value: T) {
+        self.value = value
+    }
 }

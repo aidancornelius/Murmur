@@ -355,9 +355,8 @@ final class DataBackupService {
     private func restoreToDatabase(backupData: BackupData) async throws {
         let context = stack.newBackgroundContext()
         let viewContext = stack.container.viewContext
-        var enabledReminderIDs: [UUID] = []
 
-        try await context.perform {
+        let enabledReminderIDs = try await context.perform {
             // Delete all existing data with proper merge to view context
             func deleteAll(entityName: String) throws -> [NSManagedObjectID] {
                 let request = NSFetchRequest<NSFetchRequestResult>(entityName: entityName)
@@ -444,6 +443,7 @@ final class DataBackupService {
                 cycleEntry.flowLevel = cycleBackup.flowLevel
             }
 
+            var ids: [UUID] = []
             for reminderBackup in backupData.reminders {
                 let reminder = Reminder(context: context)
                 reminder.id = reminderBackup.id
@@ -452,7 +452,7 @@ final class DataBackupService {
                 reminder.repeatsOn = reminderBackup.repeatsOn as NSArray
                 reminder.isEnabled = reminderBackup.isEnabled
                 if reminderBackup.isEnabled {
-                    enabledReminderIDs.append(reminderBackup.id)
+                    ids.append(reminderBackup.id)
                 }
             }
 
@@ -470,6 +470,8 @@ final class DataBackupService {
             } else {
                 UserDefaults.standard.removeObject(forKey: UserDefaultsKeys.cycleDaySetDate)
             }
+
+            return ids
         }
 
         // Refresh view context to trigger UI updates

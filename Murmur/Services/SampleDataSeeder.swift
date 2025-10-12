@@ -33,7 +33,8 @@ struct SampleDataSeeder {
             let calendar = Calendar.current
 
             // Pre-fetch HealthKit metrics for all days and cache them
-            var metricsCache: [String: HealthMetrics] = [:]
+            // Build the cache completely before using it in the perform closure
+            var metricsCacheBuilder: [String: HealthMetrics] = [:]
 
             // Request HealthKit authorisation once before the loop (if not provided)
             let provider: HealthKitDataProvider?
@@ -87,8 +88,11 @@ struct SampleDataSeeder {
                 }
 
                 let metrics = await HealthKitSeedAdapter.fetchHealthKitMetrics(for: date, dayType: dayType, seed: seed, dataProvider: provider)
-                metricsCache[DateUtility.dayKey(for: date)] = metrics
+                metricsCacheBuilder[DateUtility.dayKey(for: date)] = metrics
             }
+
+            // Create immutable cache for use in the perform closure
+            let metricsCache = metricsCacheBuilder
 
             await context.perform {
             // Fetch existing symptom types
@@ -255,7 +259,7 @@ struct SampleDataSeeder {
                 ]
 
                 var mealRng = SeededRandom(seed: dayOffset * 17 + 500)
-                for (mealIndex, mealTime) in mealTimes.enumerated() {
+                for mealTime in mealTimes {
                     let meal = MealEvent(context: context)
                     meal.id = UUID()
                     meal.mealType = mealTime.type

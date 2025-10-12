@@ -152,22 +152,25 @@ struct AnalysisView: View {
         }
     }
 
+    @MainActor
     private func hasAnyHealthKitData() async -> Bool {
-        await context.perform {
+        let ctx = context
+        return await ctx.perform {
             let request = SymptomEntry.fetchRequest()
             request.predicate = NSPredicate(
                 format: "hkHRV != nil OR hkRestingHR != nil OR hkSleepHours != nil"
             )
             request.fetchLimit = 1
-            return (try? context.fetch(request).first) != nil
+            return (try? ctx.fetch(request).first) != nil
         }
     }
 
     private func hasAnyActivityData() async -> Bool {
-        await context.perform {
+        let ctx = context
+        return await ctx.perform {
             let request = ActivityEvent.fetchRequest()
             request.fetchLimit = 1
-            return (try? context.fetch(request).first) != nil
+            return (try? ctx.fetch(request).first) != nil
         }
     }
 }

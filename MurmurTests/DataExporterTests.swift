@@ -11,21 +11,22 @@ import CryptoKit
 import XCTest
 @testable import Murmur
 
+@MainActor
 final class DataExporterTests: XCTestCase {
     var testStack: InMemoryCoreDataStack?
 
-    override func setUp() {
-        super.setUp()
+    override func setUp() async throws {
+        try await super.setUp()
         testStack = InMemoryCoreDataStack()
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
         testStack = nil
         // Clean up any temporary files
         let tempDir = FileManager.default.temporaryDirectory
         let exportDir = tempDir.appendingPathComponent("MurmurExport")
         try? FileManager.default.removeItem(at: exportDir)
-        super.tearDown()
+        try await super.tearDown()
     }
 
     func testCreateSampleData() throws {

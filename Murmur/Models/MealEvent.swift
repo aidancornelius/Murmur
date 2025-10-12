@@ -24,6 +24,9 @@ extension MealEvent {
     @NSManaged public var mealType: String?
     @NSManaged public var mealDescription: String?
     @NSManaged public var note: String?
+    @NSManaged public var physicalExertion: NSNumber?
+    @NSManaged public var cognitiveExertion: NSNumber?
+    @NSManaged public var emotionalLoad: NSNumber?
 }
 
 extension MealEvent: Identifiable {

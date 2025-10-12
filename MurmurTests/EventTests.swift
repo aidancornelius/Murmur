@@ -341,6 +341,82 @@ final class EventTests: XCTestCase {
         XCTAssertEqual(fetched.mealDescription, "Apple")
     }
 
+    func testMealEventWithExertionValues() throws {
+        let meal = MealEvent(context: testStack!.context)
+        meal.id = UUID()
+        meal.createdAt = Date()
+        meal.mealType = "lunch"
+        meal.mealDescription = "Large meal with coffee"
+        meal.physicalExertion = NSNumber(value: 4)
+        meal.cognitiveExertion = NSNumber(value: 5)
+        meal.emotionalLoad = NSNumber(value: 3)
+
+        try testStack!.context.save()
+
+        let fetched = try XCTUnwrap(fetchFirstObject(MealEvent.fetchRequest(), in: testStack!.context))
+        XCTAssertEqual(fetched.physicalExertion?.intValue, 4)
+        XCTAssertEqual(fetched.cognitiveExertion?.intValue, 5)
+        XCTAssertEqual(fetched.emotionalLoad?.intValue, 3)
+    }
+
+    func testMealEventWithoutExertionValues() throws {
+        let meal = MealEvent(context: testStack!.context)
+        meal.id = UUID()
+        meal.createdAt = Date()
+        meal.mealType = "breakfast"
+        meal.mealDescription = "Simple toast"
+        // Exertion values intentionally not set
+
+        try testStack!.context.save()
+
+        let fetched = try XCTUnwrap(fetchFirstObject(MealEvent.fetchRequest(), in: testStack!.context))
+        XCTAssertNil(fetched.physicalExertion)
+        XCTAssertNil(fetched.cognitiveExertion)
+        XCTAssertNil(fetched.emotionalLoad)
+    }
+
+    func testMealEventPartialExertionValues() throws {
+        let meal = MealEvent(context: testStack!.context)
+        meal.id = UUID()
+        meal.createdAt = Date()
+        meal.mealType = "dinner"
+        meal.mealDescription = "Pasta"
+        // Only set physical exertion, leave others nil
+        meal.physicalExertion = NSNumber(value: 3)
+
+        try testStack!.context.save()
+
+        let fetched = try XCTUnwrap(fetchFirstObject(MealEvent.fetchRequest(), in: testStack!.context))
+        XCTAssertEqual(fetched.physicalExertion?.intValue, 3)
+        XCTAssertNil(fetched.cognitiveExertion)
+        XCTAssertNil(fetched.emotionalLoad)
+    }
+
+    func testMealEventExertionBoundaryValues() throws {
+        let meal = MealEvent(context: testStack!.context)
+        meal.id = UUID()
+        meal.createdAt = Date()
+        meal.mealType = "snack"
+        meal.mealDescription = "Energy bar"
+
+        // Test minimum values
+        meal.physicalExertion = NSNumber(value: 1)
+        meal.cognitiveExertion = NSNumber(value: 1)
+        meal.emotionalLoad = NSNumber(value: 1)
+        XCTAssertNoThrow(try testStack!.context.save())
+
+        // Test maximum values
+        meal.physicalExertion = NSNumber(value: 5)
+        meal.cognitiveExertion = NSNumber(value: 5)
+        meal.emotionalLoad = NSNumber(value: 5)
+        XCTAssertNoThrow(try testStack!.context.save())
+
+        let fetched = try XCTUnwrap(fetchFirstObject(MealEvent.fetchRequest(), in: testStack!.context))
+        XCTAssertEqual(fetched.physicalExertion?.intValue, 5)
+        XCTAssertEqual(fetched.cognitiveExertion?.intValue, 5)
+        XCTAssertEqual(fetched.emotionalLoad?.intValue, 5)
+    }
+
     // MARK: - Integration Tests
 
     func testMultipleEventTypesCoexist() throws {

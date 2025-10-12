@@ -15,7 +15,7 @@ import XCTest
 
 /// Mock CLLocationManager for testing location services without actual GPS
 @MainActor
-final class MockCLLocationManager: CLLocationManager {
+final class MockCLLocationManager: CLLocationManager, @unchecked Sendable {
     var mockAuthorizationStatus: CLAuthorizationStatus = .notDetermined
     var mockLocation: CLLocation?
     var shouldFailLocationRequest = false

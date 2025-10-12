@@ -11,13 +11,11 @@ import os.log
 
 // MARK: - Sendable Conformances
 
-/// NSPredicate is not marked as Sendable by Apple, but it's immutable and thread-safe
-/// We use @unchecked Sendable to allow passing predicates across actor boundaries
-extension NSPredicate: @unchecked Sendable {}
-
-/// NSSortDescriptor is not marked as Sendable by Apple, but it's immutable and thread-safe
-/// We use @unchecked Sendable to allow passing sort descriptors across actor boundaries
-extension NSSortDescriptor: @unchecked Sendable {}
+/// NSPredicate and NSSortDescriptor are not marked as Sendable by Apple, but they're immutable and thread-safe
+/// We use @unchecked Sendable to allow passing them across actor boundaries
+/// @retroactive indicates these are retroactive conformances that may conflict with future Apple conformances
+extension NSPredicate: @retroactive @unchecked Sendable {}
+extension NSSortDescriptor: @retroactive @unchecked Sendable {}
 
 // MARK: - Protocols
 
@@ -154,7 +152,7 @@ actor RealHealthKitDataProvider: HealthKitDataProvider {
             }
             box.query = query
             Task {
-                await self.addQuery(query)
+                self.addQuery(query)
             }
             store.execute(query)
         }
@@ -512,8 +510,8 @@ extension HealthKitQueryService: ResourceManageable {
 
     nonisolated func cleanup() {
         Task {
-            if let realProvider = await dataProvider as? RealHealthKitDataProvider {
-                await realProvider.cleanup()
+            if let realProvider = dataProvider as? RealHealthKitDataProvider {
+                realProvider.cleanup()
             }
         }
     }

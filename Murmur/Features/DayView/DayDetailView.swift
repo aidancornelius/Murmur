@@ -380,25 +380,41 @@ struct DayDetailView: View {
     private func sortEntries(_ lhs: SymptomEntry, _ rhs: SymptomEntry) -> Bool {
         let lhsDate = lhs.backdatedAt ?? lhs.createdAt ?? Date()
         let rhsDate = rhs.backdatedAt ?? rhs.createdAt ?? Date()
-        return lhsDate > rhsDate
+        if lhsDate != rhsDate {
+            return lhsDate > rhsDate
+        }
+        // Stable secondary sort by ID to ensure consistent ordering
+        return (lhs.id?.uuidString ?? "") > (rhs.id?.uuidString ?? "")
     }
 
     private func sortActivities(_ lhs: ActivityEvent, _ rhs: ActivityEvent) -> Bool {
         let lhsDate = lhs.backdatedAt ?? lhs.createdAt ?? Date()
         let rhsDate = rhs.backdatedAt ?? rhs.createdAt ?? Date()
-        return lhsDate > rhsDate
+        if lhsDate != rhsDate {
+            return lhsDate > rhsDate
+        }
+        // Stable secondary sort by ID to ensure consistent ordering
+        return (lhs.id?.uuidString ?? "") > (rhs.id?.uuidString ?? "")
     }
 
     private func sortSleepEvents(_ lhs: SleepEvent, _ rhs: SleepEvent) -> Bool {
         let lhsDate = lhs.backdatedAt ?? lhs.createdAt ?? Date()
         let rhsDate = rhs.backdatedAt ?? rhs.createdAt ?? Date()
-        return lhsDate > rhsDate
+        if lhsDate != rhsDate {
+            return lhsDate > rhsDate
+        }
+        // Stable secondary sort by ID to ensure consistent ordering
+        return (lhs.id?.uuidString ?? "") > (rhs.id?.uuidString ?? "")
     }
 
     private func sortMealEvents(_ lhs: MealEvent, _ rhs: MealEvent) -> Bool {
         let lhsDate = lhs.backdatedAt ?? lhs.createdAt ?? Date()
         let rhsDate = rhs.backdatedAt ?? rhs.createdAt ?? Date()
-        return lhsDate > rhsDate
+        if lhsDate != rhsDate {
+            return lhsDate > rhsDate
+        }
+        // Stable secondary sort by ID to ensure consistent ordering
+        return (lhs.id?.uuidString ?? "") > (rhs.id?.uuidString ?? "")
     }
 
     private func deleteEntries(at offsets: IndexSet) {

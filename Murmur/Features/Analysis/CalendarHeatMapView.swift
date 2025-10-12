@@ -258,11 +258,15 @@ struct CalendarHeatMapView: View {
         dayData.values.reduce(0) { $0 + $1.entryCount }
     }
 
+    @MainActor
     private func loadMonthData() async {
         isLoading = true
 
-        let data: [Date: DayIntensity] = await context.perform {
-            guard let monthInterval = calendar.dateInterval(of: .month, for: currentMonth) else { return [:] }
+        let ctx = context
+        let cal = calendar
+        let month = currentMonth
+        let data: [Date: DayIntensity] = await ctx.perform {
+            guard let monthInterval = cal.dateInterval(of: .month, for: month) else { return [:] }
 
             let request = SymptomEntry.fetchRequest()
             request.predicate = NSPredicate(
@@ -271,11 +275,11 @@ struct CalendarHeatMapView: View {
                 monthInterval.start as NSDate, monthInterval.end as NSDate
             )
 
-            guard let entries = try? context.fetch(request) else { return [:] }
+            guard let entries = try? ctx.fetch(request) else { return [:] }
 
             // Group entries by day
             let groupedEntries = Dictionary(grouping: entries) { entry in
-                calendar.startOfDay(for: entry.backdatedAt ?? entry.createdAt ?? Date())
+                cal.startOfDay(for: entry.backdatedAt ?? entry.createdAt ?? Date())
             }
 
             // Calculate intensity for each day

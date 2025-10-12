@@ -28,6 +28,7 @@ enum HapticFeedback {
     case error
 
     /// Triggers the haptic feedback
+    @MainActor
     func trigger() {
         switch self {
         case .selection:

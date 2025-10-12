@@ -9,6 +9,7 @@ import CoreData
 import XCTest
 @testable import Murmur
 
+@MainActor
 final class CoreDataMigrationTests: XCTestCase {
     var testStack: InMemoryCoreDataStack?
 
@@ -25,7 +26,7 @@ final class CoreDataMigrationTests: XCTestCase {
     // MARK: - Model Loading Tests
 
     func testCoreDataModelLoads() throws {
-        let model = testStack.container.managedObjectModel
+        let model = testStack!.container.managedObjectModel
         XCTAssertNotNil(model)
 
         // Verify all expected entities exist
@@ -40,7 +41,7 @@ final class CoreDataMigrationTests: XCTestCase {
     }
 
     func testNewEntitiesHaveCorrectAttributes() throws {
-        let model = testStack.container.managedObjectModel
+        let model = testStack!.container.managedObjectModel
 
         // Test SleepEvent entity
         let sleepEntity = model.entitiesByName["SleepEvent"]
@@ -69,10 +70,13 @@ final class CoreDataMigrationTests: XCTestCase {
         XCTAssertTrue(mealAttributes?.contains("mealType") ?? false)
         XCTAssertTrue(mealAttributes?.contains("mealDescription") ?? false)
         XCTAssertTrue(mealAttributes?.contains("note") ?? false)
+        XCTAssertTrue(mealAttributes?.contains("physicalExertion") ?? false)
+        XCTAssertTrue(mealAttributes?.contains("cognitiveExertion") ?? false)
+        XCTAssertTrue(mealAttributes?.contains("emotionalLoad") ?? false)
     }
 
     func testSleepEventSymptomRelationship() throws {
-        let model = testStack.container.managedObjectModel
+        let model = testStack!.container.managedObjectModel
 
         let sleepEntity = model.entitiesByName["SleepEvent"]
         XCTAssertNotNil(sleepEntity)
@@ -350,7 +354,7 @@ final class CoreDataMigrationTests: XCTestCase {
 
     func testBulkEventCreationPerformance() throws {
         self.measure {
-            let context = testStack.container.newBackgroundContext()
+            let context = testStack!.container.newBackgroundContext()
 
             for i in 0..<100 {
                 let sleep = SleepEvent(context: context)
@@ -371,7 +375,7 @@ final class CoreDataMigrationTests: XCTestCase {
         let symptoms = try testStack!.context.fetch(SymptomType.fetchRequest()).prefix(5)
 
         self.measure {
-            let context = testStack.container.newBackgroundContext()
+            let context = testStack!.container.newBackgroundContext()
 
             for i in 0..<50 {
                 let sleep = SleepEvent(context: context)
@@ -390,6 +394,210 @@ final class CoreDataMigrationTests: XCTestCase {
             }
 
             try? context.save()
+        }
+    }
+
+    // MARK: - MealEvent Exertion Properties Tests (Model Version 4)
+
+    func testMealEventExertionAttributesExist() throws {
+        let model = testStack!.container.managedObjectModel
+        let mealEntity = model.entitiesByName["MealEvent"]
+        XCTAssertNotNil(mealEntity)
+
+        // Verify new exertion attributes exist
+        let attributes = mealEntity?.attributesByName
+        XCTAssertNotNil(attributes?["physicalExertion"])
+        XCTAssertNotNil(attributes?["cognitiveExertion"])
+        XCTAssertNotNil(attributes?["emotionalLoad"])
+
+        // Verify they are optional
+        XCTAssertFalse(attributes?["physicalExertion"]?.isOptional == false)
+        XCTAssertFalse(attributes?["cognitiveExertion"]?.isOptional == false)
+        XCTAssertFalse(attributes?["emotionalLoad"]?.isOptional == false)
+    }
+
+    func testExistingMealEventWithoutExertion() throws {
+        // Simulate an existing MealEvent from version 3 (without exertion values)
+        let meal = MealEvent(context: testStack!.context)
+        meal.id = UUID()
+        meal.createdAt = Date()
+        meal.backdatedAt = Date()
+        meal.mealType = "lunch"
+        meal.mealDescription = "Salad from version 3"
+        meal.note = "No exertion data"
+        // Intentionally not setting exertion properties
+
+        try testStack!.context.save()
+
+        let fetched = try XCTUnwrap(fetchFirstObject(MealEvent.fetchRequest(), in: testStack!.context))
+
+        // Verify existing data still loads correctly
+        XCTAssertEqual(fetched.mealType, "lunch")
+        XCTAssertEqual(fetched.mealDescription, "Salad from version 3")
+        XCTAssertEqual(fetched.note, "No exertion data")
+
+        // Verify exertion properties are nil (backward compatibility)
+        XCTAssertNil(fetched.physicalExertion)
+        XCTAssertNil(fetched.cognitiveExertion)
+        XCTAssertNil(fetched.emotionalLoad)
+    }
+
+    func testNewMealEventWithExertion() throws {
+        // Create a new MealEvent with exertion values (version 4)
+        let meal = MealEvent(context: testStack!.context)
+        meal.id = UUID()
+        meal.createdAt = Date()
+        meal.backdatedAt = Date()
+        meal.mealType = "breakfast"
+        meal.mealDescription = "Heavy meal"
+        meal.physicalExertion = NSNumber(value: 4)
+        meal.cognitiveExertion = NSNumber(value: 2)
+        meal.emotionalLoad = NSNumber(value: 3)
+
+        try testStack!.context.save()
+
+        let fetched = try XCTUnwrap(fetchFirstObject(MealEvent.fetchRequest(), in: testStack!.context))
+
+        // Verify exertion values are saved correctly
+        XCTAssertEqual(fetched.physicalExertion?.intValue, 4)
+        XCTAssertEqual(fetched.cognitiveExertion?.intValue, 2)
+        XCTAssertEqual(fetched.emotionalLoad?.intValue, 3)
+    }
+
+    func testMealEventValidationWithExertion() throws {
+        // Test that validation still works with exertion values
+        let meal = MealEvent(context: testStack!.context)
+        meal.id = UUID()
+        meal.createdAt = Date()
+        meal.mealType = "dinner"
+        meal.mealDescription = "Pasta"
+        meal.physicalExertion = NSNumber(value: 3)
+        meal.cognitiveExertion = NSNumber(value: 3)
+        meal.emotionalLoad = NSNumber(value: 3)
+
+        XCTAssertNoThrow(try testStack!.context.save())
+    }
+
+    func testMealEventValidationWithoutExertion() throws {
+        // Test that validation still works without exertion values
+        let meal = MealEvent(context: testStack!.context)
+        meal.id = UUID()
+        meal.createdAt = Date()
+        meal.mealType = "snack"
+        meal.mealDescription = "Apple"
+        // No exertion values
+
+        XCTAssertNoThrow(try testStack!.context.save())
+    }
+
+    func testMealEventExertionCanBeSetToNil() throws {
+        // Create meal with exertion
+        let meal = MealEvent(context: testStack!.context)
+        meal.id = UUID()
+        meal.createdAt = Date()
+        meal.mealType = "lunch"
+        meal.mealDescription = "Sandwich"
+        meal.physicalExertion = NSNumber(value: 3)
+        meal.cognitiveExertion = NSNumber(value: 3)
+        meal.emotionalLoad = NSNumber(value: 3)
+
+        try testStack!.context.save()
+
+        // Now set exertion back to nil (simulating user turning off exertion)
+        meal.physicalExertion = nil
+        meal.cognitiveExertion = nil
+        meal.emotionalLoad = nil
+
+        XCTAssertNoThrow(try testStack!.context.save())
+
+        let fetched = try XCTUnwrap(fetchFirstObject(MealEvent.fetchRequest(), in: testStack!.context))
+        XCTAssertNil(fetched.physicalExertion)
+        XCTAssertNil(fetched.cognitiveExertion)
+        XCTAssertNil(fetched.emotionalLoad)
+    }
+
+    func testMealEventExertionRangeValidation() throws {
+        // Test that exertion values can be in valid range 1-5
+        let meal = MealEvent(context: testStack!.context)
+        meal.id = UUID()
+        meal.createdAt = Date()
+        meal.mealType = "breakfast"
+        meal.mealDescription = "Eggs"
+
+        // Test minimum valid values
+        meal.physicalExertion = NSNumber(value: 1)
+        meal.cognitiveExertion = NSNumber(value: 1)
+        meal.emotionalLoad = NSNumber(value: 1)
+        XCTAssertNoThrow(try testStack!.context.save())
+
+        // Test maximum valid values
+        meal.physicalExertion = NSNumber(value: 5)
+        meal.cognitiveExertion = NSNumber(value: 5)
+        meal.emotionalLoad = NSNumber(value: 5)
+        XCTAssertNoThrow(try testStack!.context.save())
+    }
+
+    func testMultipleMealEventsWithMixedExertion() throws {
+        // Create meal without exertion
+        let meal1 = MealEvent(context: testStack!.context)
+        meal1.id = UUID()
+        meal1.createdAt = Date()
+        meal1.mealType = "breakfast"
+        meal1.mealDescription = "Simple breakfast"
+
+        // Create meal with exertion
+        let meal2 = MealEvent(context: testStack!.context)
+        meal2.id = UUID()
+        meal2.createdAt = Date().addingTimeInterval(-3600)
+        meal2.mealType = "lunch"
+        meal2.mealDescription = "Heavy lunch"
+        meal2.physicalExertion = NSNumber(value: 4)
+        meal2.cognitiveExertion = NSNumber(value: 3)
+        meal2.emotionalLoad = NSNumber(value: 2)
+
+        try testStack!.context.save()
+
+        let request = MealEvent.fetchRequest()
+        request.sortDescriptors = [NSSortDescriptor(keyPath: \MealEvent.createdAt, ascending: false)]
+        let meals = try testStack!.context.fetch(request)
+
+        XCTAssertEqual(meals.count, 2)
+
+        // Verify first meal (without exertion)
+        XCTAssertNil(meals[0].physicalExertion)
+        XCTAssertNil(meals[0].cognitiveExertion)
+        XCTAssertNil(meals[0].emotionalLoad)
+
+        // Verify second meal (with exertion)
+        XCTAssertEqual(meals[1].physicalExertion?.intValue, 4)
+        XCTAssertEqual(meals[1].cognitiveExertion?.intValue, 3)
+        XCTAssertEqual(meals[1].emotionalLoad?.intValue, 2)
+    }
+
+    func testMealEventExertionQueryPerformance() throws {
+        // Create 100 meals with mixed exertion data
+        for i in 0..<100 {
+            let meal = MealEvent(context: testStack!.context)
+            meal.id = UUID()
+            meal.createdAt = Date().addingTimeInterval(TimeInterval(-i * 60))
+            meal.mealType = i % 4 == 0 ? "breakfast" : i % 4 == 1 ? "lunch" : i % 4 == 2 ? "dinner" : "snack"
+            meal.mealDescription = "Meal \(i)"
+
+            // Only add exertion to half the meals
+            if i % 2 == 0 {
+                meal.physicalExertion = NSNumber(value: (i % 5) + 1)
+                meal.cognitiveExertion = NSNumber(value: (i % 5) + 1)
+                meal.emotionalLoad = NSNumber(value: (i % 5) + 1)
+            }
+        }
+
+        try testStack!.context.save()
+
+        // Measure query performance
+        self.measure {
+            let request = MealEvent.fetchRequest()
+            request.sortDescriptors = [NSSortDescriptor(keyPath: \MealEvent.createdAt, ascending: false)]
+            _ = try? testStack!.context.fetch(request)
         }
     }
 }

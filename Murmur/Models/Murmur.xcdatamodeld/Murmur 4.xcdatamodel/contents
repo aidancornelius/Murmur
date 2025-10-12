@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23425" systemVersion="24G90" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="4">
+    <entity name="Reminder" representedClassName="Reminder" syncable="YES">
+        <attribute name="hour" attributeType="Integer 16" defaultValueString="9" usesScalarValueType="YES"/>
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="isEnabled" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
+        <attribute name="minute" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="repeatsOn" optional="YES" attributeType="Transformable" valueTransformerName="NSSecureUnarchiveFromData"/>
+    </entity>
+    <entity name="SymptomEntry" representedClassName="SymptomEntry" syncable="YES">
+        <attribute name="backdatedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="createdAt" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="hkCycleDay" optional="YES" attributeType="Integer 16" usesScalarValueType="NO"/>
+        <attribute name="hkFlowLevel" optional="YES" attributeType="String"/>
+        <attribute name="hkHRV" optional="YES" attributeType="Double" usesScalarValueType="NO"/>
+        <attribute name="hkRestingHR" optional="YES" attributeType="Double" usesScalarValueType="NO"/>
+        <attribute name="hkSleepHours" optional="YES" attributeType="Double" usesScalarValueType="NO"/>
+        <attribute name="hkWorkoutMinutes" optional="YES" attributeType="Double" usesScalarValueType="NO"/>
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="locationPlacemark" optional="YES" attributeType="Transformable" valueTransformerName="PlacemarkTransformer" customClassName="CLPlacemark"/>
+        <attribute name="note" optional="YES" attributeType="String"/>
+        <attribute name="severity" attributeType="Integer 16" defaultValueString="3" usesScalarValueType="YES"/>
+        <attribute name="weatherJSON" optional="YES" attributeType="Transformable" valueTransformerName="NSSecureUnarchiveFromData"/>
+        <relationship name="symptomType" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="SymptomType" inverseName="entries" inverseEntity="SymptomType"/>
+    </entity>
+    <entity name="ActivityEvent" representedClassName="ActivityEvent" syncable="YES">
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="createdAt" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="backdatedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="name" attributeType="String"/>
+        <attribute name="note" optional="YES" attributeType="String"/>
+        <attribute name="physicalExertion" attributeType="Integer 16" defaultValueString="3" usesScalarValueType="YES"/>
+        <attribute name="cognitiveExertion" attributeType="Integer 16" defaultValueString="3" usesScalarValueType="YES"/>
+        <attribute name="emotionalLoad" attributeType="Integer 16" defaultValueString="3" usesScalarValueType="YES"/>
+        <attribute name="durationMinutes" optional="YES" attributeType="Integer 32" usesScalarValueType="NO"/>
+        <attribute name="calendarEventID" optional="YES" attributeType="String"/>
+    </entity>
+    <entity name="SymptomType" representedClassName="SymptomType" syncable="YES">
+        <attribute name="category" optional="YES" attributeType="String"/>
+        <attribute name="color" attributeType="String"/>
+        <attribute name="iconName" attributeType="String"/>
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="isDefault" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="isStarred" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="name" attributeType="String"/>
+        <attribute name="starOrder" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <relationship name="entries" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="SymptomEntry" inverseName="symptomType" inverseEntity="SymptomEntry"/>
+        <relationship name="sleepEvents" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="SleepEvent" inverseName="symptoms" inverseEntity="SleepEvent"/>
+        <uniquenessConstraints>
+            <uniquenessConstraint>
+                <constraint value="name"/>
+            </uniquenessConstraint>
+        </uniquenessConstraints>
+    </entity>
+    <entity name="ManualCycleEntry" representedClassName="ManualCycleEntry" syncable="YES">
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="date" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="flowLevel" attributeType="String"/>
+    </entity>
+    <entity name="SleepEvent" representedClassName="SleepEvent" syncable="YES">
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="createdAt" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="backdatedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="bedTime" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="wakeTime" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="quality" attributeType="Integer 16" defaultValueString="3" usesScalarValueType="YES"/>
+        <attribute name="note" optional="YES" attributeType="String"/>
+        <attribute name="hkSleepHours" optional="YES" attributeType="Double" usesScalarValueType="NO"/>
+        <attribute name="hkHRV" optional="YES" attributeType="Double" usesScalarValueType="NO"/>
+        <attribute name="hkRestingHR" optional="YES" attributeType="Double" usesScalarValueType="NO"/>
+        <relationship name="symptoms" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="SymptomType" inverseName="sleepEvents" inverseEntity="SymptomType"/>
+    </entity>
+    <entity name="MealEvent" representedClassName="MealEvent" syncable="YES">
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="createdAt" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="backdatedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="mealType" attributeType="String"/>
+        <attribute name="mealDescription" attributeType="String"/>
+        <attribute name="note" optional="YES" attributeType="String"/>
+        <attribute name="physicalExertion" optional="YES" attributeType="Integer 16" usesScalarValueType="NO"/>
+        <attribute name="cognitiveExertion" optional="YES" attributeType="Integer 16" usesScalarValueType="NO"/>
+        <attribute name="emotionalLoad" optional="YES" attributeType="Integer 16" usesScalarValueType="NO"/>
+    </entity>
+</model>

@@ -102,7 +102,13 @@ struct AddEntryView: View {
 
                     if useSameSeverity {
                         VStack(alignment: .leading, spacing: 8) {
-                            Slider(value: $sharedSeverity, in: 1...5, step: 1) {
+                            Slider(value: $sharedSeverity, in: 1...5, step: 1,
+                                   onEditingChanged: { editing in
+                                       if !editing {
+                                           // Only trigger haptic when user finishes adjusting
+                                           HapticFeedback.light.trigger()
+                                       }
+                                   }) {
                                 Text("Severity")
                             }
                             .accessibilityIdentifier(AccessibilityIdentifiers.severitySlider)
@@ -110,7 +116,6 @@ struct AddEntryView: View {
                             .accessibilityValue(sharedSeverityAccessibilityValue)
                             .accessibilityHint("Adjust to change severity for all \(selectedSymptoms.count) selected symptoms")
                             .onChange(of: sharedSeverity) { _, newValue in
-                                HapticFeedback.light.trigger()
                                 // Update all selected symptoms to use the shared severity
                                 for i in selectedSymptoms.indices {
                                     selectedSymptoms[i].severity = newValue
@@ -135,15 +140,18 @@ struct AddEntryView: View {
                                 Text(symptom.symptomType.name ?? "Unnamed")
                                     .font(.subheadline.bold())
                                     .accessibilityAddTraits(.isHeader)
-                                Slider(value: $symptom.severity, in: 1...5, step: 1) {
+                                Slider(value: $symptom.severity, in: 1...5, step: 1,
+                                       onEditingChanged: { editing in
+                                           if !editing {
+                                               // Only trigger haptic when user finishes adjusting
+                                               HapticFeedback.light.trigger()
+                                           }
+                                       }) {
                                     Text("Severity for \(symptom.symptomType.name ?? "symptom")")
                                 }
                                 .accessibilityLabel("Severity for \(symptom.symptomType.name ?? "symptom")")
                                 .accessibilityValue(SeverityScale.accessibilityValue(for: symptom.severity, isPositive: symptom.symptomType.isPositive))
                                 .accessibilityIdentifier(AccessibilityIdentifiers.individualSeveritySlider(symptom.symptomType.name ?? "symptom"))
-                                .onChange(of: symptom.severity) { _, _ in
-                                    HapticFeedback.light.trigger()
-                                }
                                 HStack {
                                     Text(SeverityScale.descriptor(for: Int(symptom.severity), isPositive: symptom.symptomType.isPositive))
                                         .font(.caption.bold())

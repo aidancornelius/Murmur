@@ -81,6 +81,10 @@ struct UnifiedEventView: View {
 
     // Meal fields
     @State private var mealType: String = "breakfast"
+    @State private var showMealExertion: Bool = false
+    @State private var mealPhysicalExertion: Int = 3
+    @State private var mealCognitiveExertion: Int = 3
+    @State private var mealEmotionalLoad: Int = 3
 
     // Shared fields
     @State private var note: String = ""
@@ -353,6 +357,9 @@ struct UnifiedEventView: View {
         .onChange(of: bedTime) { _, _ in errorMessage = nil }
         .onChange(of: wakeTime) { _, _ in errorMessage = nil }
         .onChange(of: mealType) { _, _ in errorMessage = nil }
+        .onChange(of: mealPhysicalExertion) { _, _ in errorMessage = nil }
+        .onChange(of: mealCognitiveExertion) { _, _ in errorMessage = nil }
+        .onChange(of: mealEmotionalLoad) { _, _ in errorMessage = nil }
         .onChange(of: durationMinutes) { _, _ in errorMessage = nil }
         .onChange(of: timestamp) { _, _ in errorMessage = nil }
         .sheet(isPresented: $showingSymptomPicker) {
@@ -824,13 +831,66 @@ struct UnifiedEventView: View {
             icon: "fork.knife",
             isExpanded: .constant(true)
         ) {
-            Picker("Meal type", selection: $mealType) {
-                Text("Breakfast").tag("breakfast")
-                Text("Lunch").tag("lunch")
-                Text("Dinner").tag("dinner")
-                Text("Snack").tag("snack")
+            VStack(spacing: 16) {
+                Picker("Meal type", selection: $mealType) {
+                    Text("Breakfast").tag("breakfast")
+                    Text("Lunch").tag("lunch")
+                    Text("Dinner").tag("dinner")
+                    Text("Snack").tag("snack")
+                }
+                .pickerStyle(.segmented)
+
+                // Optional exertion toggle
+                Button(action: {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        showMealExertion.toggle()
+                        HapticFeedback.selection.trigger()
+                    }
+                }) {
+                    HStack {
+                        Image(systemName: "bolt.fill")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+
+                        Text(showMealExertion ? "Energy impact" : "Add energy impact")
+                            .font(.subheadline.weight(.medium))
+
+                        Spacer()
+
+                        Image(systemName: "chevron.down")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                            .rotationEffect(.degrees(showMealExertion ? 0 : -90))
+                    }
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.primary)
+
+                // Exertion controls (shown when toggled)
+                if showMealExertion {
+                    VStack(spacing: 16) {
+                        ExertionRingSelector(
+                            label: "Physical",
+                            value: $mealPhysicalExertion,
+                            color: .orange
+                        )
+                        ExertionRingSelector(
+                            label: "Mental",
+                            value: $mealCognitiveExertion,
+                            color: .purple
+                        )
+                        ExertionRingSelector(
+                            label: "Emotional",
+                            value: $mealEmotionalLoad,
+                            color: .pink
+                        )
+                    }
+                    .transition(.asymmetric(
+                        insertion: .push(from: .top).combined(with: .opacity),
+                        removal: .push(from: .bottom).combined(with: .opacity)
+                    ))
+                }
             }
-            .pickerStyle(.segmented)
         }
     }
 
@@ -1108,13 +1168,17 @@ struct UnifiedEventView: View {
                 showMealTypeCard = true
                 showTimeCard = true  // Enable time selection for meals
             case .unknown:
-                // Smart suggestion based on time
+                // Smart suggestion based on time - prioritise sleep between 5-8am
                 let hour = Calendar.current.component(.hour, from: Date())
-                let shouldSuggestSleep = (hour >= 6 && hour < 9) || hour > 21
+                let shouldSuggestSleep = (hour >= 5 && hour < 8) || hour > 21
 
                 if shouldSuggestSleep && !hasSleepInLast12Hours() {
                     eventType = .sleep
                     showSleepQualityCard = true
+                    // Auto-title as "Sleep" when suggesting sleep mode
+                    if mainInput.trimmingCharacters(in: .whitespaces).isEmpty {
+                        mainInput = "Sleep"
+                    }
                 } else {
                     showCalendarCard = hasMatchingCalendarEvents
                 }
@@ -1326,6 +1390,13 @@ struct UnifiedEventView: View {
         }
 
         meal.note = note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : note
+
+        // Save exertion values if user has opted in
+        if showMealExertion {
+            meal.physicalExertion = NSNumber(value: mealPhysicalExertion)
+            meal.cognitiveExertion = NSNumber(value: mealCognitiveExertion)
+            meal.emotionalLoad = NSNumber(value: mealEmotionalLoad)
+        }
     }
 
     private func loadHealthKitSleepData() async {
