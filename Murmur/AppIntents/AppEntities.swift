@@ -49,7 +49,7 @@ struct SymptomEntryEntity: AppEntity, Identifiable {
 @available(iOS 16.0, *)
 struct SymptomEntryQuery: EntityQuery {
     func entities(for identifiers: [UUID]) async throws -> [SymptomEntryEntity] {
-        let context = CoreDataStack.shared.context
+        let context = await MainActor.run { CoreDataStack.shared.context }
         let fetchRequest: NSFetchRequest<SymptomEntry> = SymptomEntry.fetchRequest()
         fetchRequest.predicate = NSPredicate(format: "id IN %@", identifiers)
 
@@ -61,7 +61,7 @@ struct SymptomEntryQuery: EntityQuery {
     }
 
     func suggestedEntities() async throws -> [SymptomEntryEntity] {
-        let context = CoreDataStack.shared.context
+        let context = await MainActor.run { CoreDataStack.shared.context }
         let fetchRequest: NSFetchRequest<SymptomEntry> = SymptomEntry.fetchRequest()
         fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \SymptomEntry.backdatedAt, ascending: false)]
         fetchRequest.fetchLimit = 5
@@ -119,7 +119,7 @@ struct ActivityEventEntity: AppEntity, Identifiable {
 @available(iOS 16.0, *)
 struct ActivityEventQuery: EntityQuery {
     func entities(for identifiers: [UUID]) async throws -> [ActivityEventEntity] {
-        let context = CoreDataStack.shared.context
+        let context = await MainActor.run { CoreDataStack.shared.context }
         let fetchRequest: NSFetchRequest<ActivityEvent> = ActivityEvent.fetchRequest()
         fetchRequest.predicate = NSPredicate(format: "id IN %@", identifiers)
 
@@ -131,7 +131,7 @@ struct ActivityEventQuery: EntityQuery {
     }
 
     func suggestedEntities() async throws -> [ActivityEventEntity] {
-        let context = CoreDataStack.shared.context
+        let context = await MainActor.run { CoreDataStack.shared.context }
         let fetchRequest: NSFetchRequest<ActivityEvent> = ActivityEvent.fetchRequest()
         fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \ActivityEvent.backdatedAt, ascending: false)]
         fetchRequest.fetchLimit = 5
@@ -177,7 +177,7 @@ struct SymptomTypeEntity: AppEntity, Identifiable {
 @available(iOS 16.0, *)
 struct SymptomTypeQuery: EntityQuery {
     func entities(for identifiers: [UUID]) async throws -> [SymptomTypeEntity] {
-        let context = CoreDataStack.shared.context
+        let context = await MainActor.run { CoreDataStack.shared.context }
         let fetchRequest: NSFetchRequest<SymptomType> = SymptomType.fetchRequest()
         fetchRequest.predicate = NSPredicate(format: "id IN %@", identifiers)
 
@@ -189,7 +189,7 @@ struct SymptomTypeQuery: EntityQuery {
     }
 
     func suggestedEntities() async throws -> [SymptomTypeEntity] {
-        let context = CoreDataStack.shared.context
+        let context = await MainActor.run { CoreDataStack.shared.context }
         let fetchRequest: NSFetchRequest<SymptomType> = SymptomType.fetchRequest()
         fetchRequest.sortDescriptors = [
             NSSortDescriptor(keyPath: \SymptomType.isStarred, ascending: false),

@@ -100,7 +100,7 @@ struct VoiceSelector {
 
 // MARK: - Speech Service
 /// Centralised service for text-to-speech functionality
-class SpeechService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
+class SpeechService: NSObject, ObservableObject, AVSpeechSynthesizerDelegate, @unchecked Sendable {
     @MainActor static let shared = SpeechService()
 
     private let synthesizer = AVSpeechSynthesizer()

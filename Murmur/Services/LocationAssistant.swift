@@ -21,7 +21,7 @@ protocol LocationAssistantProtocol: AnyObject {
 // MARK: - Implementation
 
 @MainActor
-final class LocationAssistant: NSObject, LocationAssistantProtocol, ObservableObject {
+final class LocationAssistant: NSObject, LocationAssistantProtocol, ObservableObject, @unchecked Sendable {
     enum State {
         case idle
         case requesting
@@ -41,11 +41,8 @@ final class LocationAssistant: NSObject, LocationAssistantProtocol, ObservableOb
         manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
     }
 
-    deinit {
-        manager.stopUpdatingLocation()
-        manager.delegate = nil
-        geocoder.cancelGeocode()
-    }
+    // Cleanup is performed via ResourceManageable protocol instead of deinit
+    // to avoid accessing non-Sendable types from deinit in Swift 6
 
     func requestLocation() {
         // Skip location request if disabled for UI testing
@@ -89,6 +86,29 @@ final class LocationAssistant: NSObject, LocationAssistantProtocol, ObservableOb
             .joined(separator: ", ")
     }
 }
+
+// MARK: - ResourceManageable Conformance
+
+extension LocationAssistant: ResourceManageable {
+    nonisolated func start() async throws {
+        // No initialization required
+    }
+
+    nonisolated func cleanup() {
+        // Delegate to MainActor-isolated cleanup
+        Task { @MainActor in
+            self._cleanup()
+        }
+    }
+
+    private func _cleanup() {
+        manager.stopUpdatingLocation()
+        manager.delegate = nil
+        geocoder.cancelGeocode()
+    }
+}
+
+// MARK: - CLLocationManagerDelegate Conformance
 
 extension LocationAssistant: CLLocationManagerDelegate {
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {

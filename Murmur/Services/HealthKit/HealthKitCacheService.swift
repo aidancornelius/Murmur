@@ -11,7 +11,8 @@ import Foundation
 
 /// Service responsible for caching HealthKit data to reduce redundant queries
 /// Note: Sendable conformance removed - actors are implicitly Sendable
-protocol HealthKitCacheServiceProtocol {
+/// Actor isolation: This protocol should only be adopted by actors
+protocol HealthKitCacheServiceProtocol: Actor {
     // MARK: - Recent Data Cache (Timestamp-based)
     func getLastSampleDate(for metric: HealthMetric) -> Date?
     func setLastSampleDate(_ date: Date, for metric: HealthMetric)

@@ -65,7 +65,7 @@ final class HealthKitAssistant: HealthKitAssistantProtocol, ObservableObject {
     private let workoutType = HKObjectType.workoutType()
     private lazy var menstrualFlowType: HKCategoryType? = HKCategoryType.categoryType(forIdentifier: .menstrualFlow)
 
-    var isHealthDataAvailable: Bool { queryService.isHealthDataAvailable }
+    nonisolated var isHealthDataAvailable: Bool { queryService.isHealthDataAvailable }
 
     // MARK: - Initialisation
 
@@ -131,7 +131,7 @@ extension HealthKitAssistant: ResourceManageable {
 
     #if DEBUG
     /// Expose cache timestamps for testing purposes
-    func _setCacheTimestamp(_ date: Date, for metric: String) {
+    func _setCacheTimestamp(_ date: Date, for metric: String) async {
         let healthMetric: HealthMetric
         switch metric {
         case "hrv": healthMetric = .hrv
@@ -141,7 +141,7 @@ extension HealthKitAssistant: ResourceManageable {
         case "cycle": healthMetric = .cycleDay
         default: return
         }
-        cacheService.setLastSampleDate(date, for: healthMetric)
+        await cacheService.setLastSampleDate(date, for: healthMetric)
     }
 
     /// Expose active queries count for testing (always 0 with new architecture)
@@ -242,7 +242,7 @@ extension HealthKitAssistant: ResourceManageable {
             logger.warning("HRV type not available on this device")
             return
         }
-        guard cacheService.shouldRefresh(metric: .hrv, cacheDuration: AppConstants.HealthKit.hrvCacheDuration, force: force) else {
+        guard await cacheService.shouldRefresh(metric: .hrv, cacheDuration: AppConstants.HealthKit.hrvCacheDuration, force: force) else {
             return
         }
         do {
@@ -258,7 +258,7 @@ extension HealthKitAssistant: ResourceManageable {
             )
             if let latest = samples.first {
                 latestHRV = latest.quantity.doubleValue(for: HKUnit.secondUnit(with: .milli))
-                cacheService.setLastSampleDate(latest.endDate, for: .hrv)
+                await cacheService.setLastSampleDate(latest.endDate, for: .hrv)
             }
         } catch {
             logger.error("Failed to refresh HRV: \(error.localizedDescription)")
@@ -270,8 +270,9 @@ extension HealthKitAssistant: ResourceManageable {
             logger.warning("Resting heart rate type not available on this device")
             return
         }
-        guard cacheService.shouldRefresh(metric: .restingHR, cacheDuration: AppConstants.HealthKit.restingHeartRateCacheDuration, force: force) else {
-            logger.debug("Using cached resting heart rate from \(self.cacheService.getLastSampleDate(for: .restingHR) ?? Date())")
+        guard await cacheService.shouldRefresh(metric: .restingHR, cacheDuration: AppConstants.HealthKit.restingHeartRateCacheDuration, force: force) else {
+            let lastSampleDate = await cacheService.getLastSampleDate(for: .restingHR) ?? Date()
+            logger.debug("Using cached resting heart rate from \(lastSampleDate)")
             return
         }
         do {
@@ -290,7 +291,7 @@ extension HealthKitAssistant: ResourceManageable {
             if let latest = samples.first {
                 let unit = HKUnit.count().unitDivided(by: HKUnit.minute())
                 latestRestingHR = latest.quantity.doubleValue(for: unit)
-                cacheService.setLastSampleDate(latest.endDate, for: .restingHR)
+                await cacheService.setLastSampleDate(latest.endDate, for: .restingHR)
                 logger.debug("Updated resting heart rate to \(self.latestRestingHR ?? 0) bpm from \(latest.endDate)")
             } else {
                 logger.warning("No resting heart rate samples found in the last \(AppConstants.HealthKit.quantitySampleLookback / 3600) hours")
@@ -302,7 +303,7 @@ extension HealthKitAssistant: ResourceManageable {
     }
 
     private func refreshSleepIfNeeded(force: Bool = false) async {
-        guard cacheService.shouldRefresh(metric: .sleep, cacheDuration: AppConstants.HealthKit.sleepCacheDuration, force: force) else {
+        guard await cacheService.shouldRefresh(metric: .sleep, cacheDuration: AppConstants.HealthKit.sleepCacheDuration, force: force) else {
             return
         }
         do {
@@ -316,14 +317,14 @@ extension HealthKitAssistant: ResourceManageable {
                 total + sample.endDate.timeIntervalSince(sample.startDate)
             }
             latestSleepHours = totalSeconds / 3600.0
-            cacheService.setLastSampleDate(end, for: .sleep)
+            await cacheService.setLastSampleDate(end, for: .sleep)
         } catch {
             logger.error("Failed to refresh sleep: \(error.localizedDescription)")
         }
     }
 
     private func refreshWorkoutIfNeeded(force: Bool = false) async {
-        guard cacheService.shouldRefresh(metric: .workout, cacheDuration: AppConstants.HealthKit.workoutCacheDuration, force: force) else {
+        guard await cacheService.shouldRefresh(metric: .workout, cacheDuration: AppConstants.HealthKit.workoutCacheDuration, force: force) else {
             return
         }
         do {
@@ -342,7 +343,7 @@ extension HealthKitAssistant: ResourceManageable {
                 total + workout.duration
             }
             latestWorkoutMinutes = totalSeconds / 60.0
-            cacheService.setLastSampleDate(end, for: .workout)
+            await cacheService.setLastSampleDate(end, for: .workout)
         } catch {
             logger.error("Failed to refresh workout: \(error.localizedDescription)")
         }
@@ -353,7 +354,7 @@ extension HealthKitAssistant: ResourceManageable {
             logger.warning("Menstrual flow type not available on this device")
             return
         }
-        guard cacheService.shouldRefresh(metric: .cycleDay, cacheDuration: AppConstants.HealthKit.cycleCacheDuration, force: force) else {
+        guard await cacheService.shouldRefresh(metric: .cycleDay, cacheDuration: AppConstants.HealthKit.cycleCacheDuration, force: force) else {
             return
         }
         do {
@@ -401,7 +402,7 @@ extension HealthKitAssistant: ResourceManageable {
                 latestFlowLevel = nil
             }
 
-            cacheService.setLastSampleDate(end, for: .cycleDay)
+            await cacheService.setLastSampleDate(end, for: .cycleDay)
         } catch {
             logger.error("Failed to refresh cycle data: \(error.localizedDescription)")
         }

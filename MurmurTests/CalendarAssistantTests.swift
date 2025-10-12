@@ -98,7 +98,7 @@ final class CalendarAssistantTests: XCTestCase {
             start: calendar.date(byAdding: .hour, value: 1, to: now)!,
             duration: 3600
         )
-        mockStore!.mockEvents =[event1, event2]
+        mockStore!.mockEvents = [event1, event2]
 
         // When: Fetch today's events
         await assistant!.fetchTodaysEvents()
@@ -115,7 +115,7 @@ final class CalendarAssistantTests: XCTestCase {
 
         let yesterday = Date().addingTimeInterval(-24 * 3600)
         let event = EKEvent.mockMeeting(start: yesterday)
-        mockStore!.mockEvents =[event]
+        mockStore!.mockEvents = [event]
 
         // When: Fetch recent events
         await assistant!.fetchRecentEvents(daysBack: 7)
@@ -131,7 +131,7 @@ final class CalendarAssistantTests: XCTestCase {
 
         let tomorrow = Date().addingTimeInterval(24 * 3600)
         let event = EKEvent.mockMeeting(start: tomorrow)
-        mockStore!.mockEvents =[event]
+        mockStore!.mockEvents = [event]
 
         // When: Fetch upcoming events
         await assistant!.fetchUpcomingEvents(daysAhead:7)
@@ -161,7 +161,7 @@ final class CalendarAssistantTests: XCTestCase {
 
         let regularEvent = EKEvent.mockMeeting()
         let allDayEvent = EKEvent.mockAllDayEvent()
-        mockStore!.mockEvents =[regularEvent, allDayEvent]
+        mockStore!.mockEvents = [regularEvent, allDayEvent]
 
         // When: Fetch events
         await assistant!.fetchTodaysEvents()
@@ -178,7 +178,7 @@ final class CalendarAssistantTests: XCTestCase {
         let now = Date()
         let event1 = EKEvent.mockMeeting(title: "Later", start: now.addingTimeInterval(7200))
         let event2 = EKEvent.mockMeeting(title: "Earlier", start: now.addingTimeInterval(3600))
-        mockStore!.mockEvents =[event1, event2]
+        mockStore!.mockEvents = [event1, event2]
 
         // When: Fetch upcoming events
         await assistant!.fetchUpcomingEvents(daysAhead:1)
@@ -198,7 +198,7 @@ final class CalendarAssistantTests: XCTestCase {
         let event1 = EKEvent.mockMeeting(title: "Yesterday", start: yesterday)
         let event2 = EKEvent.mockMeeting(title: "Today", start: today)
         let event3 = EKEvent.mockMeeting(title: "Tomorrow", start: tomorrow)
-        mockStore!.mockEvents =[event1, event2, event3]
+        mockStore!.mockEvents = [event1, event2, event3]
 
         // When: Create predicate for today only
         let calendar = Calendar.current
@@ -221,7 +221,7 @@ final class CalendarAssistantTests: XCTestCase {
 
     func testMockStoreReset() {
         // Given: Mock store with configured state
-        mockStore!.mockEvents =[EKEvent.mockMeeting()]
+        mockStore!.mockEvents = [EKEvent.mockMeeting()]
         mockStore.shouldGrantAccess = false
         _ = mockStore!.events(matching: NSPredicate(value: true))
 
@@ -418,7 +418,7 @@ final class CalendarAssistantTests: XCTestCase {
         // Given: Mock store with no events
         mockStore.shouldGrantAccess = true
         _ = await assistant!.requestAccess()
-        mockStore!.mockEvents =[]
+        mockStore!.mockEvents = []
 
         // When: Fetch events
         await assistant!.fetchTodaysEvents()

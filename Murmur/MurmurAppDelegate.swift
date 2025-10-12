@@ -119,7 +119,7 @@ final class MurmurAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificati
         UITableViewHeaderFooterView.appearance().tintColor = .clear
     }
 
-    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         completionHandler([.badge, .sound, .banner, .list])
     }
 }

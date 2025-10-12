@@ -24,21 +24,21 @@ final class HealthKitCacheServiceTests: XCTestCase {
 
     // MARK: - Last Sample Date Tests
 
-    func testGetLastSampleDate_InitiallyNil() {
+    func testGetLastSampleDate_InitiallyNil() async {
         // When
-        let date = cacheService.getLastSampleDate(for: .hrv)
+        let date = await cacheService.getLastSampleDate(for: .hrv)
 
         // Then
         XCTAssertNil(date)
     }
 
-    func testSetAndGetLastSampleDate() {
+    func testSetAndGetLastSampleDate() async {
         // Given
         let now = Date()
 
         // When
-        cacheService.setLastSampleDate(now, for: .hrv)
-        let retrieved = cacheService.getLastSampleDate(for: .hrv)
+        await cacheService.setLastSampleDate(now, for: .hrv)
+        let retrieved = await cacheService.getLastSampleDate(for: .hrv)
 
         // Then
         XCTAssertNotNil(retrieved)
@@ -47,7 +47,7 @@ final class HealthKitCacheServiceTests: XCTestCase {
         }
     }
 
-    func testLastSampleDate_IndependentPerMetric() {
+    func testLastSampleDate_IndependentPerMetric() async {
         // Given
         let hrvDate = Date()
         let hrDate = Date().addingTimeInterval(-3600)
@@ -74,7 +74,7 @@ final class HealthKitCacheServiceTests: XCTestCase {
 
     // MARK: - Should Refresh Tests
 
-    func testShouldRefresh_NoCacheReturnsTrue() {
+    func testShouldRefresh_NoCacheReturnsTrue() async {
         // When
         let shouldRefresh = cacheService.shouldRefresh(metric: .hrv, cacheDuration: 300, force: false)
 
@@ -82,7 +82,7 @@ final class HealthKitCacheServiceTests: XCTestCase {
         XCTAssertTrue(shouldRefresh)
     }
 
-    func testShouldRefresh_ForceAlwaysReturnsTrue() {
+    func testShouldRefresh_ForceAlwaysReturnsTrue() async {
         // Given
         cacheService.setLastSampleDate(Date(), for: .hrv)
 
@@ -93,7 +93,7 @@ final class HealthKitCacheServiceTests: XCTestCase {
         XCTAssertTrue(shouldRefresh)
     }
 
-    func testShouldRefresh_WithinDurationReturnsFalse() {
+    func testShouldRefresh_WithinDurationReturnsFalse() async {
         // Given
         cacheService.setLastSampleDate(Date(), for: .hrv)
 
@@ -104,7 +104,7 @@ final class HealthKitCacheServiceTests: XCTestCase {
         XCTAssertFalse(shouldRefresh)
     }
 
-    func testShouldRefresh_ExpiredReturnsTrue() {
+    func testShouldRefresh_ExpiredReturnsTrue() async {
         // Given
         let oldDate = Date().addingTimeInterval(-600) // 10 minutes ago
         cacheService.setLastSampleDate(oldDate, for: .hrv)
@@ -118,7 +118,7 @@ final class HealthKitCacheServiceTests: XCTestCase {
 
     // MARK: - Historical Cache Tests
 
-    func testGetCachedValue_InitiallyNil() {
+    func testGetCachedValue_InitiallyNil() async {
         // When
         let value: Double? = cacheService.getCachedValue(for: .hrv, date: Date())
 
@@ -126,7 +126,7 @@ final class HealthKitCacheServiceTests: XCTestCase {
         XCTAssertNil(value)
     }
 
-    func testSetAndGetCachedValue_Double() {
+    func testSetAndGetCachedValue_Double() async {
         // Given
         let date = Date()
         let hrvValue = 45.2
@@ -140,7 +140,7 @@ final class HealthKitCacheServiceTests: XCTestCase {
         XCTAssertEqual(retrieved, hrvValue)
     }
 
-    func testSetAndGetCachedValue_Int() {
+    func testSetAndGetCachedValue_Int() async {
         // Given
         let date = Date()
         let cycleDayValue = 14
@@ -154,7 +154,7 @@ final class HealthKitCacheServiceTests: XCTestCase {
         XCTAssertEqual(retrieved, cycleDayValue)
     }
 
-    func testSetAndGetCachedValue_String() {
+    func testSetAndGetCachedValue_String() async {
         // Given
         let date = Date()
         let flowValue = "light"
@@ -168,7 +168,7 @@ final class HealthKitCacheServiceTests: XCTestCase {
         XCTAssertEqual(retrieved, flowValue)
     }
 
-    func testCachedValue_IndependentPerMetric() {
+    func testCachedValue_IndependentPerMetric() async {
         // Given
         let date = Date()
 
@@ -184,7 +184,7 @@ final class HealthKitCacheServiceTests: XCTestCase {
         XCTAssertEqual(hr, 65.0)
     }
 
-    func testCachedValue_IndependentPerDate() {
+    func testCachedValue_IndependentPerDate() async {
         // Given
         let today = Date()
         let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: today)!
@@ -201,7 +201,7 @@ final class HealthKitCacheServiceTests: XCTestCase {
         XCTAssertEqual(yesterdayValue, 50.0)
     }
 
-    func testCachedValue_SameDayReturnsSameValue() {
+    func testCachedValue_SameDayReturnsSameValue() async {
         // Given
         let morning = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date())!
         let evening = Calendar.current.date(bySettingHour: 20, minute: 0, second: 0, of: Date())!
@@ -216,7 +216,7 @@ final class HealthKitCacheServiceTests: XCTestCase {
 
     // MARK: - Clear Cache Tests
 
-    func testClearCache_ClearsRecentData() {
+    func testClearCache_ClearsRecentData() async {
         // Given
         cacheService.setLastSampleDate(Date(), for: .hrv)
         cacheService.setLastSampleDate(Date(), for: .restingHR)
@@ -229,7 +229,7 @@ final class HealthKitCacheServiceTests: XCTestCase {
         XCTAssertNil(cacheService.getLastSampleDate(for: .restingHR))
     }
 
-    func testClearCache_ClearsHistoricalData() {
+    func testClearCache_ClearsHistoricalData() async {
         // Given
         let date = Date()
         cacheService.setCachedValue(45.2, for: .hrv, date: date)
@@ -248,7 +248,7 @@ final class HealthKitCacheServiceTests: XCTestCase {
 
     // MARK: - Type Safety Tests
 
-    func testCachedValue_WrongTypeReturnsNil() {
+    func testCachedValue_WrongTypeReturnsNil() async {
         // Given
         let date = Date()
         cacheService.setCachedValue(45.2, for: .hrv, date: date)
@@ -262,7 +262,7 @@ final class HealthKitCacheServiceTests: XCTestCase {
 
     // MARK: - All Metrics Tests
 
-    func testAllMetricTypes() {
+    func testAllMetricTypes() async {
         // Given
         let date = Date()
         let metrics: [(HealthMetric, Any)] = [

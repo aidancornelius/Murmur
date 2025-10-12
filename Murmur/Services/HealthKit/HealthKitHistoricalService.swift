@@ -56,7 +56,7 @@ actor HealthKitHistoricalService: HealthKitHistoricalServiceProtocol {
     // MARK: - Historical Data Methods
 
     func hrvForDate(_ date: Date) async -> Double? {
-        if let cached: Double = cacheService.getCachedValue(for: .hrv, date: date) {
+        if let cached: Double = await cacheService.getCachedValue(for: .hrv, date: date) {
             return cached
         }
 
@@ -79,7 +79,7 @@ actor HealthKitHistoricalService: HealthKitHistoricalServiceProtocol {
 
             if let sample = samples.first {
                 let value = sample.quantity.doubleValue(for: HKUnit.secondUnit(with: .milli))
-                cacheService.setCachedValue(value, for: .hrv, date: date)
+                await cacheService.setCachedValue(value, for: .hrv, date: date)
                 return value
             }
         } catch {
@@ -89,7 +89,7 @@ actor HealthKitHistoricalService: HealthKitHistoricalServiceProtocol {
     }
 
     func restingHRForDate(_ date: Date) async -> Double? {
-        if let cached: Double = cacheService.getCachedValue(for: .restingHR, date: date) {
+        if let cached: Double = await cacheService.getCachedValue(for: .restingHR, date: date) {
             return cached
         }
 
@@ -113,7 +113,7 @@ actor HealthKitHistoricalService: HealthKitHistoricalServiceProtocol {
             if let sample = samples.first {
                 let unit = HKUnit.count().unitDivided(by: HKUnit.minute())
                 let value = sample.quantity.doubleValue(for: unit)
-                cacheService.setCachedValue(value, for: .restingHR, date: date)
+                await cacheService.setCachedValue(value, for: .restingHR, date: date)
                 return value
             }
         } catch {
@@ -123,7 +123,7 @@ actor HealthKitHistoricalService: HealthKitHistoricalServiceProtocol {
     }
 
     func sleepHoursForDate(_ date: Date) async -> Double? {
-        if let cached: Double = cacheService.getCachedValue(for: .sleep, date: date) {
+        if let cached: Double = await cacheService.getCachedValue(for: .sleep, date: date) {
             return cached
         }
 
@@ -151,7 +151,7 @@ actor HealthKitHistoricalService: HealthKitHistoricalServiceProtocol {
 
             let hours = totalSeconds / 3600.0
             if hours > 0 {
-                cacheService.setCachedValue(hours, for: .sleep, date: date)
+                await cacheService.setCachedValue(hours, for: .sleep, date: date)
                 return hours
             }
         } catch {
@@ -161,7 +161,7 @@ actor HealthKitHistoricalService: HealthKitHistoricalServiceProtocol {
     }
 
     func workoutMinutesForDate(_ date: Date) async -> Double? {
-        if let cached: Double = cacheService.getCachedValue(for: .workout, date: date) {
+        if let cached: Double = await cacheService.getCachedValue(for: .workout, date: date) {
             return cached
         }
 
@@ -181,7 +181,7 @@ actor HealthKitHistoricalService: HealthKitHistoricalServiceProtocol {
 
             let minutes = totalSeconds / 60.0
             if minutes > 0 {
-                cacheService.setCachedValue(minutes, for: .workout, date: date)
+                await cacheService.setCachedValue(minutes, for: .workout, date: date)
                 return minutes
             }
         } catch {
@@ -191,7 +191,7 @@ actor HealthKitHistoricalService: HealthKitHistoricalServiceProtocol {
     }
 
     func cycleDayForDate(_ date: Date) async -> Int? {
-        if let cached: Int = cacheService.getCachedValue(for: .cycleDay, date: date) {
+        if let cached: Int = await cacheService.getCachedValue(for: .cycleDay, date: date) {
             return cached
         }
 
@@ -230,7 +230,7 @@ actor HealthKitHistoricalService: HealthKitHistoricalServiceProtocol {
                     to: calendar.startOfDay(for: date)
                 ).day ?? 0
                 let cycleDay = daysSinceStart + 1
-                cacheService.setCachedValue(cycleDay, for: .cycleDay, date: date)
+                await cacheService.setCachedValue(cycleDay, for: .cycleDay, date: date)
                 return cycleDay
             }
         } catch {
@@ -240,7 +240,7 @@ actor HealthKitHistoricalService: HealthKitHistoricalServiceProtocol {
     }
 
     func flowLevelForDate(_ date: Date) async -> String? {
-        if let cached: String = cacheService.getCachedValue(for: .flowLevel, date: date) {
+        if let cached: String = await cacheService.getCachedValue(for: .flowLevel, date: date) {
             return cached
         }
 
@@ -272,7 +272,7 @@ actor HealthKitHistoricalService: HealthKitHistoricalServiceProtocol {
                 }
 
                 if let flowLevel {
-                    cacheService.setCachedValue(flowLevel, for: .flowLevel, date: date)
+                    await cacheService.setCachedValue(flowLevel, for: .flowLevel, date: date)
                     return flowLevel
                 }
             }

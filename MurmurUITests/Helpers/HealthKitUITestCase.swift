@@ -36,8 +36,8 @@ class HealthKitUITestCase: XCTestCase {
 
         arguments.append(contentsOf: additionalArguments)
 
-        app.launchArguments = arguments
-        app.launch()
+        app?.launchArguments = arguments
+        app?.launch()
 
         // Wait for HealthKit seeding to complete
         // The app shows progress view during seeding
@@ -68,8 +68,8 @@ class HealthKitUITestCase: XCTestCase {
 
         arguments.append(contentsOf: additionalArguments)
 
-        app.launchArguments = arguments
-        app.launch()
+        app?.launchArguments = arguments
+        app?.launch()
 
         waitForAppToLoad()
     }
@@ -98,8 +98,8 @@ class HealthKitUITestCase: XCTestCase {
 
         arguments.append(contentsOf: additionalArguments)
 
-        app.launchArguments = arguments
-        app.launch()
+        app?.launchArguments = arguments
+        app?.launch()
 
         waitForAppToLoad()
     }
@@ -122,8 +122,8 @@ class HealthKitUITestCase: XCTestCase {
 
         arguments.append(contentsOf: additionalArguments)
 
-        app.launchArguments = arguments
-        app.launch()
+        app?.launchArguments = arguments
+        app?.launch()
 
         waitForAppToLoad()
     }
@@ -159,8 +159,8 @@ class HealthKitUITestCase: XCTestCase {
 
         arguments.append(contentsOf: additionalArguments)
 
-        app.launchArguments = arguments
-        app.launch()
+        app?.launchArguments = arguments
+        app?.launch()
 
         waitForAppToLoad()
     }
@@ -168,9 +168,9 @@ class HealthKitUITestCase: XCTestCase {
     /// Wait for the app to finish loading after HealthKit seeding
     private func waitForAppToLoad() {
         // Wait for main UI element to appear (log symptom button)
-        let logButton = app.buttons.matching(identifier: "log-symptom-button").firstMatch
+        let logButton = app?.buttons.matching(identifier: "log-symptom-button").firstMatch
         XCTAssertTrue(
-            logButton.waitForExistence(timeout: 15),
+            logButton?.waitForExistence(timeout: 15) == true,
             "App should load within 15 seconds after HealthKit seeding"
         )
     }

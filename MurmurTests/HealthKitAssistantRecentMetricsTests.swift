@@ -74,7 +74,7 @@ final class HealthKitAssistantRecentMetricsTests: HealthKitAssistantTestCase {
         _ = await assistant.recentHRV()
 
         // Simulate cache expiration (31 minutes ago)
-        assistant._setCacheTimestamp(.minutesAgo(31), for: "hrv")
+        await assistant._setCacheTimestamp(.minutesAgo(31), for: "hrv")
 
         // New data available
         provider.reset()
@@ -501,19 +501,19 @@ final class HealthKitAssistantRecentMetricsTests: HealthKitAssistantTestCase {
 
         // Test medium
         provider.mockCategorySamples = [HKCategorySample.mockMenstrualFlow(value: .medium, date: today)]
-        assistant._setCacheTimestamp(.daysAgo(1), for: "cycle") // Invalidate cache
+        await assistant._setCacheTimestamp(.daysAgo(1), for: "cycle") // Invalidate cache
         result = await assistant.recentFlowLevel()
         XCTAssertEqual(result, "medium")
 
         // Test heavy
         provider.mockCategorySamples = [HKCategorySample.mockMenstrualFlow(value: .heavy, date: today)]
-        assistant._setCacheTimestamp(.daysAgo(1), for: "cycle")
+        await assistant._setCacheTimestamp(.daysAgo(1), for: "cycle")
         result = await assistant.recentFlowLevel()
         XCTAssertEqual(result, "heavy")
 
         // Test spotting (unspecified maps to spotting)
         provider.mockCategorySamples = [HKCategorySample.mockMenstrualFlow(value: .unspecified, date: today)]
-        assistant._setCacheTimestamp(.daysAgo(1), for: "cycle")
+        await assistant._setCacheTimestamp(.daysAgo(1), for: "cycle")
         result = await assistant.recentFlowLevel()
         XCTAssertEqual(result, "spotting")
     }

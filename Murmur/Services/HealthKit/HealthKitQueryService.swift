@@ -9,11 +9,22 @@ import Foundation
 @preconcurrency import HealthKit
 import os.log
 
+// MARK: - Sendable Conformances
+
+/// NSPredicate is not marked as Sendable by Apple, but it's immutable and thread-safe
+/// We use @unchecked Sendable to allow passing predicates across actor boundaries
+extension NSPredicate: @unchecked Sendable {}
+
+/// NSSortDescriptor is not marked as Sendable by Apple, but it's immutable and thread-safe
+/// We use @unchecked Sendable to allow passing sort descriptors across actor boundaries
+extension NSSortDescriptor: @unchecked Sendable {}
+
 // MARK: - Protocols
 
 /// Protocol abstraction for HealthKit data access to enable testing with mock implementations
 /// This protocol abstracts the actual data fetching operations rather than the low-level query execution
-@preconcurrency protocol HealthKitDataProvider: Sendable {
+/// Actor isolation: This protocol should only be adopted by actors
+protocol HealthKitDataProvider: Actor {
     func fetchQuantitySamples(
         type: HKQuantityType,
         predicate: NSPredicate?,
@@ -45,9 +56,10 @@ import os.log
 
 /// Service responsible for executing HealthKit queries with timeout handling
 /// Encapsulates all direct HKHealthStore interactions
-@preconcurrency protocol HealthKitQueryServiceProtocol: Sendable {
+/// Actor isolation: This protocol should only be adopted by actors
+protocol HealthKitQueryServiceProtocol: Actor {
     var dataProvider: HealthKitDataProvider { get }
-    var isHealthDataAvailable: Bool { get }
+    nonisolated var isHealthDataAvailable: Bool { get }
 
     /// Request HealthKit permissions
     func requestPermissions() async throws
@@ -99,6 +111,12 @@ import os.log
 
 // MARK: - Real Implementation
 
+/// Helper box to hold query reference across closure boundaries
+private final class QueryBox: @unchecked Sendable {
+    var query: HKQuery?
+    init() {}
+}
+
 /// Real HealthKit data provider that uses HKHealthStore
 /// Actor provides thread-safe access to query state
 actor RealHealthKitDataProvider: HealthKitDataProvider {
@@ -118,10 +136,13 @@ actor RealHealthKitDataProvider: HealthKitDataProvider {
     private func executeQuery<ResultType: Sendable>(
         _ queryBuilder: @escaping (@escaping @Sendable (ResultType?, Error?) -> Void) -> HKQuery
     ) async throws -> ResultType? {
-        try await withCheckedThrowingContinuation { continuation in
+        // Use a box to hold the query reference for capture in closure
+        let box = QueryBox()
+
+        return try await withCheckedThrowingContinuation { continuation in
             let query = queryBuilder { [weak self] result, error in
                 Task {
-                    if let self {
+                    if let self, let query = box.query {
                         await self.removeQuery(query)
                     }
                 }
@@ -131,6 +152,7 @@ actor RealHealthKitDataProvider: HealthKitDataProvider {
                     continuation.resume(returning: result)
                 }
             }
+            box.query = query
             Task {
                 await self.addQuery(query)
             }

@@ -18,26 +18,26 @@ final class HealthKitIntegrationTests: HealthKitUITestCase {
         launchWithNormalHealthKit(daysOfHistory: 7)
 
         // Verify app launched successfully
-        XCTAssertTrue(app.exists, "App should launch with HealthKit data")
+        XCTAssertTrue(app?.exists == true, "App should launch with HealthKit data")
 
         // The app should have loaded HealthKit data
         // We can't directly verify HRV values in UI, but we can verify the app didn't crash
         // and that it's in a healthy state
 
         // Navigate to analysis to see if health data is being used
-        let analysisButton = app.buttons[AccessibilityIdentifiers.analysisButton]
+        let analysisButton = app?.buttons[AccessibilityIdentifiers.analysisButton]
         if analysisButton.waitForExistence(timeout: 5) {
             analysisButton.tap()
 
             // Wait for analysis view to load
-            let trendsButton = app.buttons["Trends"]
+            let trendsButton = app?.buttons["Trends"]
             XCTAssertTrue(
                 trendsButton.waitForExistence(timeout: 5),
                 "Analysis view should load with HealthKit data available"
             )
 
             // App should be stable with real HealthKit data
-            XCTAssertTrue(app.exists, "App should remain stable with HealthKit integration")
+            XCTAssertTrue(app?.exists == true, "App should remain stable with HealthKit integration")
         }
     }
 
@@ -46,10 +46,10 @@ final class HealthKitIntegrationTests: HealthKitUITestCase {
         launchWithHigherStressHealthKit(daysOfHistory: 7)
 
         // Verify app launched successfully
-        XCTAssertTrue(app.exists, "App should launch with higher stress HealthKit data")
+        XCTAssertTrue(app?.exists == true, "App should launch with higher stress HealthKit data")
 
         // Navigate through the app to ensure it handles stress data correctly
-        let logButton = app.buttons.matching(identifier: "log-symptom-button").firstMatch
+        let logButton = app?.buttons.matching(identifier: "log-symptom-button").firstMatch
         XCTAssertTrue(logButton.exists, "UI should be functional with stress data")
     }
 
@@ -58,17 +58,17 @@ final class HealthKitIntegrationTests: HealthKitUITestCase {
         launchWithNormalHealthKit(daysOfHistory: 30)
 
         // Verify app launched successfully
-        XCTAssertTrue(app.exists, "App should launch with extended HealthKit history")
+        XCTAssertTrue(app?.exists == true, "App should launch with extended HealthKit history")
 
         // With 30 days of data, the app can calculate baselines
         // Navigate to settings or analysis to see if baselines are being used
-        let analysisButton = app.buttons[AccessibilityIdentifiers.analysisButton]
+        let analysisButton = app?.buttons[AccessibilityIdentifiers.analysisButton]
         if analysisButton.waitForExistence(timeout: 5) {
             analysisButton.tap()
 
             // Analysis view should work with baseline data
             XCTAssertTrue(
-                app.exists,
+                app?.exists == true,
                 "App should handle HealthKit baseline calculations with 30 days of data"
             )
         }
@@ -79,10 +79,10 @@ final class HealthKitIntegrationTests: HealthKitUITestCase {
         launchWithEdgeCaseHealthKit(daysOfHistory: 7)
 
         // Verify app launched successfully
-        XCTAssertTrue(app.exists, "App should launch with edge case HealthKit data")
+        XCTAssertTrue(app?.exists == true, "App should launch with edge case HealthKit data")
 
         // App should handle extreme values gracefully
-        let logButton = app.buttons.matching(identifier: "log-symptom-button").firstMatch
+        let logButton = app?.buttons.matching(identifier: "log-symptom-button").firstMatch
         XCTAssertTrue(
             logButton.waitForExistence(timeout: 10),
             "App should remain functional with edge case health data"
@@ -96,7 +96,7 @@ final class HealthKitIntegrationTests: HealthKitUITestCase {
         launchWithDeterministicHealthKit(seed: 42, daysOfHistory: 7)
 
         // Verify app launched successfully
-        XCTAssertTrue(app.exists, "App should launch with deterministic HealthKit data")
+        XCTAssertTrue(app?.exists == true, "App should launch with deterministic HealthKit data")
 
         // Give app time to process HealthKit data
         sleep(2)
@@ -105,12 +105,12 @@ final class HealthKitIntegrationTests: HealthKitUITestCase {
         let expectedValues = HealthKitExpectedValues.standard
 
         // Navigate to analysis view where health metrics are displayed
-        let analysisButton = app.buttons[AccessibilityIdentifiers.analysisButton]
+        let analysisButton = app?.buttons[AccessibilityIdentifiers.analysisButton]
         XCTAssertTrue(analysisButton.waitForExistence(timeout: 5), "Analysis button should exist")
         analysisButton.tap()
 
         // Wait for analysis view to load with deterministic data
-        let trendsButton = app.buttons["Trends"]
+        let trendsButton = app?.buttons["Trends"]
         XCTAssertTrue(
             trendsButton.waitForExistence(timeout: 5),
             "Analysis view should load correctly with deterministic fixture data"
@@ -121,7 +121,7 @@ final class HealthKitIntegrationTests: HealthKitUITestCase {
 
         // Parse and verify HRV metric
         if let expectedHRV = expectedValues.averageHRV() {
-            let hrvElement = app.staticTexts.matching(identifier: "health-metric-hrv").firstMatch
+            let hrvElement = app?.staticTexts.matching(identifier: "health-metric-hrv").firstMatch
             if hrvElement.waitForExistence(timeout: 3) {
                 let hrvText = hrvElement.label
                 if let actualHRV = parseMetricValue(from: hrvText) {
@@ -142,7 +142,7 @@ final class HealthKitIntegrationTests: HealthKitUITestCase {
 
         // Parse and verify resting heart rate metric
         if let expectedHR = expectedValues.averageRestingHR() {
-            let hrElement = app.staticTexts.matching(identifier: "health-metric-resting-hr").firstMatch
+            let hrElement = app?.staticTexts.matching(identifier: "health-metric-resting-hr").firstMatch
             if hrElement.waitForExistence(timeout: 3) {
                 let hrText = hrElement.label
                 if let actualHR = parseMetricValue(from: hrText) {
@@ -188,29 +188,29 @@ final class HealthKitIntegrationTests: HealthKitUITestCase {
         // Each run with seed=42 should produce identical behaviour
 
         launchWithDeterministicHealthKit(seed: 42, daysOfHistory: 7)
-        XCTAssertTrue(app.exists, "App should launch with seed=42")
+        XCTAssertTrue(app?.exists == true, "App should launch with seed=42")
 
         // Navigate through app in a deterministic sequence
-        let logButton = app.buttons.matching(identifier: "log-symptom-button").firstMatch
+        let logButton = app?.buttons.matching(identifier: "log-symptom-button").firstMatch
         if logButton.waitForExistence(timeout: 5) {
             logButton.tap()
 
             // UI should be consistent across runs
-            let searchButton = app.buttons["search-all-symptoms-button"]
+            let searchButton = app?.buttons["search-all-symptoms-button"]
             XCTAssertTrue(
                 searchButton.waitForExistence(timeout: 3),
                 "UI state should be consistent with deterministic data"
             )
 
             // Cancel
-            let cancelButton = app.navigationBars.buttons.element(boundBy: 0)
+            let cancelButton = app?.navigationBars.buttons.element(boundBy: 0)
             if cancelButton.waitForExistence(timeout: 2) {
                 cancelButton.tap()
             }
         }
 
         // Verify app remains stable
-        XCTAssertTrue(app.exists, "App should complete deterministic test sequence successfully")
+        XCTAssertTrue(app?.exists == true, "App should complete deterministic test sequence successfully")
     }
 
     // MARK: - Combined Integration Tests
@@ -220,35 +220,35 @@ final class HealthKitIntegrationTests: HealthKitUITestCase {
         launchWithNormalHealthKit(daysOfHistory: 7)
 
         // Log a symptom while HealthKit data is available
-        let logButton = app.buttons.matching(identifier: "log-symptom-button").firstMatch
+        let logButton = app?.buttons.matching(identifier: "log-symptom-button").firstMatch
         XCTAssertTrue(logButton.waitForExistence(timeout: 5), "Log button should exist")
         logButton.tap()
 
         // Wait for search button
-        let searchButton = app.buttons["search-all-symptoms-button"]
+        let searchButton = app?.buttons["search-all-symptoms-button"]
         if searchButton.waitForExistence(timeout: 3) {
             searchButton.tap()
 
             // Search for a symptom
-            let searchField = app.textFields.matching(identifier: "symptom-search-field").firstMatch
+            let searchField = app?.textFields.matching(identifier: "symptom-search-field").firstMatch
             if searchField.waitForExistence(timeout: 2) {
                 searchField.tap()
                 searchField.typeText("Fatigue")
 
-                let fatigueCell = app.staticTexts["Fatigue"]
+                let fatigueCell = app?.staticTexts["Fatigue"]
                 if fatigueCell.waitForExistence(timeout: 3) {
                     fatigueCell.tap()
 
                     // The app now has access to real HealthKit context
                     // Verify the symptom entry form works
-                    let slider = app.sliders.matching(identifier: "severity-slider").firstMatch
+                    let slider = app?.sliders.matching(identifier: "severity-slider").firstMatch
                     XCTAssertTrue(
                         slider.waitForExistence(timeout: 2),
                         "Symptom entry should work with HealthKit data available"
                     )
 
                     // Cancel the entry
-                    let cancelButton = app.buttons.matching(identifier: "cancel-button").firstMatch
+                    let cancelButton = app?.buttons.matching(identifier: "cancel-button").firstMatch
                     if cancelButton.waitForExistence(timeout: 2) {
                         cancelButton.tap()
                     }
@@ -265,44 +265,44 @@ final class HealthKitIntegrationTests: HealthKitUITestCase {
         // HealthKit data should be available consistently
 
         // Check analysis view
-        let analysisButton = app.buttons[AccessibilityIdentifiers.analysisButton]
+        let analysisButton = app?.buttons[AccessibilityIdentifiers.analysisButton]
         if analysisButton.waitForExistence(timeout: 5) {
             analysisButton.tap()
 
             // Wait for view to load
-            let trendsButton = app.buttons["Trends"]
+            let trendsButton = app?.buttons["Trends"]
             XCTAssertTrue(trendsButton.waitForExistence(timeout: 5), "Analysis should load")
 
             // Go back
-            let backButton = app.navigationBars.buttons.element(boundBy: 0)
+            let backButton = app?.navigationBars.buttons.element(boundBy: 0)
             if backButton.waitForExistence(timeout: 3) {
                 backButton.tap()
             }
         }
 
         // Check settings
-        let settingsButton = app.navigationBars.buttons.matching(
+        let settingsButton = app?.navigationBars.buttons.matching(
             NSPredicate(format: "identifier CONTAINS[c] 'gear' OR label CONTAINS[c] 'settings'")
         ).firstMatch
         if settingsButton.waitForExistence(timeout: 5) {
             settingsButton.tap()
 
             // Verify settings loaded
-            let settingsNav = app.navigationBars["Settings"]
+            let settingsNav = app?.navigationBars["Settings"]
             XCTAssertTrue(
                 settingsNav.waitForExistence(timeout: 3),
                 "Settings should be accessible with HealthKit data"
             )
 
             // Go back
-            let backButton = app.navigationBars.buttons.element(boundBy: 0)
+            let backButton = app?.navigationBars.buttons.element(boundBy: 0)
             if backButton.waitForExistence(timeout: 3) {
                 backButton.tap()
             }
         }
 
         // App should still be stable
-        XCTAssertTrue(app.exists, "App should remain stable across view navigation with HealthKit")
+        XCTAssertTrue(app?.exists == true, "App should remain stable across view navigation with HealthKit")
     }
 
     // MARK: - Live Data Tests (commented out - only run when testing live features)
@@ -313,13 +313,13 @@ final class HealthKitIntegrationTests: HealthKitUITestCase {
         launchWithNormalHealthKit(daysOfHistory: 7, enableLiveData: true)
 
         // Verify app launched successfully
-        XCTAssertTrue(app.exists, "App should launch with live HealthKit streaming")
+        XCTAssertTrue(app?.exists == true, "App should launch with live HealthKit streaming")
 
         // Let live data run for a few seconds
         sleep(5)
 
         // App should still be stable with live data
-        XCTAssertTrue(app.exists, "App should remain stable with live HealthKit streaming")
+        XCTAssertTrue(app?.exists == true, "App should remain stable with live HealthKit streaming")
 
         // Live data would continue updating in the background
         // Real tests would verify UI updates in response to new data

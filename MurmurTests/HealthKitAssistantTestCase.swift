@@ -66,12 +66,12 @@ class HealthKitAssistantTestCase: XCTestCase {
     }
 
     /// Helper to invalidate cache for a specific metric
-    func invalidateCache(for key: String, date: Date = .daysAgo(1)) {
+    func invalidateCache(for key: String, date: Date = .daysAgo(1)) async {
         guard let assistant = healthKit else {
             XCTFail("healthKit not initialized - setUp() may not have been called")
             return
         }
-        assistant._setCacheTimestamp(date, for: key)
+        await assistant._setCacheTimestamp(date, for: key)
     }
 
     /// Helper to configure a manual cycle tracker with test data
@@ -81,7 +81,7 @@ class HealthKitAssistantTestCase: XCTestCase {
         flowEntries: [Date: String] = [:]
     ) -> ManualCycleTracker {
         let testStack = InMemoryCoreDataStack()
-        let tracker = ManualCycleTracker(context: testStack!.context)
+        let tracker = ManualCycleTracker(context: testStack.context)
 
         tracker.setEnabled(enabled)
 

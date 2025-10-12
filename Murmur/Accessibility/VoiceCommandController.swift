@@ -75,14 +75,8 @@ class VoiceCommandController: NSObject, ObservableObject {
         speak("Stopped listening")
     }
 
-    deinit {
-        if audioEngine.isRunning {
-            audioEngine.inputNode.removeTap(onBus: 0)
-            audioEngine.stop()
-        }
-        recognitionTask?.cancel()
-        try? AVAudioSession.sharedInstance().setActive(false)
-    }
+    // Cleanup is handled by stopListening() method instead of deinit
+    // to avoid accessing non-Sendable types from deinit in Swift 6
 
     private func startRecognition() throws {
         // Cancel any existing task

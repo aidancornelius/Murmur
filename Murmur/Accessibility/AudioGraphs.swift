@@ -24,14 +24,8 @@ class AudioGraphController: NSObject, ObservableObject {
     private var currentFormat: AVAudioFormat?
     private var scheduledTones: [DispatchWorkItem] = []
 
-    nonisolated deinit {
-        // Cancel all scheduled tones
-        scheduledTones.forEach { $0.cancel() }
-
-        // Stop audio playback - these are thread-safe
-        playerNode?.stop()
-        audioEngine?.stop()
-    }
+    // Cleanup is handled by stopPlayback() method instead of deinit
+    // to avoid accessing non-Sendable types from deinit in Swift 6
 
     /// Play audio tones representing severity levels over time
     func sonifySymptomPattern(entries: [SymptomEntry], duration: TimeInterval = 3.0) {
