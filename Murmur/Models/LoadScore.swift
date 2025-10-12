@@ -42,6 +42,8 @@ struct LoadScore: Hashable {
     ///   - previousLoad: The decayed load from the previous day
     ///   - configuration: Optional configuration override (uses LoadCapacityManager if nil)
     /// - Returns: LoadScore for the day
+    /// - Note: **DEPRECATED** - Use `LoadCalculator.shared.calculate()` instead for meals and sleep support
+    @available(*, deprecated, message: "Use LoadCalculator.shared.calculate() for full event support including meals and sleep")
     @MainActor
     static func calculate(
         for date: Date,
@@ -124,6 +126,8 @@ struct LoadScore: Hashable {
     ///   - symptomsByDate: Dictionary of symptoms grouped by day
     ///   - configuration: Optional configuration override (uses LoadCapacityManager if nil)
     /// - Returns: Array of LoadScores, one per day
+    /// - Note: **DEPRECATED** - Use `LoadCalculator.shared.calculateRange()` instead for meals and sleep support
+    @available(*, deprecated, message: "Use LoadCalculator.shared.calculateRange() for full event support including meals and sleep")
     @MainActor
     static func calculateRange(
         from startDate: Date,

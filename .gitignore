@@ -121,3 +121,5 @@ build.log
 
 # Keep the backup temporarily
 !Murmur.xcodeproj.backup
+
+.mailmap

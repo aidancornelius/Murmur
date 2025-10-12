@@ -204,26 +204,39 @@ struct DayDetailView: View {
         let dayStart = calendar.startOfDay(for: targetDate)
         guard let lookbackStart = calendar.date(byAdding: .day, value: -60, to: dayStart) else { return nil }
 
+        // Fetch all event types
         let allEntries = try fetchRecentEntries(since: lookbackStart)
         let allActivities = try fetchRecentActivities(since: lookbackStart)
+        let allMeals = try fetchRecentMealEvents(since: lookbackStart)
+        let allSleep = try fetchRecentSleepEvents(since: lookbackStart)
 
-        guard !allEntries.isEmpty || !allActivities.isEmpty else { return nil }
+        // Check if we have any data to calculate
+        guard !allEntries.isEmpty || !allActivities.isEmpty || !allMeals.isEmpty || !allSleep.isEmpty else {
+            return nil
+        }
 
+        // Group symptoms by date
         let groupedEntries = Dictionary(grouping: allEntries) { entry in
             calendar.startOfDay(for: entry.backdatedAt ?? entry.createdAt ?? Date())
         }
 
-        let groupedActivities = Dictionary(grouping: allActivities) { activity in
-            calendar.startOfDay(for: activity.backdatedAt ?? activity.createdAt ?? Date())
-        }
+        // Combine all contributors and group by date
+        var allContributors: [LoadContributor] = []
+        allContributors.append(contentsOf: allActivities as [LoadContributor])
+        allContributors.append(contentsOf: allMeals as [LoadContributor])
+        allContributors.append(contentsOf: allSleep as [LoadContributor])
 
-        let allDates = Set(groupedEntries.keys).union(Set(groupedActivities.keys)).sorted()
+        let groupedContributors = LoadCalculator.shared.groupContributorsByDate(allContributors)
+
+        // Get all unique dates to process
+        let allDates = Set(groupedEntries.keys).union(Set(groupedContributors.keys)).sorted()
         guard let firstDate = allDates.first else { return nil }
 
-        let loadScores = LoadScore.calculateRange(
+        // Calculate load scores using new calculator
+        let loadScores = LoadCalculator.shared.calculateRange(
             from: firstDate,
             to: dayStart,
-            activitiesByDate: groupedActivities,
+            contributorsByDate: groupedContributors,
             symptomsByDate: groupedEntries
         )
 
@@ -244,6 +257,22 @@ struct DayDetailView: View {
         request.predicate = NSPredicate(format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))", date as NSDate, date as NSDate)
         request.sortDescriptors = [NSSortDescriptor(keyPath: \ActivityEvent.backdatedAt, ascending: true),
                                    NSSortDescriptor(keyPath: \ActivityEvent.createdAt, ascending: true)]
+        return try context.fetch(request)
+    }
+
+    private func fetchRecentMealEvents(since date: Date) throws -> [MealEvent] {
+        let request = MealEvent.fetchRequest()
+        request.predicate = NSPredicate(format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))", date as NSDate, date as NSDate)
+        request.sortDescriptors = [NSSortDescriptor(keyPath: \MealEvent.backdatedAt, ascending: true),
+                                   NSSortDescriptor(keyPath: \MealEvent.createdAt, ascending: true)]
+        return try context.fetch(request)
+    }
+
+    private func fetchRecentSleepEvents(since date: Date) throws -> [SleepEvent] {
+        let request = SleepEvent.fetchRequest()
+        request.predicate = NSPredicate(format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))", date as NSDate, date as NSDate)
+        request.sortDescriptors = [NSSortDescriptor(keyPath: \SleepEvent.backdatedAt, ascending: true),
+                                   NSSortDescriptor(keyPath: \SleepEvent.createdAt, ascending: true)]
         return try context.fetch(request)
     }
 

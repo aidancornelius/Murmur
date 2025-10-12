@@ -23,16 +23,17 @@ final class LoadScoreCache {
 
         /// Hash representing the input data for this calculation
         struct DataHash: Hashable {
-            let activitiesHash: Int
+            let contributorsHash: Int
             let symptomsHash: Int
             let previousLoad: Double
             let configHash: Int
 
-            init(activities: [ActivityEvent], symptoms: [SymptomEntry],
+            init(contributors: [LoadContributor], symptoms: [SymptomEntry],
                  previousLoad: Double, config: LoadConfiguration) {
-                // Hash based on object IDs (entities don't have updatedAt)
-                self.activitiesHash = activities.map {
-                    $0.objectID.hashValue
+                // Hash based on object IDs for Core Data objects
+                self.contributorsHash = contributors.compactMap { contributor in
+                    // Cast to NSManagedObject to get objectID
+                    (contributor as? NSManagedObject)?.objectID.hashValue
                 }.reduce(0, ^)
 
                 self.symptomsHash = symptoms.map {
@@ -63,7 +64,7 @@ final class LoadScoreCache {
     // MARK: - Public API
 
     /// Retrieves a cached load score if valid, otherwise returns nil
-    func get(for date: Date, activities: [ActivityEvent], symptoms: [SymptomEntry],
+    func get(for date: Date, contributors: [LoadContributor], symptoms: [SymptomEntry],
              previousLoad: Double, config: LoadConfiguration) -> LoadScore? {
         let dayStart = calendar.startOfDay(for: date)
 
@@ -73,7 +74,7 @@ final class LoadScoreCache {
         }
 
         let currentHash = CachedEntry.DataHash(
-            activities: activities,
+            contributors: contributors,
             symptoms: symptoms,
             previousLoad: previousLoad,
             config: config
@@ -89,11 +90,11 @@ final class LoadScoreCache {
     }
 
     /// Stores a load score in the cache with its dependencies
-    func set(_ loadScore: LoadScore, for date: Date, activities: [ActivityEvent],
+    func set(_ loadScore: LoadScore, for date: Date, contributors: [LoadContributor],
              symptoms: [SymptomEntry], previousLoad: Double, config: LoadConfiguration) {
         let dayStart = calendar.startOfDay(for: date)
         let dataHash = CachedEntry.DataHash(
-            activities: activities,
+            contributors: contributors,
             symptoms: symptoms,
             previousLoad: previousLoad,
             config: config
@@ -105,7 +106,7 @@ final class LoadScoreCache {
     /// Calculates load scores for a date range, using cache when possible
     /// Only recalculates from the first changed date forward to maintain decay chain
     func calculateRange(from startDate: Date, to endDate: Date,
-                       activitiesByDate: [Date: [ActivityEvent]],
+                       contributorsByDate: [Date: [LoadContributor]],
                        symptomsByDate: [Date: [SymptomEntry]],
                        config: LoadConfiguration? = nil) -> [LoadScore] {
         var scores: [LoadScore] = []
@@ -114,29 +115,29 @@ final class LoadScoreCache {
         let endDay = calendar.startOfDay(for: endDate)
 
         while currentDate <= endDay {
-            let activities = activitiesByDate[currentDate] ?? []
+            let contributors = contributorsByDate[currentDate] ?? []
             let symptoms = symptomsByDate[currentDate] ?? []
 
             // Get configuration
             let activeConfig = config ?? LoadCapacityManager.shared.configuration
 
             // Try to get from cache
-            if let cachedScore = get(for: currentDate, activities: activities,
+            if let cachedScore = get(for: currentDate, contributors: contributors,
                                     symptoms: symptoms, previousLoad: previousLoad,
                                     config: activeConfig) {
                 scores.append(cachedScore)
                 previousLoad = cachedScore.decayedLoad
             } else {
-                // Cache miss - calculate and store
-                let score = LoadScore.calculate(
+                // Cache miss - calculate and store using new LoadCalculator
+                let score = LoadCalculator.shared.calculate(
                     for: currentDate,
-                    activities: activities,
+                    contributors: contributors,
                     symptoms: symptoms,
                     previousLoad: previousLoad,
                     configuration: config
                 )
 
-                set(score, for: currentDate, activities: activities,
+                set(score, for: currentDate, contributors: contributors,
                     symptoms: symptoms, previousLoad: previousLoad, config: activeConfig)
 
                 scores.append(score)

@@ -555,19 +555,29 @@ struct DaySection: Identifiable, Equatable {
 
         guard !displayDates.isEmpty else { return [] }
 
-        // For load score calculation, we need the full date range including lookback data
-        // This includes dates with only entries/activities (used for decay chain)
-        let loadScoreDateRange = Set(groupedEntries.keys).union(Set(groupedActivities.keys)).sorted()
+        // For load score calculation, combine all contributors
+        var allContributors: [LoadContributor] = []
+        allContributors.append(contentsOf: activities as [LoadContributor])
+        allContributors.append(contentsOf: mealEvents as [LoadContributor])
+        allContributors.append(contentsOf: sleepEvents as [LoadContributor])
+
+        // Group contributors by date
+        let groupedContributors = LoadCalculator.shared.groupContributorsByDate(allContributors)
+
+        // Get date range for load calculation
+        let loadScoreDateRange = Set(groupedEntries.keys)
+            .union(Set(groupedContributors.keys))
+            .sorted()
 
         guard let firstDate = loadScoreDateRange.first, let lastDate = loadScoreDateRange.last else {
             return []
         }
 
-        // Calculate load scores for full range (builds proper decay chain)
-        let loadScores = LoadScore.calculateRange(
+        // Calculate load scores for full range using new calculator
+        let loadScores = LoadCalculator.shared.calculateRange(
             from: firstDate,
             to: lastDate,
-            activitiesByDate: groupedActivities,
+            contributorsByDate: groupedContributors,
             symptomsByDate: groupedEntries
         )
 
