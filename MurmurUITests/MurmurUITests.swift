@@ -16,10 +16,8 @@ final class MurmurUITests: XCTestCase {
         continueAfterFailure = false
         let newApp = XCUIApplication()
         app = newApp
-        MainActor.assumeIsolated {
-            setupSnapshot(newApp)
-            systemAlertMonitor = registerSystemAlertMonitor()
-        }
+        setupSnapshot(newApp)
+        systemAlertMonitor = registerSystemAlertMonitor()
 
         // Launch with sample data flag
         newApp.launchArguments = ["-UITestMode", "-SeedSampleData"]
@@ -28,9 +26,7 @@ final class MurmurUITests: XCTestCase {
         // Skip HealthKit authorization in UI test mode (app skips it via -UITestMode flag)
         // allowHealthKitIfNeeded() is not needed since app won't show HealthKit dialog
 
-        MainActor.assumeIsolated {
-            handleSpringboardAlertsIfNeeded()
-        }
+        handleSpringboardAlertsIfNeeded()
     }
 
     override func tearDownWithError() throws {

@@ -23,9 +23,13 @@ final class HealthKitAssistantManualTrackingTests: HealthKitAssistantTestCase {
         assistant.manualCycleTracker = manualTracker
 
         // Also have HealthKit data (should be ignored)
-        provider.mockCategorySamples = [
-            HKCategorySample.mockMenstrualFlow(value: .medium, date: .daysAgo(10))
-        ]
+        await provider.setMockData(
+            quantitySamples: [],
+            categorySamples: [
+                HKCategorySample.mockMenstrualFlow(value: .medium, date: .daysAgo(10))
+            ],
+            workouts: []
+        )
 
         // Act
         let cycleDay = await assistant.recentCycleDay()
@@ -33,7 +37,8 @@ final class HealthKitAssistantManualTrackingTests: HealthKitAssistantTestCase {
         // Assert: Should use manual tracker value
         XCTAssertEqual(cycleDay, 15)
         // Should not have queried HealthKit
-        XCTAssertEqual(provider.executeCount, 0)
+        let executeCount = await provider.executeCount
+        XCTAssertEqual(executeCount, 0)
     }
 
     func testRecentFlowLevelUsesManualTrackerWhenEnabled() async throws {
@@ -56,7 +61,8 @@ final class HealthKitAssistantManualTrackingTests: HealthKitAssistantTestCase {
 
         // Assert: Should use manual tracker
         XCTAssertEqual(flowLevel, "heavy")
-        XCTAssertEqual(provider.executeCount, 0)
+        let executeCount = await provider.executeCount
+        XCTAssertEqual(executeCount, 0)
     }
 
     func testCycleDataFallsBackToHealthKitWhenManualDisabled() async throws {
@@ -68,15 +74,20 @@ final class HealthKitAssistantManualTrackingTests: HealthKitAssistantTestCase {
         assistant.manualCycleTracker = manualTracker
 
         // HealthKit data available
-        provider.mockCategorySamples = [
-            HKCategorySample.mockMenstrualFlow(value: .medium, date: .daysAgo(7))
-        ]
+        await provider.setMockData(
+            quantitySamples: [],
+            categorySamples: [
+                HKCategorySample.mockMenstrualFlow(value: .medium, date: .daysAgo(7))
+            ],
+            workouts: []
+        )
 
         // Act
         let cycleDay = await assistant.recentCycleDay()
 
         // Assert: Should use HealthKit
         XCTAssertEqual(cycleDay, 8) // 7 days ago + 1
-        XCTAssertGreaterThan(provider.executeCount, 0)
+        let executeCount = await provider.executeCount
+        XCTAssertGreaterThan(executeCount, 0)
     }
 }

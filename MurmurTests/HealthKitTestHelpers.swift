@@ -13,7 +13,7 @@ import XCTest
 
 /// Mock implementation of HealthKitDataProvider for testing
 /// This properly implements the data provider protocol without trying to access HKQuery internals
-final class MockHealthKitDataProvider: HealthKitDataProvider {
+actor MockHealthKitDataProvider: HealthKitDataProvider {
 
     // MARK: - Mock Configuration
 
@@ -135,6 +135,29 @@ final class MockHealthKitDataProvider: HealthKitDataProvider {
     private func sortSamples<T: HKSample>(_ samples: [T], using sortDescriptors: [NSSortDescriptor]?) -> [T] {
         guard let sortDescriptors = sortDescriptors, !sortDescriptors.isEmpty else { return samples }
         return (samples as NSArray).sortedArray(using: sortDescriptors) as? [T] ?? samples
+    }
+
+    // MARK: - Configuration Helper
+
+    /// Set mock data for testing (actor-safe method)
+    func setMockData(
+        quantitySamples: [HKQuantitySample],
+        categorySamples: [HKCategorySample],
+        workouts: [HKWorkout]
+    ) {
+        self.mockQuantitySamples = quantitySamples
+        self.mockCategorySamples = categorySamples
+        self.mockWorkouts = workouts
+    }
+
+    /// Set error for query operations (actor-safe method)
+    func setShouldThrowError(_ error: Error?) {
+        self.shouldThrowError = error
+    }
+
+    /// Set error for authorization operations (actor-safe method)
+    func setAuthorizationError(_ error: Error?) {
+        self.authorizationError = error
     }
 
     // MARK: - Reset
@@ -370,12 +393,12 @@ final class MockHealthKitAssistant: HealthKitAssistantProtocol {
 // MARK: - Mock Query Service
 
 /// Mock implementation of HealthKitQueryServiceProtocol for testing
-final class MockHealthKitQueryService: HealthKitQueryServiceProtocol {
+actor MockHealthKitQueryService: HealthKitQueryServiceProtocol {
 
     // MARK: - HealthKitQueryServiceProtocol Properties
 
     var dataProvider: HealthKitDataProvider
-    var isHealthDataAvailable: Bool = true
+    nonisolated var isHealthDataAvailable: Bool = true
 
     // MARK: - Mock Configuration
 
@@ -396,8 +419,8 @@ final class MockHealthKitQueryService: HealthKitQueryServiceProtocol {
 
     // MARK: - Init
 
-    init(dataProvider: HealthKitDataProvider? = nil) {
-        self.dataProvider = dataProvider ?? MockHealthKitDataProvider()
+    init(dataProvider: HealthKitDataProvider) {
+        self.dataProvider = dataProvider
     }
 
     // MARK: - HealthKitQueryServiceProtocol Implementation
@@ -515,6 +538,13 @@ final class MockHealthKitQueryService: HealthKitQueryServiceProtocol {
         return nil
     }
 
+    // MARK: - Configuration Helper
+
+    /// Set error for testing (actor-safe method)
+    func setError(_ error: Error?) {
+        self.shouldThrowError = error
+    }
+
     // MARK: - Reset
 
     func reset() {
@@ -535,7 +565,7 @@ final class MockHealthKitQueryService: HealthKitQueryServiceProtocol {
 // MARK: - Mock Cache Service
 
 /// Mock implementation of HealthKitCacheServiceProtocol for testing
-final class MockHealthKitCacheService: HealthKitCacheServiceProtocol {
+actor MockHealthKitCacheService: HealthKitCacheServiceProtocol {
 
     // MARK: - Storage
 

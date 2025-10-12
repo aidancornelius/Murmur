@@ -20,21 +20,21 @@ final class CalendarAssistantTests: XCTestCase {
         assistant = CalendarAssistant(eventStore: mockStore!)
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
         assistant = nil
         mockStore = nil
     }
 
     // MARK: - Initialisation Tests
 
-    func testInitialAuthorizationStatus() {
+    func testInitialAuthorizationStatus() async {
         // Given: Newly created assistant
         // When: Check authorization status
         // Then: Should reflect current system status (not determined for tests)
         XCTAssertNotNil(assistant!.authorizationStatus)
     }
 
-    func testInitialEventsAreEmpty() {
+    func testInitialEventsAreEmpty() async {
         // Given: Newly created assistant
         // When: Check events
         // Then: Should have no events
@@ -83,7 +83,7 @@ final class CalendarAssistantTests: XCTestCase {
 
     func testFetchTodaysEvents() async {
         // Given: Mock store with events for today
-        mockStore.shouldGrantAccess = true
+        mockStore!.shouldGrantAccess = true
         _ = await assistant!.requestAccess()
 
         let calendar = Calendar.current
@@ -110,7 +110,7 @@ final class CalendarAssistantTests: XCTestCase {
 
     func testFetchRecentEvents() async {
         // Given: Mock store with recent events
-        mockStore.shouldGrantAccess = true
+        mockStore!.shouldGrantAccess = true
         _ = await assistant!.requestAccess()
 
         let yesterday = Date().addingTimeInterval(-24 * 3600)
@@ -126,7 +126,7 @@ final class CalendarAssistantTests: XCTestCase {
 
     func testFetchUpcomingEvents() async {
         // Given: Mock store with upcoming events
-        mockStore.shouldGrantAccess = true
+        mockStore!.shouldGrantAccess = true
         _ = await assistant!.requestAccess()
 
         let tomorrow = Date().addingTimeInterval(24 * 3600)
@@ -142,7 +142,7 @@ final class CalendarAssistantTests: XCTestCase {
 
     func testFetchEventsWithoutAccess() async {
         // Given: Mock store without access granted
-        mockStore.shouldGrantAccess = false
+        mockStore!.shouldGrantAccess = false
         _ = await assistant!.requestAccess()
 
         // When: Try to fetch events
@@ -156,7 +156,7 @@ final class CalendarAssistantTests: XCTestCase {
 
     func testFetchEventsExcludesAllDayEvents() async {
         // Given: Mix of all-day and regular events
-        mockStore.shouldGrantAccess = true
+        mockStore!.shouldGrantAccess = true
         _ = await assistant!.requestAccess()
 
         let regularEvent = EKEvent.mockMeeting()
@@ -172,7 +172,7 @@ final class CalendarAssistantTests: XCTestCase {
 
     func testEventsSortedByDate() async {
         // Given: Events in random order
-        mockStore.shouldGrantAccess = true
+        mockStore!.shouldGrantAccess = true
         _ = await assistant!.requestAccess()
 
         let now = Date()
@@ -189,7 +189,7 @@ final class CalendarAssistantTests: XCTestCase {
 
     // MARK: - Mock Store Tests
 
-    func testMockStorePredicateFiltering() {
+    func testMockStorePredicateFiltering() async {
         // Given: Mock store with events across different dates
         let today = Date()
         let yesterday = today.addingTimeInterval(-24 * 3600)
@@ -219,10 +219,10 @@ final class CalendarAssistantTests: XCTestCase {
         XCTAssertTrue(filtered.contains { $0.title == "Today" })
     }
 
-    func testMockStoreReset() {
+    func testMockStoreReset() async {
         // Given: Mock store with configured state
         mockStore!.mockEvents = [EKEvent.mockMeeting()]
-        mockStore.shouldGrantAccess = false
+        mockStore!.shouldGrantAccess = false
         _ = mockStore!.events(matching: NSPredicate(value: true))
 
         // When: Reset
@@ -278,7 +278,7 @@ final class CalendarAssistantTests: XCTestCase {
 
     // MARK: - Mock Event Creation Tests
 
-    func testMockEventCreation() {
+    func testMockEventCreation() async {
         // Given: Event creation parameters
         let start = Date()
         let duration: TimeInterval = 3600
@@ -299,7 +299,7 @@ final class CalendarAssistantTests: XCTestCase {
         XCTAssertFalse(event.isAllDay)
     }
 
-    func testMockMeetingConvenience() {
+    func testMockMeetingConvenience() async {
         // When: Create mock meeting
         let meeting = EKEvent.mockMeeting()
 
@@ -308,7 +308,7 @@ final class CalendarAssistantTests: XCTestCase {
         XCTAssertFalse(meeting.isAllDay)
     }
 
-    func testMockWorkoutConvenience() {
+    func testMockWorkoutConvenience() async {
         // When: Create mock workout
         let workout = EKEvent.mockWorkout()
 
@@ -317,7 +317,7 @@ final class CalendarAssistantTests: XCTestCase {
         XCTAssertEqual(workout.endDate.timeIntervalSince(workout.startDate), 5400) // 90 minutes
     }
 
-    func testMockAllDayEvent() {
+    func testMockAllDayEvent() async {
         // When: Create all-day event
         let event = EKEvent.mockAllDayEvent()
 
@@ -327,7 +327,7 @@ final class CalendarAssistantTests: XCTestCase {
 
     // MARK: - Event Matching Helper Tests
 
-    func testEventTitleContains() {
+    func testEventTitleContains() async {
         // Given: Event with specific title
         let event = EKEvent.mockMeeting(title: "Team Meeting with Bob")
 
@@ -338,7 +338,7 @@ final class CalendarAssistantTests: XCTestCase {
         XCTAssertFalse(event.titleContains("lunch"))
     }
 
-    func testEventTimeChecks() {
+    func testEventTimeChecks() async {
         // Given: Past event
         let pastEvent = EKEvent.mockMeeting(start: Date().addingTimeInterval(-7200))
         XCTAssertTrue(pastEvent.isInPast)
@@ -356,7 +356,7 @@ final class CalendarAssistantTests: XCTestCase {
 
     // MARK: - Activity Inference Tests
 
-    func testInferredExertionForWorkout() {
+    func testInferredExertionForWorkout() async {
         // Given: Workout event
         let workout = EKEvent.mockEvent(
             title: "Gym workout",
@@ -370,7 +370,7 @@ final class CalendarAssistantTests: XCTestCase {
         XCTAssertLessThan(workout.inferredCognitiveExertion, 5)
     }
 
-    func testInferredExertionForMeeting() {
+    func testInferredExertionForMeeting() async {
         // Given: Meeting event
         let meeting = EKEvent.mockEvent(
             title: "Team meeting",
@@ -384,7 +384,7 @@ final class CalendarAssistantTests: XCTestCase {
         XCTAssertEqual(meeting.inferredCognitiveExertion, 4)
     }
 
-    func testInferredExertionForPresentation() {
+    func testInferredExertionForPresentation() async {
         // Given: Presentation event
         let presentation = EKEvent.mockEvent(
             title: "Quarterly presentation",
@@ -398,7 +398,7 @@ final class CalendarAssistantTests: XCTestCase {
         XCTAssertEqual(presentation.inferredEmotionalLoad, 4)
     }
 
-    func testInferredExertionForInterview() {
+    func testInferredExertionForInterview() async {
         // Given: Interview event
         let interview = EKEvent.mockEvent(
             title: "Job interview",
@@ -416,7 +416,7 @@ final class CalendarAssistantTests: XCTestCase {
 
     func testFetchEventsWithEmptyStore() async {
         // Given: Mock store with no events
-        mockStore.shouldGrantAccess = true
+        mockStore!.shouldGrantAccess = true
         _ = await assistant!.requestAccess()
         mockStore!.mockEvents = []
 
@@ -429,7 +429,7 @@ final class CalendarAssistantTests: XCTestCase {
 
     func testMultipleFetchCalls() async {
         // Given: Assistant with access
-        mockStore.shouldGrantAccess = true
+        mockStore!.shouldGrantAccess = true
         _ = await assistant!.requestAccess()
 
         // When: Fetch events multiple times
@@ -441,7 +441,7 @@ final class CalendarAssistantTests: XCTestCase {
         XCTAssertEqual(mockStore!.eventsCallCount,3)
     }
 
-    func testEventWithNilDates() {
+    func testEventWithNilDates() async {
         // Given: Event with nil dates (edge case)
         let event = EKEvent.mockMeeting()
         // Manually created events should have dates, but test the helpers
@@ -453,7 +453,7 @@ final class CalendarAssistantTests: XCTestCase {
         _ = event.isToday
     }
 
-    func testEventWithEmptyTitle() {
+    func testEventWithEmptyTitle() async {
         // Given: Event with empty title
         let event = EKEvent.mockEvent(title: "", start: Date(), duration: 3600)
 
@@ -461,7 +461,7 @@ final class CalendarAssistantTests: XCTestCase {
         XCTAssertFalse(event.titleContains("meeting"))
     }
 
-    func testInferredExertionWithEmptyNotesAndTitle() {
+    func testInferredExertionWithEmptyNotesAndTitle() async {
         // Given: Event with minimal information
         let event = EKEvent.mockEvent(title: "", start: Date(), duration: 3600, notes: nil)
 

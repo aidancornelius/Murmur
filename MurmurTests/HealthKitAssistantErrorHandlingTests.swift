@@ -19,7 +19,7 @@ final class HealthKitAssistantErrorHandlingTests: HealthKitAssistantTestCase {
         let provider = try XCTUnwrap(mockDataProvider)
         let assistant = try XCTUnwrap(healthKit)
 
-        provider.shouldThrowError = NSError(domain: HKErrorDomain, code: HKError.errorDatabaseInaccessible.rawValue)
+        await provider.setShouldThrowError(NSError(domain: HKErrorDomain, code: HKError.errorDatabaseInaccessible.rawValue))
 
         // Act
         let hrv = await assistant.recentHRV()
@@ -33,7 +33,7 @@ final class HealthKitAssistantErrorHandlingTests: HealthKitAssistantTestCase {
         let provider = try XCTUnwrap(mockDataProvider)
         let assistant = try XCTUnwrap(healthKit)
 
-        provider.shouldThrowError = NSError(domain: HKErrorDomain, code: HKError.errorAuthorizationDenied.rawValue)
+        await provider.setShouldThrowError(NSError(domain: HKErrorDomain, code: HKError.errorAuthorizationDenied.rawValue))
 
         // Act
         let result = await assistant.recentRestingHR()
@@ -53,9 +53,11 @@ final class HealthKitAssistantErrorHandlingTests: HealthKitAssistantTestCase {
         try await assistant.requestPermissions()
 
         // Assert
-        XCTAssertTrue(provider.requestAuthorizationCalled)
-        let readTypes = try XCTUnwrap(provider.requestedReadTypes)
-        XCTAssertEqual(provider.requestedShareTypes?.count ?? 0, 0) // No write access
+        let requestAuthorizationCalled = await provider.requestAuthorizationCalled
+        XCTAssertTrue(requestAuthorizationCalled)
+        let readTypes = try XCTUnwrap(await provider.requestedReadTypes)
+        let shareTypesCount = await provider.requestedShareTypes?.count ?? 0
+        XCTAssertEqual(shareTypesCount, 0) // No write access
 
         // Verify specific types requested
         XCTAssertTrue(readTypes.contains(where: { ($0 as? HKQuantityType)?.identifier == HKQuantityTypeIdentifier.heartRateVariabilitySDNN.rawValue }))
@@ -70,7 +72,7 @@ final class HealthKitAssistantErrorHandlingTests: HealthKitAssistantTestCase {
         let provider = try XCTUnwrap(mockDataProvider)
         let assistant = try XCTUnwrap(healthKit)
 
-        provider.authorizationError = NSError(domain: HKErrorDomain, code: HKError.errorAuthorizationDenied.rawValue)
+        await provider.setAuthorizationError(NSError(domain: HKErrorDomain, code: HKError.errorAuthorizationDenied.rawValue))
 
         // Act & Assert
         do {
@@ -86,9 +88,11 @@ final class HealthKitAssistantErrorHandlingTests: HealthKitAssistantTestCase {
         let provider = try XCTUnwrap(mockDataProvider)
         let assistant = try XCTUnwrap(healthKit)
 
-        provider.mockQuantitySamples = [
-            HKQuantitySample.mockHRV(value: 45.0, date: Date())
-        ]
+        await provider.setMockData(
+            quantitySamples: [HKQuantitySample.mockHRV(value: 45.0, date: Date())],
+            categorySamples: [],
+            workouts: []
+        )
 
         // Act
         await assistant.bootstrapAuthorizations()
@@ -97,9 +101,11 @@ final class HealthKitAssistantErrorHandlingTests: HealthKitAssistantTestCase {
         try await waitForAsyncOperations()
 
         // Assert: Should have requested permissions
-        XCTAssertTrue(provider.requestAuthorizationCalled)
+        let requestAuthorizationCalled = await provider.requestAuthorizationCalled
+        XCTAssertTrue(requestAuthorizationCalled)
         // Should have executed queries for context refresh
-        XCTAssertGreaterThan(provider.executeCount, 0)
+        let executeCount = await provider.executeCount
+        XCTAssertGreaterThan(executeCount, 0)
     }
 
     func testBootstrapAuthorizationsHandlesErrors() async throws {
@@ -107,7 +113,7 @@ final class HealthKitAssistantErrorHandlingTests: HealthKitAssistantTestCase {
         let provider = try XCTUnwrap(mockDataProvider)
         let assistant = try XCTUnwrap(healthKit)
 
-        provider.authorizationError = NSError(domain: HKErrorDomain, code: HKError.errorAuthorizationNotDetermined.rawValue)
+        await provider.setAuthorizationError(NSError(domain: HKErrorDomain, code: HKError.errorAuthorizationNotDetermined.rawValue))
 
         // Act: Should not crash
         await assistant.bootstrapAuthorizations()

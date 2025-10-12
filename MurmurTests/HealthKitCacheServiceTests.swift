@@ -53,12 +53,12 @@ final class HealthKitCacheServiceTests: XCTestCase {
         let hrDate = Date().addingTimeInterval(-3600)
 
         // When
-        cacheService.setLastSampleDate(hrvDate, for: .hrv)
-        cacheService.setLastSampleDate(hrDate, for: .restingHR)
+        await cacheService.setLastSampleDate(hrvDate, for: .hrv)
+        await cacheService.setLastSampleDate(hrDate, for: .restingHR)
 
         // Then
-        let retrievedHRV = cacheService.getLastSampleDate(for: .hrv)
-        let retrievedHR = cacheService.getLastSampleDate(for: .restingHR)
+        let retrievedHRV = await cacheService.getLastSampleDate(for: .hrv)
+        let retrievedHR = await cacheService.getLastSampleDate(for: .restingHR)
 
         if let retrievedHRV = retrievedHRV {
             XCTAssertEqual(retrievedHRV.timeIntervalSince1970, hrvDate.timeIntervalSince1970, accuracy: 0.001)
@@ -76,7 +76,7 @@ final class HealthKitCacheServiceTests: XCTestCase {
 
     func testShouldRefresh_NoCacheReturnsTrue() async {
         // When
-        let shouldRefresh = cacheService.shouldRefresh(metric: .hrv, cacheDuration: 300, force: false)
+        let shouldRefresh = await cacheService.shouldRefresh(metric: .hrv, cacheDuration: 300, force: false)
 
         // Then
         XCTAssertTrue(shouldRefresh)
@@ -84,10 +84,10 @@ final class HealthKitCacheServiceTests: XCTestCase {
 
     func testShouldRefresh_ForceAlwaysReturnsTrue() async {
         // Given
-        cacheService.setLastSampleDate(Date(), for: .hrv)
+        await cacheService.setLastSampleDate(Date(), for: .hrv)
 
         // When
-        let shouldRefresh = cacheService.shouldRefresh(metric: .hrv, cacheDuration: 300, force: true)
+        let shouldRefresh = await cacheService.shouldRefresh(metric: .hrv, cacheDuration: 300, force: true)
 
         // Then
         XCTAssertTrue(shouldRefresh)
@@ -95,10 +95,10 @@ final class HealthKitCacheServiceTests: XCTestCase {
 
     func testShouldRefresh_WithinDurationReturnsFalse() async {
         // Given
-        cacheService.setLastSampleDate(Date(), for: .hrv)
+        await cacheService.setLastSampleDate(Date(), for: .hrv)
 
         // When
-        let shouldRefresh = cacheService.shouldRefresh(metric: .hrv, cacheDuration: 300, force: false)
+        let shouldRefresh = await cacheService.shouldRefresh(metric: .hrv, cacheDuration: 300, force: false)
 
         // Then
         XCTAssertFalse(shouldRefresh)
@@ -107,10 +107,10 @@ final class HealthKitCacheServiceTests: XCTestCase {
     func testShouldRefresh_ExpiredReturnsTrue() async {
         // Given
         let oldDate = Date().addingTimeInterval(-600) // 10 minutes ago
-        cacheService.setLastSampleDate(oldDate, for: .hrv)
+        await cacheService.setLastSampleDate(oldDate, for: .hrv)
 
         // When
-        let shouldRefresh = cacheService.shouldRefresh(metric: .hrv, cacheDuration: 300, force: false) // 5 min cache
+        let shouldRefresh = await cacheService.shouldRefresh(metric: .hrv, cacheDuration: 300, force: false) // 5 min cache
 
         // Then
         XCTAssertTrue(shouldRefresh)
@@ -120,7 +120,7 @@ final class HealthKitCacheServiceTests: XCTestCase {
 
     func testGetCachedValue_InitiallyNil() async {
         // When
-        let value: Double? = cacheService.getCachedValue(for: .hrv, date: Date())
+        let value: Double? = await cacheService.getCachedValue(for: .hrv, date: Date())
 
         // Then
         XCTAssertNil(value)
@@ -132,8 +132,8 @@ final class HealthKitCacheServiceTests: XCTestCase {
         let hrvValue = 45.2
 
         // When
-        cacheService.setCachedValue(hrvValue, for: .hrv, date: date)
-        let retrieved: Double? = cacheService.getCachedValue(for: .hrv, date: date)
+        await cacheService.setCachedValue(hrvValue, for: .hrv, date: date)
+        let retrieved: Double? = await cacheService.getCachedValue(for: .hrv, date: date)
 
         // Then
         XCTAssertNotNil(retrieved)
@@ -146,8 +146,8 @@ final class HealthKitCacheServiceTests: XCTestCase {
         let cycleDayValue = 14
 
         // When
-        cacheService.setCachedValue(cycleDayValue, for: .cycleDay, date: date)
-        let retrieved: Int? = cacheService.getCachedValue(for: .cycleDay, date: date)
+        await cacheService.setCachedValue(cycleDayValue, for: .cycleDay, date: date)
+        let retrieved: Int? = await cacheService.getCachedValue(for: .cycleDay, date: date)
 
         // Then
         XCTAssertNotNil(retrieved)
@@ -160,8 +160,8 @@ final class HealthKitCacheServiceTests: XCTestCase {
         let flowValue = "light"
 
         // When
-        cacheService.setCachedValue(flowValue, for: .flowLevel, date: date)
-        let retrieved: String? = cacheService.getCachedValue(for: .flowLevel, date: date)
+        await cacheService.setCachedValue(flowValue, for: .flowLevel, date: date)
+        let retrieved: String? = await cacheService.getCachedValue(for: .flowLevel, date: date)
 
         // Then
         XCTAssertNotNil(retrieved)
@@ -173,12 +173,12 @@ final class HealthKitCacheServiceTests: XCTestCase {
         let date = Date()
 
         // When
-        cacheService.setCachedValue(45.2, for: .hrv, date: date)
-        cacheService.setCachedValue(65.0, for: .restingHR, date: date)
+        await cacheService.setCachedValue(45.2, for: .hrv, date: date)
+        await cacheService.setCachedValue(65.0, for: .restingHR, date: date)
 
         // Then
-        let hrv: Double? = cacheService.getCachedValue(for: .hrv, date: date)
-        let hr: Double? = cacheService.getCachedValue(for: .restingHR, date: date)
+        let hrv: Double? = await cacheService.getCachedValue(for: .hrv, date: date)
+        let hr: Double? = await cacheService.getCachedValue(for: .restingHR, date: date)
 
         XCTAssertEqual(hrv, 45.2)
         XCTAssertEqual(hr, 65.0)
@@ -190,12 +190,12 @@ final class HealthKitCacheServiceTests: XCTestCase {
         let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: today)!
 
         // When
-        cacheService.setCachedValue(45.2, for: .hrv, date: today)
-        cacheService.setCachedValue(50.0, for: .hrv, date: yesterday)
+        await cacheService.setCachedValue(45.2, for: .hrv, date: today)
+        await cacheService.setCachedValue(50.0, for: .hrv, date: yesterday)
 
         // Then
-        let todayValue: Double? = cacheService.getCachedValue(for: .hrv, date: today)
-        let yesterdayValue: Double? = cacheService.getCachedValue(for: .hrv, date: yesterday)
+        let todayValue: Double? = await cacheService.getCachedValue(for: .hrv, date: today)
+        let yesterdayValue: Double? = await cacheService.getCachedValue(for: .hrv, date: yesterday)
 
         XCTAssertEqual(todayValue, 45.2)
         XCTAssertEqual(yesterdayValue, 50.0)
@@ -207,8 +207,8 @@ final class HealthKitCacheServiceTests: XCTestCase {
         let evening = Calendar.current.date(bySettingHour: 20, minute: 0, second: 0, of: Date())!
 
         // When
-        cacheService.setCachedValue(45.2, for: .hrv, date: morning)
-        let retrievedEvening: Double? = cacheService.getCachedValue(for: .hrv, date: evening)
+        await cacheService.setCachedValue(45.2, for: .hrv, date: morning)
+        let retrievedEvening: Double? = await cacheService.getCachedValue(for: .hrv, date: evening)
 
         // Then
         XCTAssertEqual(retrievedEvening, 45.2, "Same day should return cached value")
@@ -218,29 +218,31 @@ final class HealthKitCacheServiceTests: XCTestCase {
 
     func testClearCache_ClearsRecentData() async {
         // Given
-        cacheService.setLastSampleDate(Date(), for: .hrv)
-        cacheService.setLastSampleDate(Date(), for: .restingHR)
+        await cacheService.setLastSampleDate(Date(), for: .hrv)
+        await cacheService.setLastSampleDate(Date(), for: .restingHR)
 
         // When
-        cacheService.clearCache()
+        await cacheService.clearCache()
 
         // Then
-        XCTAssertNil(cacheService.getLastSampleDate(for: .hrv))
-        XCTAssertNil(cacheService.getLastSampleDate(for: .restingHR))
+        let hrvDate = await cacheService.getLastSampleDate(for: .hrv)
+        let hrDate = await cacheService.getLastSampleDate(for: .restingHR)
+        XCTAssertNil(hrvDate)
+        XCTAssertNil(hrDate)
     }
 
     func testClearCache_ClearsHistoricalData() async {
         // Given
         let date = Date()
-        cacheService.setCachedValue(45.2, for: .hrv, date: date)
-        cacheService.setCachedValue(65.0, for: .restingHR, date: date)
+        await cacheService.setCachedValue(45.2, for: .hrv, date: date)
+        await cacheService.setCachedValue(65.0, for: .restingHR, date: date)
 
         // When
-        cacheService.clearCache()
+        await cacheService.clearCache()
 
         // Then
-        let hrv: Double? = cacheService.getCachedValue(for: .hrv, date: date)
-        let hr: Double? = cacheService.getCachedValue(for: .restingHR, date: date)
+        let hrv: Double? = await cacheService.getCachedValue(for: .hrv, date: date)
+        let hr: Double? = await cacheService.getCachedValue(for: .restingHR, date: date)
 
         XCTAssertNil(hrv)
         XCTAssertNil(hr)
@@ -251,10 +253,10 @@ final class HealthKitCacheServiceTests: XCTestCase {
     func testCachedValue_WrongTypeReturnsNil() async {
         // Given
         let date = Date()
-        cacheService.setCachedValue(45.2, for: .hrv, date: date)
+        await cacheService.setCachedValue(45.2, for: .hrv, date: date)
 
         // When - Try to retrieve as wrong type
-        let wrongType: Int? = cacheService.getCachedValue(for: .hrv, date: date)
+        let wrongType: Int? = await cacheService.getCachedValue(for: .hrv, date: date)
 
         // Then
         XCTAssertNil(wrongType, "Should return nil when retrieving with wrong type")
@@ -277,21 +279,21 @@ final class HealthKitCacheServiceTests: XCTestCase {
         // When
         for (metric, value) in metrics {
             if let doubleValue = value as? Double {
-                cacheService.setCachedValue(doubleValue, for: metric, date: date)
+                await cacheService.setCachedValue(doubleValue, for: metric, date: date)
             } else if let intValue = value as? Int {
-                cacheService.setCachedValue(intValue, for: metric, date: date)
+                await cacheService.setCachedValue(intValue, for: metric, date: date)
             } else if let stringValue = value as? String {
-                cacheService.setCachedValue(stringValue, for: metric, date: date)
+                await cacheService.setCachedValue(stringValue, for: metric, date: date)
             }
         }
 
         // Then
-        let hrv: Double? = cacheService.getCachedValue(for: .hrv, date: date)
-        let restingHR: Double? = cacheService.getCachedValue(for: .restingHR, date: date)
-        let sleep: Double? = cacheService.getCachedValue(for: .sleep, date: date)
-        let workout: Double? = cacheService.getCachedValue(for: .workout, date: date)
-        let cycleDay: Int? = cacheService.getCachedValue(for: .cycleDay, date: date)
-        let flowLevel: String? = cacheService.getCachedValue(for: .flowLevel, date: date)
+        let hrv: Double? = await cacheService.getCachedValue(for: .hrv, date: date)
+        let restingHR: Double? = await cacheService.getCachedValue(for: .restingHR, date: date)
+        let sleep: Double? = await cacheService.getCachedValue(for: .sleep, date: date)
+        let workout: Double? = await cacheService.getCachedValue(for: .workout, date: date)
+        let cycleDay: Int? = await cacheService.getCachedValue(for: .cycleDay, date: date)
+        let flowLevel: String? = await cacheService.getCachedValue(for: .flowLevel, date: date)
 
         XCTAssertEqual(hrv, 45.2)
         XCTAssertEqual(restingHR, 65.0)

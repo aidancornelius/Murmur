@@ -37,7 +37,7 @@ class HealthKitAssistantTestCase: XCTestCase {
 
     override func tearDown() async throws {
         // Clean up mock data
-        mockDataProvider?.reset()
+        await mockDataProvider?.reset()
         mockDataProvider = nil
 
         // Clean up assistant instance
@@ -55,14 +55,16 @@ class HealthKitAssistantTestCase: XCTestCase {
         sleep: [HKCategorySample] = [],
         workouts: [HKWorkout] = [],
         menstrualFlow: [HKCategorySample] = []
-    ) {
+    ) async {
         guard let provider = mockDataProvider else {
             XCTFail("mockDataProvider not initialized - setUp() may not have been called")
             return
         }
-        provider.mockQuantitySamples = hrv + restingHR
-        provider.mockCategorySamples = sleep + menstrualFlow
-        provider.mockWorkouts = workouts
+        await provider.setMockData(
+            quantitySamples: hrv + restingHR,
+            categorySamples: sleep + menstrualFlow,
+            workouts: workouts
+        )
     }
 
     /// Helper to invalidate cache for a specific metric

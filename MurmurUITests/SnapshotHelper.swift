@@ -15,12 +15,10 @@
 import Foundation
 import XCTest
 
-@MainActor
 func setupSnapshot(_ app: XCUIApplication, waitForAnimations: Bool = true) {
     Snapshot.setupSnapshot(app, waitForAnimations: waitForAnimations)
 }
 
-@MainActor
 func snapshot(_ name: String, waitForLoadingIndicator: Bool) {
     if waitForLoadingIndicator {
         Snapshot.snapshot(name)
@@ -32,7 +30,6 @@ func snapshot(_ name: String, waitForLoadingIndicator: Bool) {
 /// - Parameters:
 ///   - name: The name of the snapshot
 ///   - timeout: Amount of seconds to wait until the network loading indicator disappears. Pass `0` if you don't want to wait.
-@MainActor
 func snapshot(_ name: String, timeWaitingForIdle timeout: TimeInterval = 20) {
     Snapshot.snapshot(name, timeWaitingForIdle: timeout)
 }
@@ -52,16 +49,15 @@ enum SnapshotError: Error, CustomDebugStringConvertible {
 }
 
 @objcMembers
-@MainActor
 open class Snapshot: NSObject {
-    static var app: XCUIApplication?
-    static var waitForAnimations = true
-    static var cacheDirectory: URL?
-    static var screenshotsDirectory: URL? {
+    nonisolated(unsafe) static var app: XCUIApplication?
+    nonisolated(unsafe) static var waitForAnimations = true
+    nonisolated(unsafe) static var cacheDirectory: URL?
+    nonisolated(unsafe) static var screenshotsDirectory: URL? {
         return cacheDirectory?.appendingPathComponent("screenshots", isDirectory: true)
     }
-    static var deviceLanguage = ""
-    static var currentLocale = ""
+    nonisolated(unsafe) static var deviceLanguage = ""
+    nonisolated(unsafe) static var currentLocale = ""
 
     open class func setupSnapshot(_ app: XCUIApplication, waitForAnimations: Bool = true) {
 
@@ -284,7 +280,6 @@ private extension XCUIElementQuery {
         return self.containing(isNetworkLoadingIndicator)
     }
 
-    @MainActor
     var deviceStatusBars: XCUIElementQuery {
         guard let app = Snapshot.app else {
             fatalError("XCUIApplication is not set. Please call setupSnapshot(app) before snapshot().")

@@ -23,7 +23,7 @@ final class HealthKitAssistantBaselineTests: HealthKitAssistantTestCase {
         for day in 0..<30 {
             samples.append(HKQuantitySample.mockHRV(value: Double(40 + day), date: .daysAgo(day)))
         }
-        provider.mockQuantitySamples = samples
+        await provider.setMockData(quantitySamples: samples, categorySamples: [], workouts: [])
 
         // Clear existing baseline
         await MainActor.run {
@@ -54,7 +54,7 @@ final class HealthKitAssistantBaselineTests: HealthKitAssistantTestCase {
         for (index, value) in values.enumerated() {
             samples.append(HKQuantitySample.mockRestingHR(value: value, date: .daysAgo(index)))
         }
-        provider.mockQuantitySamples = samples
+        await provider.setMockData(quantitySamples: samples, categorySamples: [], workouts: [])
 
         // Clear existing baseline
         await MainActor.run {
@@ -84,7 +84,7 @@ final class HealthKitAssistantBaselineTests: HealthKitAssistantTestCase {
         for day in 0..<5 {
             samples.append(HKQuantitySample.mockHRV(value: Double(40 + day), date: .daysAgo(day)))
         }
-        provider.mockQuantitySamples = samples
+        await provider.setMockData(quantitySamples: samples, categorySamples: [], workouts: [])
 
         // Clear existing baseline
         await MainActor.run {
@@ -112,7 +112,7 @@ final class HealthKitAssistantBaselineTests: HealthKitAssistantTestCase {
             hrvSamples.append(HKQuantitySample.mockHRV(value: Double(40 + day), date: .daysAgo(day)))
             hrvSamples.append(HKQuantitySample.mockRestingHR(value: Double(60 + day), date: .daysAgo(day)))
         }
-        provider.mockQuantitySamples = hrvSamples
+        await provider.setMockData(quantitySamples: hrvSamples, categorySamples: [], workouts: [])
 
         let startTime = Date()
 
