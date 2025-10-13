@@ -99,7 +99,7 @@ final class LoadScoreCache {
             previousLoad: previousLoad,
             config: config
         )
-        let entry = CachedEntry(loadScore: loadScore, dataHash: dataHash, timestamp: Date())
+        let entry = CachedEntry(loadScore: loadScore, dataHash: dataHash, timestamp: DateUtility.now())
         cache[dayStart] = entry
     }
 
@@ -173,7 +173,7 @@ final class LoadScoreCache {
     /// Removes cache entries older than the specified number of days
     /// Helps manage memory for long-running apps
     func pruneOlderThan(days: Int) {
-        let cutoffDate = calendar.date(byAdding: .day, value: -days, to: Date()) ?? Date()
+        let cutoffDate = calendar.date(byAdding: .day, value: -days, to: DateUtility.now()) ?? DateUtility.now()
         let keysToRemove = cache.keys.filter { $0 < cutoffDate }
         keysToRemove.forEach { cache.removeValue(forKey: $0) }
     }

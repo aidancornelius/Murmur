@@ -48,7 +48,7 @@ final class TimelineDataController: NSObject, ObservableObject {
         self.context = context
 
         // Calculate date ranges
-        let today = Calendar.current.startOfDay(for: Date())
+        let today = Calendar.current.startOfDay(for: DateUtility.now())
         self.displayStartDate = calendar.date(byAdding: .day, value: -30, to: today) ?? today
         self.dataStartDate = calendar.date(byAdding: .day, value: -90, to: today) ?? today
 
@@ -227,7 +227,7 @@ final class TimelineDataController: NSObject, ObservableObject {
             } else if let createdAt = object.value(forKey: "createdAt") as? Date {
                 date = createdAt
             } else {
-                date = Date()
+                date = DateUtility.now()
             }
             return calendar.startOfDay(for: date)
         }
@@ -259,7 +259,7 @@ final class TimelineDataController: NSObject, ObservableObject {
 
     /// Updates date ranges (e.g., at midnight or when user changes settings)
     func updateDateRanges() {
-        let today = calendar.startOfDay(for: Date())
+        let today = calendar.startOfDay(for: DateUtility.now())
         let newDisplayStart = calendar.date(byAdding: .day, value: -30, to: today) ?? today
         let newDataStart = calendar.date(byAdding: .day, value: -90, to: today) ?? today
 

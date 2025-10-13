@@ -47,6 +47,70 @@ Run UI tests across 5 devices including multiple iPhone and iPad models (8-12 mi
 
 Run smoke tests for critical user journeys (~1 min, iPhone 17 Pro)
 
+### ios test_widgets
+
+```sh
+[bundle exec] fastlane ios test_widgets
+```
+
+Run widget tests (<1 min, iPhone 17 Pro)
+
+### ios test_unified_event
+
+```sh
+[bundle exec] fastlane ios test_unified_event
+```
+
+Run UnifiedEventView tests (<1 min, iPhone 17 Pro)
+
+### ios test_intents
+
+```sh
+[bundle exec] fastlane ios test_intents
+```
+
+Run App Intents tests (<1 min, iPhone 17 Pro)
+
+### ios test_background
+
+```sh
+[bundle exec] fastlane ios test_background
+```
+
+Run background tasks tests (<1 min, iPhone 17 Pro)
+
+### ios test_new_features
+
+```sh
+[bundle exec] fastlane ios test_new_features
+```
+
+Run all new feature tests: widgets, unified event, intents, background (2-3 mins)
+
+### ios test_core_data
+
+```sh
+[bundle exec] fastlane ios test_core_data
+```
+
+Run core data tests (<1 min, iPhone 17 Pro)
+
+### ios test_analysis
+
+```sh
+[bundle exec] fastlane ios test_analysis
+```
+
+Run analysis engine tests (<1 min, iPhone 17 Pro)
+
+### ios test_integrations
+
+```sh
+[bundle exec] fastlane ios test_integrations
+```
+
+Run location and calendar tests (<1 min, iPhone 17 Pro)
+
 ### ios test_healthkit
 
 ```sh

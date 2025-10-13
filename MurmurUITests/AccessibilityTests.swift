@@ -229,14 +229,14 @@ final class AccessibilityTests: XCTestCase {
 
         // Navigate to other screens to verify they also adapt
         app.buttons[AccessibilityIdentifiers.analysisButton].tap()
-        Thread.sleep(forTimeInterval: 1.0)
+        RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
         // Go back to timeline
         app.navigationBars.buttons.firstMatch.tap()
-        Thread.sleep(forTimeInterval: 0.5)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
         app.buttons[AccessibilityIdentifiers.settingsButton].tap()
-        Thread.sleep(forTimeInterval: 1.0)
+        RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
         takeScreenshot(named: "DynamicType_AccessibilityExtraLarge")
     }
@@ -315,17 +315,17 @@ final class AccessibilityTests: XCTestCase {
 
         // Navigate through all main screens to verify layout adaptation
         app.buttons[AccessibilityIdentifiers.analysisButton].tap()
-        Thread.sleep(forTimeInterval: 1.0)
+        RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
         let analysis = AnalysisScreen(app: app)
         XCTAssertTrue(analysis.waitForLoad(), "Analysis should load with adapted layout")
 
         // Go back to timeline
         app.navigationBars.buttons.firstMatch.tap()
-        Thread.sleep(forTimeInterval: 0.5)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
         app.buttons[AccessibilityIdentifiers.settingsButton].tap()
-        Thread.sleep(forTimeInterval: 1.0)
+        RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
         let settings = SettingsScreen(app: app)
         XCTAssertTrue(settings.waitForLoad(), "Settings should load with adapted layout")
@@ -355,7 +355,7 @@ final class AccessibilityTests: XCTestCase {
             voiceCommandButton.tap()
 
             // Should show some voice input interface or help
-            Thread.sleep(forTimeInterval: 1.0)
+            RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
             XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'voice' OR label CONTAINS 'Voice'")).count > 0,
                          "Voice command interface should appear")
@@ -425,7 +425,7 @@ final class AccessibilityTests: XCTestCase {
 
             // Should show error or validation message
             // This validates that error feedback is accessible
-            Thread.sleep(forTimeInterval: 0.5)
+            RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
             // The save might succeed or show error depending on app requirements
             // Just verify the app responds appropriately

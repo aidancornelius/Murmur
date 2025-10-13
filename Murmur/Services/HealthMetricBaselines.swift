@@ -101,7 +101,7 @@ class HealthMetricBaselines: ObservableObject {
             mean: mean,
             standardDeviation: standardDeviation,
             sampleCount: samples.count,
-            lastUpdated: Date()
+            lastUpdated: DateUtility.now()
         )
     }
 

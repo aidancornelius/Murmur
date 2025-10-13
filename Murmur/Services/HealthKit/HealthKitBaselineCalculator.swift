@@ -55,8 +55,8 @@ final class HealthKitBaselineCalculator: HealthKitBaselineCalculatorProtocol {
 
         do {
             // Fetch 30 days of HRV data
-            let start = Date().addingTimeInterval(-30 * 24 * 3600)
-            let end = Date()
+            let start = DateUtility.now().addingTimeInterval(-30 * 24 * 3600)
+            let end = DateUtility.now()
             let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
 
             let samples = try await queryService.fetchQuantitySamples(
@@ -85,8 +85,8 @@ final class HealthKitBaselineCalculator: HealthKitBaselineCalculatorProtocol {
 
         do {
             // Fetch 30 days of resting HR data
-            let start = Date().addingTimeInterval(-30 * 24 * 3600)
-            let end = Date()
+            let start = DateUtility.now().addingTimeInterval(-30 * 24 * 3600)
+            let end = DateUtility.now()
             let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
 
             let samples = try await queryService.fetchQuantitySamples(

@@ -36,7 +36,7 @@ final class SnapshotTests: XCTestCase {
         assertExists(timeline.logSymptomButton, timeout: 10, message: "Timeline should be visible")
 
         // Wait for entries to load
-        Thread.sleep(forTimeInterval: 1.0)
+        RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
         snapshot("01Timeline")
     }
@@ -123,7 +123,7 @@ final class SnapshotTests: XCTestCase {
         }
 
         // Wait for chart to render and data to load
-        Thread.sleep(forTimeInterval: 3.5)
+        RunLoop.current.run(until: Date().addingTimeInterval(3.5))
 
         snapshot("04Analysis")
     }
@@ -149,7 +149,7 @@ final class SnapshotTests: XCTestCase {
         }
 
         // Wait for calendar to render and data to load
-        Thread.sleep(forTimeInterval: 3.5)
+        RunLoop.current.run(until: Date().addingTimeInterval(3.5))
 
         snapshot("05AnalysisCalendar")
     }
@@ -187,7 +187,7 @@ final class SnapshotTests: XCTestCase {
         let timeline = TimelineScreen(app: app)
         assertExists(timeline.logSymptomButton, timeout: 10, message: "Timeline should be visible")
 
-        Thread.sleep(forTimeInterval: 1.0)
+        RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
         snapshot("07TimelineDark")
     }
@@ -253,7 +253,7 @@ final class SnapshotTests: XCTestCase {
             app.buttons["Trends"].tap()
         }
 
-        Thread.sleep(forTimeInterval: 3.5)
+        RunLoop.current.run(until: Date().addingTimeInterval(3.5))
 
         snapshot("10AnalysisDark")
     }
@@ -277,7 +277,7 @@ final class SnapshotTests: XCTestCase {
             app.buttons["Calendar"].tap()
         }
 
-        Thread.sleep(forTimeInterval: 3.5)
+        RunLoop.current.run(until: Date().addingTimeInterval(3.5))
 
         snapshot("11AnalysisCalendarDark")
     }
@@ -338,7 +338,7 @@ final class SnapshotTests: XCTestCase {
         let timeline = TimelineScreen(app: app)
         assertExists(timeline.logSymptomButton, timeout: 10, message: "Timeline should be visible")
 
-        Thread.sleep(forTimeInterval: 1.0)
+        RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
         snapshot("14TimelineIPad")
     }
@@ -361,7 +361,7 @@ final class SnapshotTests: XCTestCase {
         let analysis = AnalysisScreen(app: app)
         XCTAssertTrue(analysis.waitForLoad(), "Analysis screen should load")
 
-        Thread.sleep(forTimeInterval: 3.5)
+        RunLoop.current.run(until: Date().addingTimeInterval(3.5))
 
         snapshot("15AnalysisIPad")
     }
@@ -452,7 +452,7 @@ final class SnapshotTests: XCTestCase {
         // Look for integrations section
         if app.buttons["Integrations"].exists {
             app.buttons["Integrations"].tap()
-            Thread.sleep(forTimeInterval: 0.5)
+            RunLoop.current.run(until: Date().addingTimeInterval(0.5))
         }
 
         snapshot("19ErrorState")
@@ -474,10 +474,9 @@ final class SnapshotTests: XCTestCase {
         snapshot("20EmptyStates")
     }
 
-    /// SKIP: Uses old AddEntryView with severity-slider which has been replaced by UnifiedEventView
-    /// Captures symptom entry with selections made
+    /// Captures event entry with selections made
     @MainActor
-    func skip_testSymptomEntryWithSelectionsSnapshot() throws {
+    func testSymptomEntryWithSelectionsSnapshot() throws {
         guard let app = app else {
             XCTFail("App not initialized")
             return
@@ -487,18 +486,24 @@ final class SnapshotTests: XCTestCase {
         let timeline = TimelineScreen(app: app)
         timeline.navigateToAddEntry()
 
-        let addEntry = AddEntryScreen(app: app)
-        addEntry.waitForLoad()
+        let unifiedEvent = UnifiedEventScreen(app: app)
+        XCTAssertTrue(unifiedEvent.waitForLoad(), "Unified event screen should load")
 
-        // Make some selections
-        addEntry.openSymptomSearch()
-        addEntry.searchForSymptom("Headache")
-        _ = addEntry.selectSymptom(named: "Headache")
-        addEntry.setSeverity(3)
-        addEntry.enterNote("Example note for screenshot")
+        // Select activity event type explicitly
+        unifiedEvent.selectEventType(.activity)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.3))
 
-        // Wait for UI to stabilise
-        Thread.sleep(forTimeInterval: 0.5)
+        // Enter activity using natural language
+        unifiedEvent.enterMainInput("Walked for 30 minutes")
+
+        // Wait for parsing and UI to update (exertion cards should appear)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.8))
+
+        // Add a note
+        unifiedEvent.enterNote("Example note for screenshot")
+
+        // Wait for UI to stabilise before snapshot
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
         snapshot("21SymptomEntryFilled")
     }
@@ -526,7 +531,7 @@ final class SnapshotTests: XCTestCase {
         }
 
         // Wait for full calendar to render and data to load
-        Thread.sleep(forTimeInterval: 3.5)
+        RunLoop.current.run(until: Date().addingTimeInterval(3.5))
 
         snapshot("22CalendarFullYear")
     }
@@ -548,13 +553,370 @@ final class SnapshotTests: XCTestCase {
         // Navigate to load capacity if available
         if app.buttons["Load Capacity"].exists {
             app.buttons["Load Capacity"].tap()
-            Thread.sleep(forTimeInterval: 2.5)
+            RunLoop.current.run(until: Date().addingTimeInterval(2.5))
         } else if app.staticTexts["Load Capacity"].exists {
             // Try scrolling to find it
             app.staticTexts["Load Capacity"].tap()
-            Thread.sleep(forTimeInterval: 2.5)
+            RunLoop.current.run(until: Date().addingTimeInterval(2.5))
         }
 
         snapshot("23LoadCapacity")
+    }
+
+    // MARK: - Unified event view snapshots (12 snapshots)
+
+    /// Captures unified event view with activity type in empty state
+    @MainActor
+    func testUnifiedEventView_Activity_Empty_Snapshot() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
+        app.launchForSnapshots()
+
+        let timeline = TimelineScreen(app: app)
+        assertExists(timeline.logSymptomButton, message: "Timeline should be visible")
+
+        timeline.navigateToAddEntry()
+
+        let unifiedEvent = UnifiedEventScreen(app: app)
+        XCTAssertTrue(unifiedEvent.waitForLoad(), "Unified event screen should load")
+
+        // Select activity event type
+        unifiedEvent.selectEventType(.activity)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
+
+        snapshot("24UnifiedEventActivityEmpty")
+    }
+
+    /// Captures unified event view with activity type filled with data
+    @MainActor
+    func testUnifiedEventView_Activity_Filled_Snapshot() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
+        app.launchForSnapshots()
+
+        let timeline = TimelineScreen(app: app)
+        timeline.navigateToAddEntry()
+
+        let unifiedEvent = UnifiedEventScreen(app: app)
+        XCTAssertTrue(unifiedEvent.waitForLoad(), "Unified event screen should load")
+
+        // Select activity event type
+        unifiedEvent.selectEventType(.activity)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.3))
+
+        // Enter activity using natural language
+        unifiedEvent.enterMainInput("Walked for 30 minutes")
+        RunLoop.current.run(until: Date().addingTimeInterval(0.8))
+
+        // Add a note
+        unifiedEvent.enterNote("Morning walk around the neighbourhood")
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
+
+        snapshot("25UnifiedEventActivityFilled")
+    }
+
+    /// Captures unified event view with sleep type in empty state
+    @MainActor
+    func testUnifiedEventView_Sleep_Empty_Snapshot() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
+        app.launchForSnapshots()
+
+        let timeline = TimelineScreen(app: app)
+        timeline.navigateToAddEntry()
+
+        let unifiedEvent = UnifiedEventScreen(app: app)
+        XCTAssertTrue(unifiedEvent.waitForLoad(), "Unified event screen should load")
+
+        // Select sleep event type
+        unifiedEvent.selectEventType(.sleep)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
+
+        snapshot("26UnifiedEventSleepEmpty")
+    }
+
+    /// Captures unified event view with sleep type filled with data
+    @MainActor
+    func testUnifiedEventView_Sleep_Filled_Snapshot() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
+        app.launchForSnapshots()
+
+        let timeline = TimelineScreen(app: app)
+        timeline.navigateToAddEntry()
+
+        let unifiedEvent = UnifiedEventScreen(app: app)
+        XCTAssertTrue(unifiedEvent.waitForLoad(), "Unified event screen should load")
+
+        // Select sleep event type
+        unifiedEvent.selectEventType(.sleep)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.3))
+
+        // Enter sleep description
+        unifiedEvent.enterMainInput("Slept 8 hours")
+        RunLoop.current.run(until: Date().addingTimeInterval(0.8))
+
+        // Add a note
+        unifiedEvent.enterNote("Woke up once during the night")
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
+
+        snapshot("27UnifiedEventSleepFilled")
+    }
+
+    /// Captures unified event view with meal type in empty state
+    @MainActor
+    func testUnifiedEventView_Meal_Empty_Snapshot() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
+        app.launchForSnapshots()
+
+        let timeline = TimelineScreen(app: app)
+        timeline.navigateToAddEntry()
+
+        let unifiedEvent = UnifiedEventScreen(app: app)
+        XCTAssertTrue(unifiedEvent.waitForLoad(), "Unified event screen should load")
+
+        // Select meal event type
+        unifiedEvent.selectEventType(.meal)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
+
+        snapshot("28UnifiedEventMealEmpty")
+    }
+
+    /// Captures unified event view with meal type filled with data
+    @MainActor
+    func testUnifiedEventView_Meal_Filled_Snapshot() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
+        app.launchForSnapshots()
+
+        let timeline = TimelineScreen(app: app)
+        timeline.navigateToAddEntry()
+
+        let unifiedEvent = UnifiedEventScreen(app: app)
+        XCTAssertTrue(unifiedEvent.waitForLoad(), "Unified event screen should load")
+
+        // Select meal event type
+        unifiedEvent.selectEventType(.meal)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.3))
+
+        // Enter meal description
+        unifiedEvent.enterMainInput("Breakfast: scrambled eggs and toast")
+        RunLoop.current.run(until: Date().addingTimeInterval(0.8))
+
+        // Add a note
+        unifiedEvent.enterNote("Felt energised after eating")
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
+
+        snapshot("29UnifiedEventMealFilled")
+    }
+
+    /// Captures unified event view with activity showing exertion controls
+    @MainActor
+    func testUnifiedEventView_Activity_WithExertion_Snapshot() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
+        app.launchForSnapshots()
+
+        let timeline = TimelineScreen(app: app)
+        timeline.navigateToAddEntry()
+
+        let unifiedEvent = UnifiedEventScreen(app: app)
+        XCTAssertTrue(unifiedEvent.waitForLoad(), "Unified event screen should load")
+
+        // Select activity event type
+        unifiedEvent.selectEventType(.activity)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.3))
+
+        // Enter activity to trigger exertion controls
+        unifiedEvent.enterMainInput("Went for a run for 45 minutes")
+        RunLoop.current.run(until: Date().addingTimeInterval(1.0))
+
+        // Wait for exertion controls to appear
+        if unifiedEvent.physicalExertionRing.waitForExistence(timeout: 2.0) {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.5))
+        }
+
+        snapshot("30UnifiedEventActivityExertion")
+    }
+
+    /// Captures unified event view with meal showing exertion toggle
+    @MainActor
+    func testUnifiedEventView_Meal_WithExertionToggle_Snapshot() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
+        app.launchForSnapshots()
+
+        let timeline = TimelineScreen(app: app)
+        timeline.navigateToAddEntry()
+
+        let unifiedEvent = UnifiedEventScreen(app: app)
+        XCTAssertTrue(unifiedEvent.waitForLoad(), "Unified event screen should load")
+
+        // Select meal event type
+        unifiedEvent.selectEventType(.meal)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.3))
+
+        // Enter meal description
+        unifiedEvent.enterMainInput("Lunch: large pizza and soft drink")
+        RunLoop.current.run(until: Date().addingTimeInterval(0.8))
+
+        // Scroll down to see exertion toggle if available
+        if app.scrollViews.firstMatch.exists {
+            app.scrollViews.firstMatch.swipeUp()
+            RunLoop.current.run(until: Date().addingTimeInterval(0.3))
+        }
+
+        snapshot("31UnifiedEventMealExertionToggle")
+    }
+
+    /// Captures unified event view with validation error state
+    @MainActor
+    func testUnifiedEventView_ValidationError_Snapshot() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
+        app.launchForSnapshots()
+
+        let timeline = TimelineScreen(app: app)
+        timeline.navigateToAddEntry()
+
+        let unifiedEvent = UnifiedEventScreen(app: app)
+        XCTAssertTrue(unifiedEvent.waitForLoad(), "Unified event screen should load")
+
+        // Select activity event type
+        unifiedEvent.selectEventType(.activity)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.3))
+
+        // Try to save without entering any data to trigger validation error
+        if unifiedEvent.saveButton.waitForExistence(timeout: 2.0) {
+            unifiedEvent.saveButton.tap()
+            RunLoop.current.run(until: Date().addingTimeInterval(0.8))
+
+            // Check if error message appeared
+            if unifiedEvent.errorMessage.waitForExistence(timeout: 2.0) {
+                RunLoop.current.run(until: Date().addingTimeInterval(0.3))
+            }
+        }
+
+        snapshot("32UnifiedEventValidationError")
+    }
+
+    /// Captures unified event view with time chip selections
+    @MainActor
+    func testUnifiedEventView_TimeChips_Snapshot() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
+        app.launchForSnapshots()
+
+        let timeline = TimelineScreen(app: app)
+        timeline.navigateToAddEntry()
+
+        let unifiedEvent = UnifiedEventScreen(app: app)
+        XCTAssertTrue(unifiedEvent.waitForLoad(), "Unified event screen should load")
+
+        // Select activity event type
+        unifiedEvent.selectEventType(.activity)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.3))
+
+        // Enter activity
+        unifiedEvent.enterMainInput("Quick workout")
+        RunLoop.current.run(until: Date().addingTimeInterval(0.8))
+
+        // Try to interact with time chips if they appear
+        let timeChips = app.buttons.matching(NSPredicate(format: "label CONTAINS 'min' OR label CONTAINS 'hour'"))
+        if timeChips.count > 0 {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.5))
+        }
+
+        snapshot("33UnifiedEventTimeChips")
+    }
+
+    /// Captures unified event view with notes section expanded
+    @MainActor
+    func testUnifiedEventView_NotesExpanded_Snapshot() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
+        app.launchForSnapshots()
+
+        let timeline = TimelineScreen(app: app)
+        timeline.navigateToAddEntry()
+
+        let unifiedEvent = UnifiedEventScreen(app: app)
+        XCTAssertTrue(unifiedEvent.waitForLoad(), "Unified event screen should load")
+
+        // Select activity event type
+        unifiedEvent.selectEventType(.activity)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.3))
+
+        // Enter activity
+        unifiedEvent.enterMainInput("Evening walk")
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
+
+        // Open notes section explicitly
+        unifiedEvent.openNotes()
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
+
+        // Scroll down to ensure notes field is visible
+        if app.scrollViews.firstMatch.exists {
+            app.scrollViews.firstMatch.swipeUp()
+            RunLoop.current.run(until: Date().addingTimeInterval(0.3))
+        }
+
+        snapshot("34UnifiedEventNotesExpanded")
+    }
+
+    /// Captures unified event view with event type picker menu visible
+    @MainActor
+    func testUnifiedEventView_EventTypePicker_Snapshot() throws {
+        guard let app = app else {
+            XCTFail("App not initialized")
+            return
+        }
+        app.launchForSnapshots()
+
+        let timeline = TimelineScreen(app: app)
+        timeline.navigateToAddEntry()
+
+        let unifiedEvent = UnifiedEventScreen(app: app)
+        XCTAssertTrue(unifiedEvent.waitForLoad(), "Unified event screen should load")
+
+        // Tap on event type button to show picker menu
+        if unifiedEvent.eventTypeButton.waitForExistence(timeout: 2.0) {
+            unifiedEvent.eventTypeButton.tap()
+            RunLoop.current.run(until: Date().addingTimeInterval(0.5))
+
+            // Verify menu items are visible
+            let activityButton = app.buttons["Activity"]
+            let sleepButton = app.buttons["Sleep"]
+            let mealButton = app.buttons["Meal"]
+
+            if activityButton.exists || sleepButton.exists || mealButton.exists {
+                RunLoop.current.run(until: Date().addingTimeInterval(0.3))
+            }
+        }
+
+        snapshot("35UnifiedEventTypePicker")
     }
 }

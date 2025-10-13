@@ -50,6 +50,20 @@
          </BuildActionEntry>
          <BuildActionEntry
             buildForTesting = "YES"
+            buildForRunning = "NO"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "B44B2EB5F5A7D929C0E43098"
+               BuildableName = "MurmurWidgetTests.xctest"
+               BlueprintName = "MurmurWidgetTests"
+               ReferencedContainer = "container:Murmur.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
             buildForRunning = "YES"
             buildForProfiling = "YES"
             buildForArchiving = "YES"
@@ -88,6 +102,13 @@
             BlueprintName = "Murmur"
             ReferencedContainer = "container:Murmur.xcodeproj">
          </BuildableReference>
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "6D67B0085D6E9A510AE694C8"
+            BuildableName = "MurmurWidgets.appex"
+            BlueprintName = "MurmurWidgetsExtension"
+            ReferencedContainer = "container:Murmur.xcodeproj">
+         </BuildableReference>
       </CodeCoverageTargets>
       <Testables>
          <TestableReference
@@ -98,6 +119,17 @@
                BlueprintIdentifier = "20EFC0E04F507A87E4831E0B"
                BuildableName = "MurmurTests.xctest"
                BlueprintName = "MurmurTests"
+               ReferencedContainer = "container:Murmur.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "B44B2EB5F5A7D929C0E43098"
+               BuildableName = "MurmurWidgetTests.xctest"
+               BlueprintName = "MurmurWidgetTests"
                ReferencedContainer = "container:Murmur.xcodeproj">
             </BuildableReference>
          </TestableReference>

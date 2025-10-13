@@ -148,6 +148,30 @@ targets:
       - package: HealthKitUtility
         product: HealthKitTestData
 
+  MurmurWidgetTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: MurmurWidgetTests
+        excludes:
+          - "**/*.md"
+          - "MurmurWidgetBundleTests.swift"
+          - "MurmurWidgetControlTests.swift"
+          - "ControlWidgetProviderTests.swift"
+          - "WidgetIntentTests.swift"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.cornelius-bell.MurmurWidgetTests
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Murmur.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Murmur"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks @loader_path/Frameworks"
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: MurmurWidgetsExtension
+      - target: Murmur
+      - package: HealthKitUtility
+        product: HealthKitTestData
+
   MurmurUITests:
     type: bundle.ui-testing
     platform: iOS
@@ -173,6 +197,7 @@ schemes:
         Murmur: all
         MurmurWidgetsExtension: all
         MurmurTests: [test]
+        MurmurWidgetTests: [test]
         MurmurUITests: [test]
     run:
       config: Debug
@@ -181,8 +206,10 @@ schemes:
       gatherCoverageData: true
       coverageTargets:
         - Murmur
+        - MurmurWidgetsExtension
       targets:
         - name: MurmurTests
+        - name: MurmurWidgetTests
         - name: MurmurUITests
     profile:
       config: Release
@@ -294,6 +321,25 @@ schemes:
         "-HealthKitHistoryDays 30":
           enabled: true
         "-HealthKitSeed 42":
+          enabled: true
+
+  Murmur (Sleep Testing - 6:30am):
+    build:
+      targets:
+        Murmur: all
+        MurmurWidgetsExtension: all
+    run:
+      config: Debug
+      commandLineArguments:
+        "-UITestMode":
+          enabled: true
+        "-SeedHealthKitNormal":
+          enabled: true
+        "-HealthKitHistoryDays 7":
+          enabled: true
+        "-HealthKitSeed 42":
+          enabled: true
+        "-OverrideTime 06:30":
           enabled: true
 
   MurmurWidgetsExtension:

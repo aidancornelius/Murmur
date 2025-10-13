@@ -91,7 +91,7 @@ final class MurmurUITests: XCTestCase {
 
         // Wait for next screen if we tapped "Turn On All"
         if tappedTurnOnAll {
-            Thread.sleep(forTimeInterval: 0.5)
+            RunLoop.current.run(until: Date().addingTimeInterval(0.5))
         }
 
         let allowCandidates: [XCUIElement] = [
@@ -109,7 +109,7 @@ final class MurmurUITests: XCTestCase {
         }
 
         // Final check for Done button
-        Thread.sleep(forTimeInterval: 0.5)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
         let doneButton = healthApp.buttons["Done"]
         if doneButton.waitForExistence(timeout: 1.5) {
             doneButton.tap()

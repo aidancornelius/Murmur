@@ -81,7 +81,7 @@ actor HealthKitCacheService: HealthKitCacheServiceProtocol {
     func shouldRefresh(metric: HealthMetric, cacheDuration: TimeInterval, force: Bool) -> Bool {
         if force { return true }
         guard let lastDate = getLastSampleDate(for: metric) else { return true }
-        return Date().timeIntervalSince(lastDate) >= cacheDuration
+        return DateUtility.now().timeIntervalSince(lastDate) >= cacheDuration
     }
 
     // MARK: - Historical Data Cache Methods

@@ -43,10 +43,10 @@ struct GetRecentEntriesIntent: AppIntent {
         for entry in entries {
             let symptomName = entry.symptomType?.name ?? "Unknown"
             let severityText = SeverityScale.descriptor(for: Int(entry.severity))
-            let date = entry.backdatedAt ?? entry.createdAt ?? Date()
+            let date = entry.backdatedAt ?? entry.createdAt ?? DateUtility.now()
             let formatter = RelativeDateTimeFormatter()
             formatter.unitsStyle = .short
-            let timeText = formatter.localizedString(for: date, relativeTo: Date())
+            let timeText = formatter.localizedString(for: date, relativeTo: DateUtility.now())
 
             summary += "\(symptomName): \(severityText) (\(timeText))"
             if let note = entry.note {
@@ -74,10 +74,10 @@ struct EntrySnippet: Identifiable {
         self.symptomName = entry.symptomType?.name ?? "Unknown"
         self.severity = SeverityScale.descriptor(for: Int(entry.severity))
 
-        let date = entry.backdatedAt ?? entry.createdAt ?? Date()
+        let date = entry.backdatedAt ?? entry.createdAt ?? DateUtility.now()
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .abbreviated
-        self.date = formatter.localizedString(for: date, relativeTo: Date())
+        self.date = formatter.localizedString(for: date, relativeTo: DateUtility.now())
         self.note = entry.note
     }
 }

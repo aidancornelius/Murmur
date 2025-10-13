@@ -37,11 +37,11 @@ struct SymptomEntryEntity: AppEntity, Identifiable {
         self.symptomName = entry.symptomType?.name ?? "Unknown"
         self.severity = Int(entry.severity)
         self.severityDescription = SeverityScale.descriptor(for: Int(entry.severity))
-        self.date = entry.backdatedAt ?? entry.createdAt ?? Date()
+        self.date = entry.backdatedAt ?? entry.createdAt ?? DateUtility.now()
 
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .abbreviated
-        self.dateDescription = formatter.localizedString(for: date, relativeTo: Date())
+        self.dateDescription = formatter.localizedString(for: date, relativeTo: DateUtility.now())
         self.note = entry.note
     }
 }
@@ -106,11 +106,11 @@ struct ActivityEventEntity: AppEntity, Identifiable {
     init(from activity: ActivityEvent) {
         self.id = activity.id ?? UUID()
         self.name = activity.name ?? "Unknown"
-        self.date = activity.backdatedAt ?? activity.createdAt ?? Date()
+        self.date = activity.backdatedAt ?? activity.createdAt ?? DateUtility.now()
 
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .abbreviated
-        self.dateDescription = formatter.localizedString(for: date, relativeTo: Date())
+        self.dateDescription = formatter.localizedString(for: date, relativeTo: DateUtility.now())
 
         self.physicalExertion = Int(activity.physicalExertion)
         self.cognitiveExertion = Int(activity.cognitiveExertion)

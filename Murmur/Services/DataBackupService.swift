@@ -148,7 +148,7 @@ final class DataBackupService {
         let encryptedData = try encrypt(data: jsonData, password: password)
 
         // Save to file
-        let timestamp = DateUtility.backupTimestamp(for: Date())
+        let timestamp = DateUtility.backupTimestamp(for: DateUtility.now())
         let filename = "Murmur_Backup_\(timestamp).murmurbackup"
 
         let tempURL = FileManager.default.temporaryDirectory
@@ -268,7 +268,7 @@ final class DataBackupService {
         )
 
         return BackupData(
-            createdAt: Date(),
+            createdAt: DateUtility.now(),
             entries: entryBackups,
             symptomTypes: typeBackups,
             activities: activityBackups,

@@ -69,7 +69,7 @@ struct SymptomEntryService {
 
         // Determine if this is a backdated entry (more than 1 hour in the past)
         let targetDate = timestamp
-        let hourAgo = Date().addingTimeInterval(-3600)
+        let hourAgo = DateUtility.now().addingTimeInterval(-3600)
         let isBackdated = targetDate < hourAgo
 
         // Fetch HealthKit data - use historical methods for backdated entries
@@ -128,7 +128,7 @@ struct SymptomEntryService {
 
             let entry = SymptomEntry(context: context)
             entry.id = UUID()
-            entry.createdAt = Date()
+            entry.createdAt = DateUtility.now()
             entry.backdatedAt = timestamp
             entry.severity = Int16(selectedSymptom.severity)
 

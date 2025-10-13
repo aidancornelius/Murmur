@@ -15,6 +15,23 @@ import Foundation
 /// All formatters are created on-demand for thread safety. DateFormatter creation
 /// is sufficiently fast that caching adds unnecessary complexity and potential for bugs.
 enum DateUtility {
+    // MARK: - Current Time
+
+    /// Get the current time, respecting test time overrides
+    ///
+    /// In UI test mode with `-OverrideTime HH:MM`, returns the override time.
+    /// Otherwise returns the actual current time.
+    ///
+    /// - Returns: The current date/time or the overridden test time
+    static func now() -> Date {
+        #if targetEnvironment(simulator)
+        if let overrideTime = UITestConfiguration.overrideTime {
+            return overrideTime
+        }
+        #endif
+        return Date()
+    }
+
     // MARK: - Formatter Creation
 
     /// Create a day key formatter (yyyy-MM-dd)

@@ -66,7 +66,7 @@ extension MealEvent {
     }
 
     private func validateDates() throws {
-        let now = Date()
+        let now = DateUtility.now()
 
         // Validate createdAt is not in future
         if let created = createdAt, created > now.addingTimeInterval(60) {

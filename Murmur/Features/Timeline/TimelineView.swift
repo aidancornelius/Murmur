@@ -156,7 +156,7 @@ private struct TimelineEntryRow: View {
     }
 
     private var timeLabel: String {
-        let reference = entry.backdatedAt ?? entry.createdAt ?? Date()
+        let reference = entry.backdatedAt ?? entry.createdAt ?? DateUtility.now()
         return DateFormatters.shortTime.string(from: reference)
     }
 
@@ -222,7 +222,7 @@ private struct TimelineActivityRow: View {
     }
 
     private var timeLabel: String {
-        let reference = activity.backdatedAt ?? activity.createdAt ?? Date()
+        let reference = activity.backdatedAt ?? activity.createdAt ?? DateUtility.now()
         return DateFormatters.shortTime.string(from: reference)
     }
 
@@ -350,7 +350,7 @@ private struct TimelineSleepRow: View {
         if let bedTime = sleep.bedTime {
             return DateFormatters.shortTime.string(from: bedTime)
         }
-        let reference = sleep.backdatedAt ?? sleep.createdAt ?? Date()
+        let reference = sleep.backdatedAt ?? sleep.createdAt ?? DateUtility.now()
         return DateFormatters.shortTime.string(from: reference)
     }
 
@@ -425,7 +425,7 @@ private struct TimelineMealRow: View {
     }
 
     private var timeLabel: String {
-        let reference = meal.backdatedAt ?? meal.createdAt ?? Date()
+        let reference = meal.backdatedAt ?? meal.createdAt ?? DateUtility.now()
         return DateFormatters.shortTime.string(from: reference)
     }
 
@@ -464,13 +464,13 @@ enum TimelineItem: Identifiable {
     var date: Date {
         switch self {
         case .symptom(let entry):
-            return entry.backdatedAt ?? entry.createdAt ?? Date()
+            return entry.backdatedAt ?? entry.createdAt ?? DateUtility.now()
         case .activity(let activity):
-            return activity.backdatedAt ?? activity.createdAt ?? Date()
+            return activity.backdatedAt ?? activity.createdAt ?? DateUtility.now()
         case .sleep(let sleep):
-            return sleep.backdatedAt ?? sleep.createdAt ?? Date()
+            return sleep.backdatedAt ?? sleep.createdAt ?? DateUtility.now()
         case .meal(let meal):
-            return meal.backdatedAt ?? meal.createdAt ?? Date()
+            return meal.backdatedAt ?? meal.createdAt ?? DateUtility.now()
         }
     }
 }
@@ -516,14 +516,14 @@ struct DaySection: Identifiable, Equatable {
     }
 
     func sortEntries(_ lhs: SymptomEntry, _ rhs: SymptomEntry) -> Bool {
-        let lhsDate = lhs.backdatedAt ?? lhs.createdAt ?? Date()
-        let rhsDate = rhs.backdatedAt ?? rhs.createdAt ?? Date()
+        let lhsDate = lhs.backdatedAt ?? lhs.createdAt ?? DateUtility.now()
+        let rhsDate = rhs.backdatedAt ?? rhs.createdAt ?? DateUtility.now()
         return lhsDate > rhsDate
     }
 
     func sortActivities(_ lhs: ActivityEvent, _ rhs: ActivityEvent) -> Bool {
-        let lhsDate = lhs.backdatedAt ?? lhs.createdAt ?? Date()
-        let rhsDate = rhs.backdatedAt ?? rhs.createdAt ?? Date()
+        let lhsDate = lhs.backdatedAt ?? lhs.createdAt ?? DateUtility.now()
+        let rhsDate = rhs.backdatedAt ?? rhs.createdAt ?? DateUtility.now()
         return lhsDate > rhsDate
     }
 
@@ -532,19 +532,19 @@ struct DaySection: Identifiable, Equatable {
         let calendar = Calendar.current
 
         let groupedEntries = Dictionary(grouping: entries) { entry in
-            calendar.startOfDay(for: entry.backdatedAt ?? entry.createdAt ?? Date())
+            calendar.startOfDay(for: entry.backdatedAt ?? entry.createdAt ?? DateUtility.now())
         }
 
         let groupedActivities = Dictionary(grouping: activities) { activity in
-            calendar.startOfDay(for: activity.backdatedAt ?? activity.createdAt ?? Date())
+            calendar.startOfDay(for: activity.backdatedAt ?? activity.createdAt ?? DateUtility.now())
         }
 
         let groupedSleepEvents = Dictionary(grouping: sleepEvents) { sleep in
-            calendar.startOfDay(for: sleep.backdatedAt ?? sleep.createdAt ?? Date())
+            calendar.startOfDay(for: sleep.backdatedAt ?? sleep.createdAt ?? DateUtility.now())
         }
 
         let groupedMealEvents = Dictionary(grouping: mealEvents) { meal in
-            calendar.startOfDay(for: meal.backdatedAt ?? meal.createdAt ?? Date())
+            calendar.startOfDay(for: meal.backdatedAt ?? meal.createdAt ?? DateUtility.now())
         }
 
         // Display dates are dates with UI data (entries, activities, sleep, or meals)
@@ -592,7 +592,7 @@ struct DaySection: Identifiable, Equatable {
                 let daySleepEvents = groupedSleepEvents[day] ?? []
                 let dayMealEvents = groupedMealEvents[day] ?? []
                 let sorted = dayEntries.sorted {
-                    ($0.backdatedAt ?? $0.createdAt ?? Date()) > ($1.backdatedAt ?? $1.createdAt ?? Date())
+                    ($0.backdatedAt ?? $0.createdAt ?? DateUtility.now()) > ($1.backdatedAt ?? $1.createdAt ?? DateUtility.now())
                 }
                 let loadScore = loadScoresByDate[day]
                 return DaySection(

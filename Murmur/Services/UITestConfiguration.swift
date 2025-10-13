@@ -147,6 +147,32 @@ struct UITestConfiguration {
         CommandLine.arguments.contains("-SimulateUpdate")
     }
 
+    // MARK: - Time Override
+
+    static var overrideTime: Date? {
+        // Look for -OverrideTime HH:MM pattern
+        if let index = CommandLine.arguments.firstIndex(of: "-OverrideTime"),
+           index + 1 < CommandLine.arguments.count {
+            let timeString = CommandLine.arguments[index + 1]
+            let components = timeString.split(separator: ":")
+            guard components.count == 2,
+                  let hour = Int(components[0]),
+                  let minute = Int(components[1]) else {
+                return nil
+            }
+
+            // Create a date for today at the specified time
+            let calendar = Calendar.current
+            var dateComponents = calendar.dateComponents([.year, .month, .day], from: Date())
+            dateComponents.hour = hour
+            dateComponents.minute = minute
+            dateComponents.second = 0
+
+            return calendar.date(from: dateComponents)
+        }
+        return nil
+    }
+
     // MARK: - Configuration
 
     /// Configure the app for UI testing based on launch arguments

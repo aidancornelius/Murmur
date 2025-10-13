@@ -13,7 +13,7 @@ import Foundation
 extension MealEvent: ExertionEvent {
     /// Effective date for load calculations
     public var effectiveDate: Date {
-        return backdatedAt ?? createdAt ?? Date()
+        return backdatedAt ?? createdAt ?? DateUtility.now()
     }
 
     /// Physical exertion as Double (converting from optional NSNumber)

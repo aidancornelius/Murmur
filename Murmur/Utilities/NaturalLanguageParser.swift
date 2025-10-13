@@ -78,7 +78,7 @@ struct NaturalLanguageParser {
 
         // Check for time-based hints only if NOT from calendar
         let calendar = Calendar.current
-        let hour = calendar.component(.hour, from: Date())
+        let hour = calendar.component(.hour, from: DateUtility.now())
 
         // If it mentions morning/night times, might be sleep
         if lowercased.contains("hours") && (hour < 9 || hour > 21) {
@@ -122,7 +122,7 @@ struct NaturalLanguageParser {
         var emotionalLoad: Int? = nil
 
         let calendar = Calendar.current
-        let now = Date()
+        let now = DateUtility.now()
 
         // Detect event type
         let detectedType = detectEventType(input, isFromCalendar: isFromCalendar)
@@ -292,7 +292,7 @@ struct NaturalLanguageParser {
         }
 
         // Default based on time
-        let hour = Calendar.current.component(.hour, from: Date())
+        let hour = Calendar.current.component(.hour, from: DateUtility.now())
         switch hour {
         case 5..<11: return "breakfast"
         case 11..<16: return "lunch"

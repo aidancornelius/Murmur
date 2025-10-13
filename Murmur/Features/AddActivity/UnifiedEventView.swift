@@ -58,7 +58,7 @@ struct UnifiedEventView: View {
     @State private var emotionalLoad: Int = 3
 
     // Time fields
-    @State private var timestamp = Date()
+    @State private var timestamp = DateUtility.now()
     @State private var durationMinutes: String = ""
     @State private var selectedTimeChip: TimeChip? = nil
     @State private var selectedDurationChip: DurationChip? = nil
@@ -66,13 +66,13 @@ struct UnifiedEventView: View {
     // Sleep fields - default to yesterday 10pm to today 7am
     @State private var bedTime: Date = {
         let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
+        let today = calendar.startOfDay(for: DateUtility.now())
         let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
         return calendar.date(bySettingHour: 22, minute: 0, second: 0, of: yesterday)!
     }()
     @State private var wakeTime: Date = {
         let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
+        let today = calendar.startOfDay(for: DateUtility.now())
         return calendar.date(bySettingHour: 7, minute: 0, second: 0, of: today)!
     }()
     @State private var sleepQuality: Int = 3
@@ -111,7 +111,7 @@ struct UnifiedEventView: View {
 
         var date: Date {
             let calendar = Calendar.current
-            let now = Date()
+            let now = DateUtility.now()
 
             switch self {
             case .now:
@@ -177,20 +177,20 @@ struct UnifiedEventView: View {
     }
 
     private func isCurrentlyOccurring(_ event: EKEvent) -> Bool {
-        let now = Date()
+        let now = DateUtility.now()
         guard let startDate = event.startDate, let endDate = event.endDate else { return false }
         return startDate <= now && endDate >= now
     }
 
     private func hasJustEnded(_ event: EKEvent) -> Bool {
-        let now = Date()
+        let now = DateUtility.now()
         guard let endDate = event.endDate else { return false }
         let thirtyMinutesAgo = now.addingTimeInterval(-30 * 60)
         return endDate >= thirtyMinutesAgo && endDate < now
     }
 
     private func isAboutToStart(_ event: EKEvent) -> Bool {
-        let now = Date()
+        let now = DateUtility.now()
         guard let startDate = event.startDate else { return false }
         let fifteenMinutesFromNow = now.addingTimeInterval(15 * 60)
         return startDate > now && startDate <= fifteenMinutesFromNow
@@ -1041,7 +1041,7 @@ struct UnifiedEventView: View {
         if !filteredEvents.isEmpty {
             let sortedEvents = filteredEvents.sorted { event1, event2 in
                 // Prioritise by status: happening > just ended > upcoming > other
-                let now = Date()
+                let now = DateUtility.now()
 
                 func priority(_ event: EKEvent) -> Int {
                     guard let startDate = event.startDate, let endDate = event.endDate else { return 0 }
@@ -1173,7 +1173,7 @@ struct UnifiedEventView: View {
                 showTimeCard = true  // Enable time selection for meals
             case .unknown:
                 // Smart suggestion based on time - prioritise sleep between 5-8am
-                let hour = Calendar.current.component(.hour, from: Date())
+                let hour = Calendar.current.component(.hour, from: DateUtility.now())
                 let shouldSuggestSleep = (hour >= 5 && hour < 8) || hour > 21
 
                 if shouldSuggestSleep && !hasSleepInLast12Hours() {
@@ -1223,7 +1223,7 @@ struct UnifiedEventView: View {
 
     private func populateFromCalendarEvent(_ event: EKEvent) {
         mainInput = event.title ?? ""
-        timestamp = event.startDate ?? Date()
+        timestamp = event.startDate ?? DateUtility.now()
         calendarEventID = event.eventIdentifier
         isFromCalendarEvent = true
 
@@ -1311,7 +1311,7 @@ struct UnifiedEventView: View {
     private func saveActivity() throws {
         let activity = ActivityEvent(context: context)
         activity.id = UUID()
-        activity.createdAt = Date()
+        activity.createdAt = DateUtility.now()
         activity.backdatedAt = timestamp
 
         // Ensure we have a non-empty name
@@ -1341,7 +1341,7 @@ struct UnifiedEventView: View {
     private func saveSleep() async throws {
         let sleep = SleepEvent(context: context)
         sleep.id = UUID()
-        sleep.createdAt = Date()
+        sleep.createdAt = DateUtility.now()
         sleep.backdatedAt = bedTime
         sleep.bedTime = bedTime
         sleep.wakeTime = wakeTime
@@ -1381,7 +1381,7 @@ struct UnifiedEventView: View {
     private func saveMeal() throws {
         let meal = MealEvent(context: context)
         meal.id = UUID()
-        meal.createdAt = Date()
+        meal.createdAt = DateUtility.now()
         meal.backdatedAt = timestamp
         meal.mealType = mealType
 
@@ -1424,7 +1424,7 @@ struct UnifiedEventView: View {
 
     private func hasSleepInLast12Hours() -> Bool {
         let request = SleepEvent.fetchRequest()
-        let twelveHoursAgo = Date().addingTimeInterval(-12 * 3600)
+        let twelveHoursAgo = DateUtility.now().addingTimeInterval(-12 * 3600)
         request.predicate = NSPredicate(
             format: "createdAt >= %@",
             twelveHoursAgo as NSDate

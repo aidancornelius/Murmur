@@ -13,8 +13,8 @@ extension XCUIElement {
 
     /// Tap when element is stable (animations complete)
     func tapWhenStable(delay: TimeInterval = 0.3) {
-        // Wait for element to stop moving/animating
-        Thread.sleep(forTimeInterval: delay)
+        // Wait for element to stop moving/animating using predicate
+        _ = waitForHittable(timeout: delay)
         tap()
     }
 
@@ -79,7 +79,8 @@ extension XCUIElement {
     func typeTextSlowly(_ text: String, delay: TimeInterval = 0.1) {
         for char in text {
             typeText(String(char))
-            Thread.sleep(forTimeInterval: delay)
+            // Use RunLoop for better UI integration
+            RunLoop.current.run(until: Date().addingTimeInterval(delay))
         }
     }
 
@@ -181,13 +182,17 @@ extension XCUIElement {
     // MARK: - Scroll Helpers
 
     /// Scroll to make element visible
-    func scrollToVisible(in scrollView: XCUIElement? = nil) {
+    func scrollToVisible(in scrollView: XCUIElement? = nil, maxAttempts: Int = 10) {
         guard !isHittable else { return }
 
         if let scrollView = scrollView {
-            // Scroll within specific scroll view
-            while !isHittable && scrollView.exists {
+            // Scroll within specific scroll view, waiting for hittable state after each scroll
+            var attempts = 0
+            while !isHittable && scrollView.exists && attempts < maxAttempts {
                 scrollView.swipeUp()
+                attempts += 1
+                // Wait for scroll animation to complete using predicate
+                _ = waitForHittable(timeout: 0.3)
             }
         } else {
             // Try to scroll in any available scroll view
@@ -197,10 +202,11 @@ extension XCUIElement {
             if scrollViews.count > 0 {
                 let scrollView = scrollViews.firstMatch
                 var attempts = 0
-                while !isHittable && scrollView.exists && attempts < 10 {
+                while !isHittable && scrollView.exists && attempts < maxAttempts {
                     scrollView.swipeUp()
                     attempts += 1
-                    Thread.sleep(forTimeInterval: 0.2)
+                    // Wait for scroll animation to complete using predicate
+                    _ = waitForHittable(timeout: 0.3)
                 }
             }
         }

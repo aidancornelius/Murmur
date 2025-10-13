@@ -63,7 +63,7 @@ final class DeviceTests: XCTestCase {
 
         // Navigate to other screens to verify layout
         app.buttons[AccessibilityIdentifiers.analysisButton].tap()
-        Thread.sleep(forTimeInterval: 1.0)
+        RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
         let analysis = AnalysisScreen(app: app)
         XCTAssertTrue(analysis.waitForLoad(), "Analysis should load on small screen")
@@ -289,7 +289,7 @@ final class DeviceTests: XCTestCase {
 
         // Start in portrait
         XCUIDevice.shared.orientation = .portrait
-        Thread.sleep(forTimeInterval: 0.5)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
         // Open add entry in portrait
         timeline.navigateToAddEntry()
@@ -299,7 +299,7 @@ final class DeviceTests: XCTestCase {
 
         // Rotate to landscape while on add entry screen
         XCUIDevice.shared.orientation = .landscapeLeft
-        Thread.sleep(forTimeInterval: 1.0)
+        RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
         // Verify screen is still functional
         let cancelButton = app.buttons[AccessibilityIdentifiers.cancelButton]
@@ -308,7 +308,7 @@ final class DeviceTests: XCTestCase {
 
         // Rotate back to portrait
         XCUIDevice.shared.orientation = .portrait
-        Thread.sleep(forTimeInterval: 1.0)
+        RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
         // Should still be functional
         assertHittable(cancelButton, message: "UI should remain functional after rotating back")
@@ -346,17 +346,17 @@ final class DeviceTests: XCTestCase {
 
         // Navigate through all screens to verify layout
         app.buttons[AccessibilityIdentifiers.analysisButton].tap()
-        Thread.sleep(forTimeInterval: 1.0)
+        RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
         let analysis = AnalysisScreen(app: app)
         XCTAssertTrue(analysis.waitForLoad(), "Analysis should load with adapted layout")
 
         // Go back to timeline
         app.navigationBars.buttons.firstMatch.tap()
-        Thread.sleep(forTimeInterval: 0.5)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
         app.buttons[AccessibilityIdentifiers.settingsButton].tap()
-        Thread.sleep(forTimeInterval: 1.0)
+        RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
         let settings = SettingsScreen(app: app)
         XCTAssertTrue(settings.waitForLoad(), "Settings should load with adapted layout")
@@ -387,7 +387,7 @@ final class DeviceTests: XCTestCase {
             app.buttons["Trends"].tap()
         }
 
-        Thread.sleep(forTimeInterval: 2.0)
+        RunLoop.current.run(until: Date().addingTimeInterval(2.0))
 
         // Chart should be visible
         let charts = app.otherElements.matching(NSPredicate(format: "identifier CONTAINS 'chart' OR identifier CONTAINS 'Chart'"))

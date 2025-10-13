@@ -28,7 +28,7 @@ struct GetSymptomsBySeverityIntent: AppIntent {
         let context = CoreDataStack.shared.context
 
         let calendar = Calendar.current
-        let startDate = calendar.date(byAdding: .day, value: -daysBack, to: Date()) ?? Date()
+        let startDate = calendar.date(byAdding: .day, value: -daysBack, to: DateUtility.now()) ?? DateUtility.now()
 
         let fetchRequest: NSFetchRequest<SymptomEntry> = SymptomEntry.fetchRequest()
         fetchRequest.predicate = NSPredicate(
@@ -153,7 +153,7 @@ struct GetDailySummaryIntent: AppIntent {
     static let description = IntentDescription("Get a summary of symptoms and activities for a specific day")
     static let openAppWhenRun: Bool = false
 
-    @Parameter(title: "Date", description: "The date to get summary for", default: Date())
+    @Parameter(title: "Date", description: "The date to get summary for", default: DateUtility.now())
     var date: Date
 
     @MainActor
@@ -163,7 +163,7 @@ struct GetDailySummaryIntent: AppIntent {
 
         // Get start and end of day
         let startOfDay = calendar.startOfDay(for: date)
-        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) ?? Date()
+        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) ?? DateUtility.now()
 
         // Fetch symptoms
         let symptomFetch: NSFetchRequest<SymptomEntry> = SymptomEntry.fetchRequest()
@@ -238,7 +238,7 @@ struct CountSymptomsIntent: AppIntent {
 
         if daysBack > 0 {
             let calendar = Calendar.current
-            let startDate = calendar.date(byAdding: .day, value: -daysBack, to: Date()) ?? Date()
+            let startDate = calendar.date(byAdding: .day, value: -daysBack, to: DateUtility.now()) ?? DateUtility.now()
             fetchRequest.predicate = NSPredicate(format: "backdatedAt >= %@", startDate as NSDate)
         }
 

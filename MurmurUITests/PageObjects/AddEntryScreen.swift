@@ -65,12 +65,28 @@ struct AddEntryScreen {
 
     /// Select a symptom from the search results
     func selectSymptom(named name: String, timeout: TimeInterval = 3) -> Bool {
+        // First try to find by accessibility identifier
         let symptomButton = app.buttons.matching(identifier: AccessibilityIdentifiers.quickSymptomButton(name)).firstMatch
-        guard symptomButton.waitForExistence(timeout: timeout) else {
-            return false
+        if symptomButton.waitForExistence(timeout: timeout) {
+            symptomButton.tap()
+            return true
         }
-        symptomButton.tap()
-        return true
+
+        // Fallback: search by label/text (case insensitive)
+        let symptomByLabel = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", name)).firstMatch
+        if symptomByLabel.waitForExistence(timeout: 1) {
+            symptomByLabel.tap()
+            return true
+        }
+
+        // Fallback: try static texts that might be tappable
+        let symptomText = app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", name)).firstMatch
+        if symptomText.waitForExistence(timeout: 1) {
+            symptomText.tap()
+            return true
+        }
+
+        return false
     }
 
     /// Select a symptom button (for quick selection)

@@ -443,7 +443,7 @@ actor HealthKitQueryService: HealthKitQueryServiceProtocol {
 
         do {
             // Get sleep from last 24 hours
-            let end = Date()
+            let end = DateUtility.now()
             let start = end.addingTimeInterval(-AppConstants.HealthKit.dailyMetricsLookback)
 
             let samples = try await fetchSleepSamples(start: start, end: end)

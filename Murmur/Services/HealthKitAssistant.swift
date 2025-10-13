@@ -246,8 +246,8 @@ extension HealthKitAssistant: ResourceManageable {
             return
         }
         do {
-            let start = Date().addingTimeInterval(-AppConstants.HealthKit.quantitySampleLookback)
-            let end = Date()
+            let start = DateUtility.now().addingTimeInterval(-AppConstants.HealthKit.quantitySampleLookback)
+            let end = DateUtility.now()
             let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
             let samples = try await queryService.fetchQuantitySamples(
                 for: hrvType,
@@ -271,14 +271,14 @@ extension HealthKitAssistant: ResourceManageable {
             return
         }
         guard await cacheService.shouldRefresh(metric: .restingHR, cacheDuration: AppConstants.HealthKit.restingHeartRateCacheDuration, force: force) else {
-            let lastSampleDate = await cacheService.getLastSampleDate(for: .restingHR) ?? Date()
+            let lastSampleDate = await cacheService.getLastSampleDate(for: .restingHR) ?? DateUtility.now()
             logger.debug("Using cached resting heart rate from \(lastSampleDate)")
             return
         }
         do {
             logger.debug("Fetching resting heart rate samples from last \(AppConstants.HealthKit.quantitySampleLookback / 3600) hours")
-            let start = Date().addingTimeInterval(-AppConstants.HealthKit.quantitySampleLookback)
-            let end = Date()
+            let start = DateUtility.now().addingTimeInterval(-AppConstants.HealthKit.quantitySampleLookback)
+            let end = DateUtility.now()
             let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
             let samples = try await queryService.fetchQuantitySamples(
                 for: restingHeartType,
@@ -308,7 +308,7 @@ extension HealthKitAssistant: ResourceManageable {
         }
         do {
             // Get sleep from last 24 hours
-            let end = Date()
+            let end = DateUtility.now()
             let start = end.addingTimeInterval(-AppConstants.HealthKit.dailyMetricsLookback)
 
             let samples = try await queryService.fetchSleepSamples(start: start, end: end)
@@ -329,7 +329,7 @@ extension HealthKitAssistant: ResourceManageable {
         }
         do {
             // Get workouts from last 24 hours
-            let end = Date()
+            let end = DateUtility.now()
             let start = end.addingTimeInterval(-AppConstants.HealthKit.dailyMetricsLookback)
 
             let samples = try await queryService.fetchWorkouts(
@@ -359,7 +359,7 @@ extension HealthKitAssistant: ResourceManageable {
         }
         do {
             // Get menstrual flow from last 45 days to calculate cycle day
-            let end = Date()
+            let end = DateUtility.now()
             let start = end.addingTimeInterval(-AppConstants.HealthKit.menstrualCycleLookback)
             let sort = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
 
@@ -379,14 +379,14 @@ extension HealthKitAssistant: ResourceManageable {
 
             if let mostRecentPeriodStart = periodStarts.first {
                 let calendar = Calendar.current
-                let daysSinceStart = calendar.dateComponents([.day], from: calendar.startOfDay(for: mostRecentPeriodStart.startDate), to: calendar.startOfDay(for: Date())).day ?? 0
+                let daysSinceStart = calendar.dateComponents([.day], from: calendar.startOfDay(for: mostRecentPeriodStart.startDate), to: calendar.startOfDay(for: DateUtility.now())).day ?? 0
                 latestCycleDay = daysSinceStart + 1
             } else {
                 latestCycleDay = nil
             }
 
             // Get today's flow level
-            let (todayStart, todayEnd) = DateUtility.dayBounds(for: Date(), calendar: Calendar.current)
+            let (todayStart, todayEnd) = DateUtility.dayBounds(for: DateUtility.now(), calendar: Calendar.current)
             let todaySamples = samples.filter { $0.startDate >= todayStart && $0.startDate < todayEnd }
 
             if let todayFlow = todaySamples.first {

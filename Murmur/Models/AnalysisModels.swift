@@ -96,7 +96,7 @@ class AnalysisEngine {
         days: Int = 30
     ) -> [SymptomTrend] {
         let calendar = Calendar.current
-        let now = Date()
+        let now = DateUtility.now()
         guard let startDate = calendar.date(byAdding: .day, value: -days, to: now),
               let midPoint = calendar.date(byAdding: .day, value: -(days/2), to: now) else {
             return []
@@ -120,12 +120,12 @@ class AnalysisEngine {
             let isPositive = type.isPositive
 
             let firstHalf = entries.filter { entry in
-                let date = entry.backdatedAt ?? entry.createdAt ?? Date()
+                let date = entry.backdatedAt ?? entry.createdAt ?? DateUtility.now()
                 return date < midPoint
             }
 
             let secondHalf = entries.filter { entry in
-                let date = entry.backdatedAt ?? entry.createdAt ?? Date()
+                let date = entry.backdatedAt ?? entry.createdAt ?? DateUtility.now()
                 return date >= midPoint
             }
 
@@ -203,7 +203,7 @@ class AnalysisEngine {
         hoursWindow: Int = 24
     ) -> [ActivityCorrelation] {
         let calendar = Calendar.current
-        let now = Date()
+        let now = DateUtility.now()
         guard let startDate = calendar.date(byAdding: .day, value: -days, to: now) else {
             return []
         }
@@ -247,11 +247,11 @@ class AnalysisEngine {
 
                 // Check each symptom
                 for symptom in typeSymptoms {
-                    let symptomDate = symptom.backdatedAt ?? symptom.createdAt ?? Date()
+                    let symptomDate = symptom.backdatedAt ?? symptom.createdAt ?? DateUtility.now()
 
                     // Check if any activity happened in the window before this symptom
                     let hasActivityBefore = activityInstances.contains { activity in
-                        let activityDate = activity.backdatedAt ?? activity.createdAt ?? Date()
+                        let activityDate = activity.backdatedAt ?? activity.createdAt ?? DateUtility.now()
                         let timeDiff = symptomDate.timeIntervalSince(activityDate)
                         return timeDiff > 0 && timeDiff <= Double(hoursWindow * 3600)
                     }
@@ -307,7 +307,7 @@ class AnalysisEngine {
         days: Int = 30
     ) -> [TimePattern] {
         let calendar = Calendar.current
-        let now = Date()
+        let now = DateUtility.now()
         guard let startDate = calendar.date(byAdding: .day, value: -days, to: now) else {
             return []
         }
@@ -331,7 +331,7 @@ class AnalysisEngine {
             var dayOfWeekCounts = [Int: Int]()
 
             for entry in entries {
-                let date = entry.backdatedAt ?? entry.createdAt ?? Date()
+                let date = entry.backdatedAt ?? entry.createdAt ?? DateUtility.now()
                 let hour = calendar.component(.hour, from: date)
                 let dayOfWeek = calendar.component(.weekday, from: date)
 
@@ -361,7 +361,7 @@ class AnalysisEngine {
         days: Int = 30
     ) -> [PhysiologicalCorrelation] {
         let calendar = Calendar.current
-        let now = Date()
+        let now = DateUtility.now()
         guard let startDate = calendar.date(byAdding: .day, value: -days, to: now) else {
             return []
         }

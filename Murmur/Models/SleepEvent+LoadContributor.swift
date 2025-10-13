@@ -14,7 +14,7 @@ extension SleepEvent: RecoveryModifier {
     /// Effective date for load calculations (use wake time for when sleep impacts the day)
     public var effectiveDate: Date {
         // Use wake time as the effective date since that's when sleep quality impacts the day
-        return wakeTime ?? backdatedAt ?? createdAt ?? Date()
+        return wakeTime ?? backdatedAt ?? createdAt ?? DateUtility.now()
     }
 
     /// Sleep quality as Double (converting from Int16)

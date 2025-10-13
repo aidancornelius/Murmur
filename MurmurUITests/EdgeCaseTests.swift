@@ -80,7 +80,7 @@ final class EdgeCaseTests: XCTestCase {
         // Try to access symptom history (implementation varies)
         if app.buttons["Symptom History"].exists {
             app.buttons["Symptom History"].tap()
-            Thread.sleep(forTimeInterval: 1.0)
+            RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
             // Should show empty state
             let emptyMessage = app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'No' OR label CONTAINS 'history'")).firstMatch
@@ -105,7 +105,7 @@ final class EdgeCaseTests: XCTestCase {
         // Navigate to tracked symptoms
         if app.buttons[AccessibilityIdentifiers.trackedSymptomsButton].exists {
             app.buttons[AccessibilityIdentifiers.trackedSymptomsButton].tap()
-            Thread.sleep(forTimeInterval: 1.0)
+            RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
             // Should show symptoms but none starred
             XCTAssertTrue(app.exists, "Should show symptom list")
@@ -128,7 +128,7 @@ final class EdgeCaseTests: XCTestCase {
         // Navigate to tracked symptoms
         if app.buttons[AccessibilityIdentifiers.trackedSymptomsButton].exists {
             app.buttons[AccessibilityIdentifiers.trackedSymptomsButton].tap()
-            Thread.sleep(forTimeInterval: 1.0)
+            RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
             // Should only show default symptoms
             XCTAssertTrue(app.exists, "Should show default symptom list")
@@ -138,8 +138,7 @@ final class EdgeCaseTests: XCTestCase {
     // MARK: - Error States (5 tests)
 
     /// Tests handling of failed save operations
-    /// SKIP: Uses old AddEntryView with severity-slider which has been replaced by UnifiedEventView
-    func skip_testFailedToSaveEntry() throws {
+    func testFailedToSaveEntry() throws {
         guard let app = app else {
             XCTFail("App not initialized")
             return
@@ -151,23 +150,28 @@ final class EdgeCaseTests: XCTestCase {
         let timeline = TimelineScreen(app: app)
         timeline.navigateToAddEntry()
 
-        let addEntry = AddEntryScreen(app: app)
-        addEntry.waitForLoad()
+        let unifiedEvent = UnifiedEventScreen(app: app)
+        XCTAssertTrue(unifiedEvent.waitForLoad(), "Unified event screen should load")
 
-        // Try to create an entry
-        addEntry.openSymptomSearch()
-        addEntry.searchForSymptom("Headache")
-        _ = addEntry.selectSymptom(named: "Headache")
-        addEntry.setSeverity(3)
+        // Try to create an entry using natural language input
+        unifiedEvent.enterMainInput("Walked for 30 minutes")
+
+        // Wait for UI to process input
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
         // Attempt save (might fail with low storage simulation)
-        addEntry.save()
+        unifiedEvent.save()
 
         // Check if error message appears or entry saves successfully
-        Thread.sleep(forTimeInterval: 1.0)
+        RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
         // App should handle gracefully either way
         XCTAssertTrue(app.exists, "App should handle save attempt gracefully")
+
+        // If error appears, verify it's displayed properly
+        if unifiedEvent.hasError() {
+            XCTAssertNotNil(unifiedEvent.getErrorMessage(), "Error message should be displayed if save fails")
+        }
     }
 
     /// Tests HealthKit permission denied state
@@ -189,7 +193,7 @@ final class EdgeCaseTests: XCTestCase {
         // Try to access HealthKit settings
         if app.buttons["Integrations"].exists || app.buttons["HealthKit"].exists {
             (app.buttons["Integrations"].exists ? app.buttons["Integrations"] : app.buttons["HealthKit"]).tap()
-            Thread.sleep(forTimeInterval: 1.0)
+            RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
             // Should show disabled state or prompt to enable in Settings app
             XCTAssertTrue(app.exists, "Should handle disabled HealthKit gracefully")
@@ -220,7 +224,7 @@ final class EdgeCaseTests: XCTestCase {
             // Should be disabled or show error when tapped
             if locationToggle.isEnabled {
                 locationToggle.tap()
-                Thread.sleep(forTimeInterval: 0.5)
+                RunLoop.current.run(until: Date().addingTimeInterval(0.5))
             }
         }
 
@@ -307,7 +311,7 @@ final class EdgeCaseTests: XCTestCase {
         if scrollView.exists {
             // Swipe down to trigger refresh
             scrollView.swipeDown()
-            Thread.sleep(forTimeInterval: 0.5)
+            RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
             // Should briefly show refresh indicator
             // Then content should still be visible
@@ -451,7 +455,7 @@ final class EdgeCaseTests: XCTestCase {
             saveButton.tap()
 
             // Should either save successfully or show validation message
-            Thread.sleep(forTimeInterval: 1.0)
+            RunLoop.current.run(until: Date().addingTimeInterval(1.0))
             XCTAssertTrue(app.exists, "Should handle long notes gracefully")
         }
     }
@@ -532,7 +536,7 @@ final class EdgeCaseTests: XCTestCase {
             // Interact with date picker if it appears
             if app.datePickers.count > 0 {
                 // Date picker appeared, app supports backdating
-                Thread.sleep(forTimeInterval: 0.5)
+                RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
                 // Try to select old date (picker interaction varies)
                 // For now, just verify the UI responds
@@ -612,7 +616,7 @@ final class EdgeCaseTests: XCTestCase {
                 saveButton.tap()
 
                 // Should show validation message or prevent save
-                Thread.sleep(forTimeInterval: 0.5)
+                RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
                 // Should still be on add entry screen or show error
                 XCTAssertTrue(app.exists, "Should validate empty entry")
@@ -648,7 +652,7 @@ final class EdgeCaseTests: XCTestCase {
             // Look for edit button
             if app.buttons["Edit"].exists {
                 app.buttons["Edit"].tap()
-                Thread.sleep(forTimeInterval: 0.5)
+                RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
                 // Make an edit (add a note or change severity)
                 let noteField = app.textViews.firstMatch
@@ -701,7 +705,7 @@ final class EdgeCaseTests: XCTestCase {
                     app.alerts.buttons["Delete"].tap()
                 }
 
-                Thread.sleep(forTimeInterval: 1.0)
+                RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
                 // Should return to timeline
                 assertExists(timeline.logSymptomButton, timeout: 5,
@@ -732,7 +736,7 @@ final class EdgeCaseTests: XCTestCase {
         // Navigate to tracked symptoms
         if app.buttons[AccessibilityIdentifiers.trackedSymptomsButton].exists {
             app.buttons[AccessibilityIdentifiers.trackedSymptomsButton].tap()
-            Thread.sleep(forTimeInterval: 1.0)
+            RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
             // Try to add a new symptom type
             if app.buttons["Add Symptom"].exists || app.navigationBars.buttons["+"].exists {
@@ -747,7 +751,7 @@ final class EdgeCaseTests: XCTestCase {
                     // Save
                     if app.buttons["Save"].exists {
                         app.buttons["Save"].tap()
-                        Thread.sleep(forTimeInterval: 0.5)
+                        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
                         // Go back to timeline
                         app.buttons[AccessibilityIdentifiers.logSymptomButton].tap()
@@ -788,7 +792,7 @@ final class EdgeCaseTests: XCTestCase {
         // Navigate to tracked symptoms
         if app.buttons[AccessibilityIdentifiers.trackedSymptomsButton].exists {
             app.buttons[AccessibilityIdentifiers.trackedSymptomsButton].tap()
-            Thread.sleep(forTimeInterval: 1.0)
+            RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
             // Try to delete a symptom type
             // This should either be prevented or show a confirmation
@@ -837,11 +841,11 @@ final class EdgeCaseTests: XCTestCase {
 
         // Background the app
         XCUIDevice.shared.press(.home)
-        Thread.sleep(forTimeInterval: 1.0)
+        RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
         // Reactivate
         app.activate()
-        Thread.sleep(forTimeInterval: 1.0)
+        RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
         // Should still be on add entry screen or returned to timeline
         // Either way, app should handle gracefully

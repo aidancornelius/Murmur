@@ -139,14 +139,12 @@ extension XCTestCase {
 
     /// Wait for any one of the elements to exist
     func waitForAny(_ elements: [XCUIElement], timeout: TimeInterval = 5) -> XCUIElement? {
-        let deadline = Date().addingTimeInterval(timeout)
-        while Date() < deadline {
-            for element in elements {
-                if element.exists {
-                    return element
-                }
-            }
-            Thread.sleep(forTimeInterval: 0.1)
+        let predicate = NSPredicate(format: "exists == true")
+        let expectations = elements.map { XCTNSPredicateExpectation(predicate: predicate, object: $0) }
+        let result = XCTWaiter.wait(for: expectations, timeout: timeout, enforceOrder: false)
+
+        if result == .completed {
+            return elements.first { $0.exists }
         }
         return nil
     }
@@ -163,7 +161,8 @@ extension XCTestCase {
                 return true
             }
             if attempt < attempts {
-                Thread.sleep(forTimeInterval: delay)
+                // Use RunLoop.current.run for better integration with UI events
+                RunLoop.current.run(until: Date().addingTimeInterval(delay))
             }
         }
         return false
@@ -179,7 +178,8 @@ extension XCTestCase {
             if condition() {
                 return true
             }
-            Thread.sleep(forTimeInterval: interval)
+            // Use RunLoop.current.run for better integration with UI events
+            RunLoop.current.run(until: Date().addingTimeInterval(interval))
         }
         return false
     }
@@ -275,5 +275,33 @@ extension XCTestCase {
                      line: UInt = #line) {
         log(message, file: file, line: line)
         XCTAssertTrue(condition, message, file: file, line: line)
+    }
+
+    // MARK: - UI Stability Helpers
+
+    /// Wait for UI to settle after animations or transitions
+    /// Waits for the run loop to process pending events
+    func waitForUIToSettle(timeout: TimeInterval = 1.0) {
+        RunLoop.current.run(until: Date().addingTimeInterval(timeout))
+    }
+
+    /// Wait for sheet or modal to dismiss by checking element disappearance
+    func waitForSheetDismissal(_ element: XCUIElement, timeout: TimeInterval = 3.0) {
+        let predicate = NSPredicate(format: "exists == false")
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
+        _ = XCTWaiter.wait(for: [expectation], timeout: timeout)
+    }
+
+    /// Wait for Core Data save to complete
+    /// This is a placeholder for waiting after Core Data operations
+    func waitForDataPersistence(timeout: TimeInterval = 0.5) {
+        // Give Core Data time to save and notify observers
+        RunLoop.current.run(until: Date().addingTimeInterval(timeout))
+    }
+
+    /// Wait for chart or visualisation to render
+    func waitForChartRender(timeout: TimeInterval = 1.0) {
+        // Charts need time to render and animate
+        RunLoop.current.run(until: Date().addingTimeInterval(timeout))
     }
 }

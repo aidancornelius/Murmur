@@ -65,8 +65,8 @@ struct LogSymptomIntent: AppIntent {
         // Create entry
         let entry = SymptomEntry(context: context)
         entry.id = UUID()
-        entry.createdAt = Date()
-        entry.backdatedAt = Date()
+        entry.createdAt = DateUtility.now()
+        entry.backdatedAt = DateUtility.now()
         entry.severity = Int16(validSeverity)
         entry.note = notes?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false ? notes : nil
         entry.symptomType = selectedType

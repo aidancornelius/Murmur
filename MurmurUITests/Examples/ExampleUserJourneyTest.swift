@@ -91,7 +91,7 @@ final class ExampleUserJourneyTest: XCTestCase {
 
         analysis.switchToTrends()
         // Wait briefly for view to update
-        Thread.sleep(forTimeInterval: 0.5)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
         // Go back to timeline
         analysis.goBack()
@@ -315,7 +315,7 @@ final class ExampleUserJourneyTest: XCTestCase {
         timeline.pullToRefresh()
 
         // Wait briefly for refresh animation
-        Thread.sleep(forTimeInterval: 1.0)
+        RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
         // Verify still on timeline
         assertExists(timeline.logSymptomButton)

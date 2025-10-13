@@ -45,7 +45,7 @@ struct AddEntryView: View {
     @State private var useSameSeverity: Bool = true
     @State private var sharedSeverity: Double = 3
     @State private var note: String = ""
-    @State private var timestamp = Date()
+    @State private var timestamp = DateUtility.now()
     @State private var includeLocation = false
     @State private var isSaving = false
     @State private var errorMessage: String?

@@ -97,7 +97,7 @@ final class CalendarAssistant: CalendarAssistantProtocol, ObservableObject {
         }
 
         let calendar = Calendar.current
-        let endDate = Date()
+        let endDate = DateUtility.now()
         guard let startDate = calendar.date(byAdding: .day, value: -daysBack, to: endDate) else { return }
 
         let predicate = eventStore.predicateForEvents(withStart: startDate, end: endDate, calendars: nil)
@@ -114,7 +114,7 @@ final class CalendarAssistant: CalendarAssistantProtocol, ObservableObject {
         }
 
         let calendar = Calendar.current
-        let startDate = Date()
+        let startDate = DateUtility.now()
         guard let endDate = calendar.date(byAdding: .day, value: daysAhead, to: startDate) else { return }
 
         let predicate = eventStore.predicateForEvents(withStart: startDate, end: endDate, calendars: nil)
@@ -131,7 +131,7 @@ final class CalendarAssistant: CalendarAssistantProtocol, ObservableObject {
         }
 
         let calendar = Calendar.current
-        let startDate = calendar.startOfDay(for: Date())
+        let startDate = calendar.startOfDay(for: DateUtility.now())
         guard let endDate = calendar.date(byAdding: .day, value: 1, to: startDate) else { return }
 
         let predicate = eventStore.predicateForEvents(withStart: startDate, end: endDate, calendars: nil)

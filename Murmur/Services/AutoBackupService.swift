@@ -186,7 +186,7 @@ final class AutoBackupService {
         }
 
         let password = try getOrCreatePassword()
-        let now = Date()
+        let now = DateUtility.now()
         let calendar = Calendar.current
 
         // Determine if we should create a monthly backup
@@ -329,7 +329,7 @@ final class AutoBackupService {
 
         // Schedule for tomorrow at 3 AM
         let calendar = Calendar.current
-        var components = calendar.dateComponents([.year, .month, .day], from: Date())
+        var components = calendar.dateComponents([.year, .month, .day], from: DateUtility.now())
         components.day? += 1
         components.hour = 3
         components.minute = 0
@@ -373,7 +373,7 @@ final class AutoBackupService {
 
         // Check if we need to backup (at least 23 hours since last backup)
         if let lastDate = lastBackupDate {
-            let timeSinceLastBackup = Date().timeIntervalSince(lastDate)
+            let timeSinceLastBackup = DateUtility.now().timeIntervalSince(lastDate)
             guard timeSinceLastBackup >= 23 * 60 * 60 else { return }
         }
 

@@ -43,8 +43,11 @@ final class UserJourneyTests: XCTestCase {
         // Navigate to add entry
         timeline.navigateToAddEntry()
 
+        // Allow time for navigation animation
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
+
         let addEntry = AddEntryScreen(app: app)
-        XCTAssertTrue(addEntry.waitForLoad(), "Add entry screen should load")
+        XCTAssertTrue(addEntry.waitForLoad(timeout: 5), "Add entry screen should load")
         captureStep("02-AddEntry")
 
         // Search and select symptom
@@ -131,9 +134,8 @@ final class UserJourneyTests: XCTestCase {
         XCTAssertTrue(timeline.hasEntry(containing: "Muscle pain"), "Timeline should show Muscle pain entry")
     }
 
-    /// SKIP: Uses old AddEntryView with severity-slider which has been replaced by UnifiedEventView
     /// Tests symptom entry with location tracking
-    func skip_testSymptomEntryWithLocation() throws {
+    func testSymptomEntryWithLocation() throws {
         guard let app = app else {
             XCTFail("App not initialized")
             return
@@ -167,9 +169,8 @@ final class UserJourneyTests: XCTestCase {
         XCTAssertTrue(timeline.hasEntry(containing: "Dizziness"), "Timeline should show Dizziness entry")
     }
 
-    /// SKIP: Uses old AddEntryView with severity-slider which has been replaced by UnifiedEventView
     /// Tests creating a backdated symptom entry
-    func skip_testBackdatedEntry() throws {
+    func testBackdatedEntry() throws {
         guard let app = app else {
             XCTFail("App not initialized")
             return
@@ -213,9 +214,8 @@ final class UserJourneyTests: XCTestCase {
         XCTAssertTrue(timeline.waitForLoad(), "Timeline should reload")
     }
 
-    /// SKIP: Uses old AddEntryView with severity-slider which has been replaced by UnifiedEventView
     /// Tests cancelling symptom entry
-    func skip_testCancelEntry() throws {
+    func testCancelEntry() throws {
         guard let app = app else {
             XCTFail("App not initialized")
             return
@@ -246,9 +246,8 @@ final class UserJourneyTests: XCTestCase {
         XCTAssertEqual(timeline.entryCount(), initialEntryCount, "Entry count should not change after cancel")
     }
 
-    /// SKIP: Uses old AddEntryView with severity-slider which has been replaced by UnifiedEventView
     /// Tests searching for and creating a new custom symptom
-    func skip_testSearchAndCreateNewSymptom() throws {
+    func testSearchAndCreateNewSymptom() throws {
         guard let app = app else {
             XCTFail("App not initialized")
             return
@@ -278,7 +277,7 @@ final class UserJourneyTests: XCTestCase {
             }
 
             // Wait for sheet to close and UI to update
-            Thread.sleep(forTimeInterval: 1.0)
+            RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
             addEntry.setSeverity(4)
             addEntry.save()
@@ -338,11 +337,11 @@ final class UserJourneyTests: XCTestCase {
 
         // Scroll up
         timeline.scrollUp()
-        Thread.sleep(forTimeInterval: 0.5)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
         // Scroll down
         timeline.scrollDown()
-        Thread.sleep(forTimeInterval: 0.5)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
         // Verify timeline still exists after scrolling
         XCTAssertTrue(timeline.timeline.exists, "Timeline should still exist after scrolling")
@@ -363,7 +362,7 @@ final class UserJourneyTests: XCTestCase {
         timeline.pullToRefresh()
 
         // Wait a bit for refresh to complete
-        Thread.sleep(forTimeInterval: 1.0)
+        RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
         // Verify timeline is still visible
         XCTAssertTrue(timeline.logSymptomButton.exists, "Timeline should be visible after refresh")
@@ -441,13 +440,13 @@ final class UserJourneyTests: XCTestCase {
         // Scroll up to see older entries
         for _ in 1...5 {
             timeline.scrollUp(velocity: .slow)
-            Thread.sleep(forTimeInterval: 0.3)
+            RunLoop.current.run(until: Date().addingTimeInterval(0.3))
         }
 
         // Scroll back down to recent entries
         for _ in 1...5 {
             timeline.scrollDown(velocity: .slow)
-            Thread.sleep(forTimeInterval: 0.3)
+            RunLoop.current.run(until: Date().addingTimeInterval(0.3))
         }
 
         // Verify timeline is still functional
@@ -476,7 +475,7 @@ final class UserJourneyTests: XCTestCase {
         }
 
         // Verify trends content is visible
-        Thread.sleep(forTimeInterval: 1.0) // Allow chart to render
+        RunLoop.current.run(until: Date().addingTimeInterval(1.0)) // Allow chart to render
         XCTAssertTrue(analysis.isShowingTrends() || analysis.hasChart(), "Should show trends or chart")
     }
 
@@ -496,7 +495,7 @@ final class UserJourneyTests: XCTestCase {
 
         // Switch to calendar view
         analysis.switchToCalendar()
-        Thread.sleep(forTimeInterval: 1.0)
+        RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
         // Verify calendar is showing
         XCTAssertTrue(analysis.isShowingCalendar(), "Should show calendar heat map")
@@ -518,7 +517,7 @@ final class UserJourneyTests: XCTestCase {
 
         // Switch to calendar view
         analysis.switchToCalendar()
-        Thread.sleep(forTimeInterval: 1.0)
+        RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
         // Tap on a calendar cell (if available)
         let calendarCells = app.buttons.matching(NSPredicate(format: "identifier CONTAINS 'calendar' OR identifier CONTAINS 'day'"))
@@ -526,7 +525,7 @@ final class UserJourneyTests: XCTestCase {
             calendarCells.element(boundBy: 0).tap()
 
             // May show day detail or popup
-            Thread.sleep(forTimeInterval: 0.5)
+            RunLoop.current.run(until: Date().addingTimeInterval(0.5))
             XCTAssertTrue(app.exists, "App should still be responsive after tapping calendar day")
         }
     }
@@ -547,7 +546,7 @@ final class UserJourneyTests: XCTestCase {
 
         // Switch to history view
         analysis.switchToHistory()
-        Thread.sleep(forTimeInterval: 1.0)
+        RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
         // Verify history content is visible
         let historyContent = app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'History' OR label CONTAINS 'symptom'"))
@@ -570,15 +569,15 @@ final class UserJourneyTests: XCTestCase {
 
         // Change to 7 days
         analysis.selectTimePeriod(7)
-        Thread.sleep(forTimeInterval: 0.5)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
         // Change to 30 days
         analysis.selectTimePeriod(30)
-        Thread.sleep(forTimeInterval: 0.5)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
         // Change to 90 days
         analysis.selectTimePeriod(90)
-        Thread.sleep(forTimeInterval: 0.5)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
         // Verify analysis view is still responsive
         XCTAssertTrue(analysis.viewSelectorMenu.exists || analysis.trendsTab.exists, "Analysis view should still be functional")
@@ -600,7 +599,7 @@ final class UserJourneyTests: XCTestCase {
 
         // Switch to activities view
         analysis.switchToActivities()
-        Thread.sleep(forTimeInterval: 1.0)
+        RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
         // Verify activities content is visible
         XCTAssertTrue(app.exists, "Activities view should be visible")
@@ -625,7 +624,7 @@ final class UserJourneyTests: XCTestCase {
 
         // Switch to health view
         analysis.switchToHealth()
-        Thread.sleep(forTimeInterval: 1.0)
+        RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
         // Verify health content is visible
         XCTAssertTrue(app.exists, "Health view should be visible")
@@ -684,7 +683,7 @@ final class UserJourneyTests: XCTestCase {
         settings.waitForLoad()
 
         settings.navigateToTrackedSymptoms()
-        Thread.sleep(forTimeInterval: 0.5)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
         let uniqueSymptomName = "TestSymptom\(Int.random(in: 1000...9999))"
         XCTAssertTrue(settings.addSymptomType(name: uniqueSymptomName), "Should be able to add new symptom type")
@@ -708,7 +707,7 @@ final class UserJourneyTests: XCTestCase {
         settings.waitForLoad()
 
         settings.navigateToTrackedSymptoms()
-        Thread.sleep(forTimeInterval: 0.5)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
         // Find an existing symptom to edit
         let symptoms = app.staticTexts.matching(NSPredicate(format: "identifier CONTAINS 'symptom' OR label CONTAINS 'Headache' OR label CONTAINS 'Fatigue'"))
@@ -744,7 +743,7 @@ final class UserJourneyTests: XCTestCase {
         settings.waitForLoad()
 
         settings.navigateToTrackedSymptoms()
-        Thread.sleep(forTimeInterval: 0.5)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
         // Add a symptom to delete
         let symptomToDelete = "DeleteMe\(Int.random(in: 1000...9999))"
@@ -755,7 +754,7 @@ final class UserJourneyTests: XCTestCase {
         XCTAssertTrue(deleteSuccess, "Should be able to delete symptom")
 
         // Verify it's gone
-        Thread.sleep(forTimeInterval: 0.5)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
         XCTAssertFalse(settings.hasSymptomType(named: symptomToDelete), "Deleted symptom should not appear in list")
     }
 
@@ -774,14 +773,14 @@ final class UserJourneyTests: XCTestCase {
         settings.waitForLoad()
 
         settings.navigateToTrackedSymptoms()
-        Thread.sleep(forTimeInterval: 0.5)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
         // Look for star/favorite button
         let starButtons = app.buttons.matching(NSPredicate(format: "identifier CONTAINS 'star' OR identifier CONTAINS 'favorite'"))
         if starButtons.count > 0 {
             let starButton = starButtons.firstMatch
             starButton.tap()
-            Thread.sleep(forTimeInterval: 0.3)
+            RunLoop.current.run(until: Date().addingTimeInterval(0.3))
 
             // Tap again to unstar
             starButton.tap()
@@ -809,13 +808,13 @@ final class UserJourneyTests: XCTestCase {
         settings.waitForLoad()
 
         settings.navigateToAppearance()
-        Thread.sleep(forTimeInterval: 0.5)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
         // Look for dark mode toggle or buttons
         let darkModeOption = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'dark' OR label CONTAINS[c] 'appearance'")).firstMatch
         if darkModeOption.exists {
             darkModeOption.tap()
-            Thread.sleep(forTimeInterval: 0.3)
+            RunLoop.current.run(until: Date().addingTimeInterval(0.3))
         }
 
         let toggles = app.switches.matching(NSPredicate(format: "identifier CONTAINS 'dark' OR identifier CONTAINS 'appearance'"))
@@ -842,18 +841,18 @@ final class UserJourneyTests: XCTestCase {
         let healthButton = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'health' OR label CONTAINS[c] 'healthkit'")).firstMatch
         if healthButton.waitForExistence(timeout: 3) {
             healthButton.tap()
-            Thread.sleep(forTimeInterval: 0.5)
+            RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
             // Look for HealthKit toggle
             let healthKitToggle = app.switches.matching(NSPredicate(format: "identifier CONTAINS 'healthkit' OR identifier CONTAINS 'health'")).firstMatch
             if healthKitToggle.exists {
                 _ = healthKitToggle.value as? String
                 healthKitToggle.tap()
-                Thread.sleep(forTimeInterval: 0.5)
+                RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
                 // Toggle back
                 healthKitToggle.tap()
-                Thread.sleep(forTimeInterval: 0.5)
+                RunLoop.current.run(until: Date().addingTimeInterval(0.5))
             }
         }
     }
@@ -873,13 +872,13 @@ final class UserJourneyTests: XCTestCase {
         settings.waitForLoad()
 
         settings.navigateToReminders()
-        Thread.sleep(forTimeInterval: 0.5)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
         // Look for add reminder button
         let addButton = app.buttons.matching(NSPredicate(format: "identifier CONTAINS 'add' OR label CONTAINS[c] 'add reminder'")).firstMatch
         if addButton.exists {
             addButton.tap()
-            Thread.sleep(forTimeInterval: 0.5)
+            RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
             // May show time picker or reminder configuration
             if app.datePickers.firstMatch.exists {
@@ -907,13 +906,13 @@ final class UserJourneyTests: XCTestCase {
         settings.waitForLoad()
 
         settings.navigateToDataManagement()
-        Thread.sleep(forTimeInterval: 0.5)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
         // Look for export button
         let exportButton = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'export' OR identifier CONTAINS 'export'")).firstMatch
         if exportButton.exists {
             exportButton.tap()
-            Thread.sleep(forTimeInterval: 1.0)
+            RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
             // May show share sheet or confirmation
             // Check if share sheet appeared
@@ -944,7 +943,7 @@ final class UserJourneyTests: XCTestCase {
         settings.waitForLoad()
 
         settings.navigateToLoadCapacity()
-        Thread.sleep(forTimeInterval: 0.5)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
         // Verify load capacity screen is visible
         let loadCapacityContent = app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'capacity' OR label CONTAINS[c] 'load'"))
@@ -964,7 +963,7 @@ final class UserJourneyTests: XCTestCase {
         let timeline = TimelineScreen(app: app)
         timeline.navigateToAddEvent()
 
-        Thread.sleep(forTimeInterval: 0.5)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
         // Look for activity type selection
         let activityTypes = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'exercise' OR label CONTAINS[c] 'meal' OR label CONTAINS[c] 'sleep'"))
@@ -1002,7 +1001,7 @@ final class UserJourneyTests: XCTestCase {
                 editButton.tap()
 
                 // Make some change
-                Thread.sleep(forTimeInterval: 0.5)
+                RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
                 // Save changes
                 let saveButton = app.buttons[AccessibilityIdentifiers.saveButton]
@@ -1079,7 +1078,7 @@ final class UserJourneyTests: XCTestCase {
 
         // Switch to activities/patterns view
         analysis.switchToPatterns()
-        Thread.sleep(forTimeInterval: 1.0)
+        RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
         // Verify patterns/correlation content is visible
         XCTAssertTrue(app.exists, "Patterns view should be accessible")
@@ -1098,7 +1097,7 @@ final class UserJourneyTests: XCTestCase {
         let timeline = TimelineScreen(app: app)
         timeline.navigateToAddEvent()
 
-        Thread.sleep(forTimeInterval: 0.5)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
         // Look for sleep option
         let sleepButton = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'sleep'")).firstMatch
@@ -1106,7 +1105,7 @@ final class UserJourneyTests: XCTestCase {
             sleepButton.tap()
 
             // May need to set duration or time
-            Thread.sleep(forTimeInterval: 0.5)
+            RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
             let saveButton = app.buttons[AccessibilityIdentifiers.saveButton]
             if saveButton.exists {
@@ -1128,14 +1127,14 @@ final class UserJourneyTests: XCTestCase {
         let timeline = TimelineScreen(app: app)
         timeline.navigateToAddEvent()
 
-        Thread.sleep(forTimeInterval: 0.5)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
         // Look for meal option
         let mealButton = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'meal' OR label CONTAINS[c] 'food'")).firstMatch
         if mealButton.exists {
             mealButton.tap()
 
-            Thread.sleep(forTimeInterval: 0.5)
+            RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
             let saveButton = app.buttons[AccessibilityIdentifiers.saveButton]
             if saveButton.exists {
@@ -1165,7 +1164,7 @@ final class UserJourneyTests: XCTestCase {
             if editButton.waitForExistence(timeout: 2) {
                 editButton.tap()
 
-                Thread.sleep(forTimeInterval: 0.5)
+                RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
                 let saveButton = app.buttons[AccessibilityIdentifiers.saveButton]
                 if saveButton.exists {

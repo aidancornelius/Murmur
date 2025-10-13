@@ -34,15 +34,29 @@ final class ServiceCleanupRegressionTests: XCTestCase {
         healthKit.cleanup()
 
         // Wait for async cleanup task to complete with proper polling
-        let startTime = Date()
-        let timeout: TimeInterval = 3.0
-        while (healthKit.latestHRV != nil ||
-               healthKit.latestRestingHR != nil ||
-               healthKit.latestSleepHours != nil ||
-               healthKit.latestWorkoutMinutes != nil) &&
-              Date().timeIntervalSince(startTime) < timeout {
-            try await Task.sleep(nanoseconds: 50_000_000) // 0.05 seconds
+        // Use XCTWaiter to periodically check state changes
+        let expectation = XCTestExpectation(description: "HealthKit cleanup completes")
+
+        Task {
+            var checkCount = 0
+            while checkCount < 60 { // 60 * 50ms = 3 seconds max
+                if healthKit.latestHRV == nil &&
+                   healthKit.latestRestingHR == nil &&
+                   healthKit.latestSleepHours == nil &&
+                   healthKit.latestWorkoutMinutes == nil {
+                    expectation.fulfill()
+                    break
+                }
+                try? await Task.sleep(nanoseconds: 50_000_000) // 0.05 seconds
+                checkCount += 1
+            }
+            // Fulfill anyway after timeout to prevent hanging
+            if checkCount >= 60 {
+                expectation.fulfill()
+            }
         }
+
+        await fulfillment(of: [expectation], timeout: 3.5)
 
         // Then - Verify published state is cleared (only check if we had state)
         if hasState {
@@ -57,10 +71,8 @@ final class ServiceCleanupRegressionTests: XCTestCase {
 
     // MARK: - CoreDataStack Cleanup Tests
 
-    // SKIP: This test is flaky because cleanup() creates an unstructured Task that may not
-    // execute before the test completes due to main actor serialization.
-    // The cleanup() method would need to be async to be reliably testable.
-    func skip_testCoreDataStackSavesPendingChangesOnCleanup() async throws {
+    func testCoreDataStackSavesPendingChangesOnCleanup() async throws {
+        throw XCTSkip("This test is flaky because cleanup() creates an unstructured Task that may not execute before the test completes due to main actor serialization. The cleanup() method would need to be async to be reliably testable.")
         // Given
         let stack = CoreDataStack.shared
         let context = stack.context
@@ -127,11 +139,24 @@ final class ServiceCleanupRegressionTests: XCTestCase {
         tracker.cleanup()
 
         // Wait for async cleanup task to complete with proper polling
-        let startTime = Date()
-        let timeout: TimeInterval = 2.0
-        while tracker.latestCycleDay != nil && Date().timeIntervalSince(startTime) < timeout {
-            try await Task.sleep(nanoseconds: 50_000_000) // 0.05 seconds
+        let expectation = XCTestExpectation(description: "ManualCycleTracker cleanup completes")
+
+        Task {
+            var checkCount = 0
+            while checkCount < 40 { // 40 * 50ms = 2 seconds max
+                if tracker.latestCycleDay == nil {
+                    expectation.fulfill()
+                    break
+                }
+                try? await Task.sleep(nanoseconds: 50_000_000) // 0.05 seconds
+                checkCount += 1
+            }
+            if checkCount >= 40 {
+                expectation.fulfill()
+            }
         }
+
+        await fulfillment(of: [expectation], timeout: 2.5)
 
         // Then - Verify state is cleared
         XCTAssertNil(tracker.latestCycleDay, "Cycle day should be cleared after cleanup")
@@ -195,12 +220,24 @@ final class ServiceCleanupRegressionTests: XCTestCase {
         await manager.cleanupAll()
 
         // Wait for async cleanup tasks to complete with proper polling
-        let startTime = Date()
-        let timeout: TimeInterval = 2.0
-        while (healthKit.latestHRV != nil || tracker.latestCycleDay != nil) &&
-              Date().timeIntervalSince(startTime) < timeout {
-            try await Task.sleep(nanoseconds: 50_000_000) // 0.05 seconds
+        let expectation = XCTestExpectation(description: "ResourceManager cleanup completes")
+
+        Task {
+            var checkCount = 0
+            while checkCount < 40 { // 40 * 50ms = 2 seconds max
+                if healthKit.latestHRV == nil && tracker.latestCycleDay == nil {
+                    expectation.fulfill()
+                    break
+                }
+                try? await Task.sleep(nanoseconds: 50_000_000) // 0.05 seconds
+                checkCount += 1
+            }
+            if checkCount >= 40 {
+                expectation.fulfill()
+            }
         }
+
+        await fulfillment(of: [expectation], timeout: 2.5)
 
         // Then
         let countAfter = await manager.managedResourceCount
@@ -263,11 +300,24 @@ final class ServiceCleanupRegressionTests: XCTestCase {
         healthKit.cleanup()
 
         // Wait for async cleanup tasks to complete with proper polling
-        let startTime = Date()
-        let timeout: TimeInterval = 2.0
-        while healthKit.latestHRV != nil && Date().timeIntervalSince(startTime) < timeout {
-            try await Task.sleep(nanoseconds: 50_000_000) // 0.05 seconds
+        let expectation = XCTestExpectation(description: "Multiple cleanup calls complete")
+
+        Task {
+            var checkCount = 0
+            while checkCount < 40 { // 40 * 50ms = 2 seconds max
+                if healthKit.latestHRV == nil {
+                    expectation.fulfill()
+                    break
+                }
+                try? await Task.sleep(nanoseconds: 50_000_000) // 0.05 seconds
+                checkCount += 1
+            }
+            if checkCount >= 40 {
+                expectation.fulfill()
+            }
         }
+
+        await fulfillment(of: [expectation], timeout: 2.5)
 
         // Then - Should not crash or cause issues, state should be cleared
         XCTAssertNil(healthKit.latestHRV, "Multiple cleanup calls should be safe and clear state")
@@ -275,10 +325,8 @@ final class ServiceCleanupRegressionTests: XCTestCase {
 
     // MARK: - Scene Phase Integration Tests
 
-    // SKIP: This test is flaky because cleanup() creates an unstructured Task that may not
-    // execute before the test completes due to main actor serialization.
-    // The cleanup() method would need to be async to be reliably testable.
-    func skip_testCoreDataSavesOnBackgroundTransition() async throws {
+    func testCoreDataSavesOnBackgroundTransition() async throws {
+        throw XCTSkip("This test is flaky because cleanup() creates an unstructured Task that may not execute before the test completes due to main actor serialization. The cleanup() method would need to be async to be reliably testable.")
         // Given
         let stack = CoreDataStack.shared
         let context = stack.context

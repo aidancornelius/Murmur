@@ -9,7 +9,7 @@ platform :ios do
   # Testing Lanes
   # =================
 
-  desc "Run unit tests with code coverage (<1 min, iPhone 17 Pro)"
+  desc "Run unit tests with code coverage\n(<1 min, iPhone 17 Pro)"
   lane :test do
     UI.header("Unit Tests")
     UI.message("Running unit tests with code coverage...")
@@ -25,7 +25,7 @@ platform :ios do
     UI.success("✓ Unit tests passed")
   end
 
-  desc "Run UI tests on iPhone and iPad (2-3 mins, 2 devices)"
+  desc "Run UI tests on iPhone and iPad\n(2-3 mins, 2 devices)"
   lane :test_ui do
     UI.header("UI Tests - Standard Devices")
     UI.message("Testing on: iPhone 17 Pro, iPad Pro 13-inch (M4)")
@@ -40,7 +40,7 @@ platform :ios do
     UI.success("✓ UI tests passed on standard devices")
   end
 
-  desc "Run UI tests across 5 devices including multiple iPhone and iPad models (8-12 mins)"
+  desc "Run UI tests across 5 devices including multiple iPhone and iPad models\n(8-12 mins)"
   lane :test_ui_full do
     UI.header("UI Tests - Full Device Coverage")
     UI.message("Testing across 5 devices (iPhones and iPads)...")
@@ -62,7 +62,7 @@ platform :ios do
     UI.success("✓ UI tests passed on all devices")
   end
 
-  desc "Run smoke tests for critical user journeys (~1 min, iPhone 17 Pro)"
+  desc "Run smoke tests for critical user journeys\n(~1 min, iPhone 17 Pro)"
   lane :test_smoke do
     UI.header("Smoke Tests - Critical User Journeys")
     UI.message("Running quick validation of core functionality...")
@@ -84,6 +84,156 @@ platform :ios do
   end
 
   # =================
+  # Granular Test Lanes
+  # =================
+  #
+  # These lanes allow targeted testing of specific features
+  # added during the test suite renovation
+
+  desc "Run widget tests\n(<1 min, iPhone 17 Pro)"
+  lane :test_widgets do
+    UI.header("Widget Tests")
+    UI.message("Testing widget functionality and intents...")
+
+    scan(
+      scheme: "Murmur",
+      only_testing: ["MurmurWidgetTests"],
+      device: "iPhone 17 Pro",
+      result_bundle: true,
+      output_directory: "./fastlane-output/test-reports"
+    )
+
+    UI.success("✓ Widget tests passed")
+  end
+
+  desc "Run UnifiedEventView tests\n(<1 min, iPhone 17 Pro)"
+  lane :test_unified_event do
+    UI.header("UnifiedEventView Tests")
+    UI.message("Testing unified event entry screen...")
+
+    scan(
+      scheme: "Murmur",
+      only_testing: ["MurmurTests/UnifiedEventViewTests"],
+      device: "iPhone 17 Pro",
+      result_bundle: true,
+      output_directory: "./fastlane-output/test-reports"
+    )
+
+    UI.success("✓ UnifiedEventView tests passed")
+  end
+
+  desc "Run App Intents tests\n(<1 min, iPhone 17 Pro)"
+  lane :test_intents do
+    UI.header("App Intents Tests")
+    UI.message("Testing Siri shortcuts and app intents...")
+
+    scan(
+      scheme: "Murmur",
+      only_testing: ["MurmurTests/AppIntentsTests"],
+      device: "iPhone 17 Pro",
+      result_bundle: true,
+      output_directory: "./fastlane-output/test-reports"
+    )
+
+    UI.success("✓ App Intents tests passed")
+  end
+
+  desc "Run background tasks tests\n(<1 min, iPhone 17 Pro)"
+  lane :test_background do
+    UI.header("Background Tasks Tests")
+    UI.message("Testing auto-backup and background operations...")
+
+    scan(
+      scheme: "Murmur",
+      only_testing: ["MurmurTests/BackgroundTasksTests"],
+      device: "iPhone 17 Pro",
+      result_bundle: true,
+      output_directory: "./fastlane-output/test-reports"
+    )
+
+    UI.success("✓ Background tasks tests passed")
+  end
+
+  desc "Run all new feature tests: widgets, unified event, intents, background\n(2-3 mins)"
+  lane :test_new_features do
+    UI.header("New Feature Tests")
+    UI.message("Testing all recently added features...")
+    UI.message("  1. Widget tests")
+    UI.message("  2. UnifiedEventView tests")
+    UI.message("  3. App Intents tests")
+    UI.message("  4. Background Tasks tests")
+
+    test_widgets
+    test_unified_event
+    test_intents
+    test_background
+
+    UI.success("✓ All new feature tests passed")
+  end
+
+  desc "Run core data tests\n(<1 min, iPhone 17 Pro)"
+  lane :test_core_data do
+    UI.header("Core Data Tests")
+    UI.message("Testing data models and migrations...")
+
+    scan(
+      scheme: "Murmur",
+      only_testing: [
+        "MurmurTests/CoreDataMigrationTests",
+        "MurmurTests/EventTests",
+        "MurmurTests/SymptomEntryCreationTests",
+        "MurmurTests/DaySummaryTests"
+      ],
+      device: "iPhone 17 Pro",
+      result_bundle: true,
+      output_directory: "./fastlane-output/test-reports"
+    )
+
+    UI.success("✓ Core Data tests passed")
+  end
+
+  desc "Run analysis engine tests\n(<1 min, iPhone 17 Pro)"
+  lane :test_analysis do
+    UI.header("Analysis Engine Tests")
+    UI.message("Testing trend detection and correlations...")
+
+    scan(
+      scheme: "Murmur",
+      only_testing: [
+        "MurmurTests/AnalysisEngineTests",
+        "MurmurTests/CalendarHeatMapTests",
+        "MurmurTests/LoadCalculatorTests",
+        "MurmurTests/LoadScoreTests"
+      ],
+      device: "iPhone 17 Pro",
+      result_bundle: true,
+      output_directory: "./fastlane-output/test-reports"
+    )
+
+    UI.success("✓ Analysis engine tests passed")
+  end
+
+  desc "Run location and calendar tests\n(<1 min, iPhone 17 Pro)"
+  lane :test_integrations do
+    UI.header("Integration Tests")
+    UI.message("Testing location and calendar integrations...")
+
+    scan(
+      scheme: "Murmur",
+      only_testing: [
+        "MurmurTests/LocationAssistantTests",
+        "MurmurTests/CalendarAssistantTests",
+        "MurmurTests/NotificationSchedulerTests"
+      ],
+      device: "iPhone 17 Pro",
+      result_bundle: true,
+      output_directory: "./fastlane-output/test-reports"
+    )
+
+    UI.success("✓ Integration tests passed")
+  end
+
+  # =================
   # HealthKit Testing
   # =================
   #
@@ -91,7 +241,7 @@ platform :ios do
   # synthetic health data from the HealthKitUtility library. Tests use deterministic
   # seeds to ensure reproducible results across runs.
 
-  desc "Run HealthKit integration tests with 7 days of synthetic data (1-2 mins)"
+  desc "Run HealthKit integration tests with 7 days of synthetic data\n(1-2 mins)"
   lane :test_healthkit do
     UI.header("HealthKit Integration Tests - Normal Profile")
     UI.message("Testing: 7 days of synthetic health data with normal profile")
@@ -108,7 +258,7 @@ platform :ios do
     UI.success("✓ HealthKit integration tests passed")
   end
 
-  desc "Run HealthKit integration tests with 30 days of synthetic data (3-5 mins)"
+  desc "Run HealthKit integration tests with 30 days of synthetic data\n(3-5 mins)"
   lane :test_healthkit_extended do
     UI.header("HealthKit Integration Tests - Extended Historical Data")
     UI.message("Testing: 30 days of synthetic health data")
@@ -128,7 +278,7 @@ platform :ios do
     UI.success("✓ Extended historical data tests passed")
   end
 
-  desc "Verify deterministic data generation with seed=42 (~1 min)"
+  desc "Verify deterministic data generation with seed=42\n(~1 min)"
   lane :test_healthkit_deterministic do
     UI.header("HealthKit Deterministic Fixture Tests")
     UI.message("Testing: Deterministic data generation with seed=42")
@@ -148,7 +298,7 @@ platform :ios do
     UI.success("✓ Deterministic fixture tests passed - data generation is reproducible")
   end
 
-  desc "Run unit tests for HealthKitUtility synthetic data library (<30 secs)"
+  desc "Run unit tests for HealthKitUtility synthetic data library\n(<30 secs)"
   lane :test_healthkit_utility do
     UI.header("HealthKitUtility Library Smoke Tests")
     UI.message("Testing: Synthetic data library in isolation")
@@ -166,7 +316,7 @@ platform :ios do
     UI.success("✓ HealthKitUtility smoke tests passed - library working correctly")
   end
 
-  desc "Run all HealthKit tests: utility + integration + deterministic + extended (5-8 mins)"
+  desc "Run all HealthKit tests: utility + integration + deterministic + extended\n(5-8 mins)"
   lane :test_healthkit_full do
     UI.header("Comprehensive HealthKit Test Suite")
     UI.message("Running all HealthKit tests in sequence:")
@@ -185,7 +335,7 @@ platform :ios do
     UI.success("✓ All HealthKit tests passed successfully")
   end
 
-  desc "Run standard test suite: unit + UI + HealthKit integration (3-5 mins)"
+  desc "Run standard test suite: unit + UI + HealthKit integration\n(3-5 mins)"
   lane :test_all do
     UI.header("Standard Test Suite")
     UI.message("Running: Unit tests → UI tests → HealthKit integration")
@@ -197,7 +347,7 @@ platform :ios do
     UI.success("✓ All standard tests passed")
   end
 
-  desc "Run complete test suite: unit + UI + full HealthKit (10-15 mins)"
+  desc "Run complete test suite: unit + UI + full HealthKit\n(10-15 mins)"
   lane :test_complete do
     UI.header("Complete Test Suite")
     UI.message("Running comprehensive test suite:")
@@ -218,7 +368,7 @@ platform :ios do
   # Screenshot Lanes
   # =================
 
-  desc "Generate screenshots for App Store (standard devices)"
+  desc "Generate screenshots for App Store\n(standard devices)"
   lane :screenshots do
     snapshot(scheme: "MurmurUITests")
   end

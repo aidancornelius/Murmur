@@ -40,11 +40,11 @@ final class PerformanceTests: XCTestCase {
             if scrollView.exists {
                 // Perform scrolls
                 scrollView.swipeUp()
-                Thread.sleep(forTimeInterval: 0.5)
+                RunLoop.current.run(until: Date().addingTimeInterval(0.5))
                 scrollView.swipeUp()
-                Thread.sleep(forTimeInterval: 0.5)
+                RunLoop.current.run(until: Date().addingTimeInterval(0.5))
                 scrollView.swipeDown()
-                Thread.sleep(forTimeInterval: 0.5)
+                RunLoop.current.run(until: Date().addingTimeInterval(0.5))
             }
         }
     }
@@ -72,7 +72,7 @@ final class PerformanceTests: XCTestCase {
         let scrollView = app.scrollViews.firstMatch
         if scrollView.exists {
             scrollView.swipeUp()
-            Thread.sleep(forTimeInterval: 0.3)
+            RunLoop.current.run(until: Date().addingTimeInterval(0.3))
 
             // Should still be responsive after scroll
             assertHittable(timeline.logSymptomButton,
@@ -104,7 +104,7 @@ final class PerformanceTests: XCTestCase {
 
                 // Go back
                 app.navigationBars.buttons.firstMatch.tap()
-                Thread.sleep(forTimeInterval: 0.5)
+                RunLoop.current.run(until: Date().addingTimeInterval(0.5))
             }
         } else {
             XCTFail("No entries found to test")
@@ -127,19 +127,19 @@ final class PerformanceTests: XCTestCase {
         // Measure tab switching performance
         measure(metrics: [XCTClockMetric()]) {
             app.buttons[AccessibilityIdentifiers.analysisButton].tap()
-            Thread.sleep(forTimeInterval: 0.3)
+            RunLoop.current.run(until: Date().addingTimeInterval(0.3))
 
             app.navigationBars.buttons.firstMatch.tap()
-            Thread.sleep(forTimeInterval: 0.3)
+            RunLoop.current.run(until: Date().addingTimeInterval(0.3))
 
             app.buttons[AccessibilityIdentifiers.settingsButton].tap()
-            Thread.sleep(forTimeInterval: 0.3)
+            RunLoop.current.run(until: Date().addingTimeInterval(0.3))
 
             app.navigationBars.buttons.firstMatch.tap()
-            Thread.sleep(forTimeInterval: 0.3)
+            RunLoop.current.run(until: Date().addingTimeInterval(0.3))
 
             app.buttons[AccessibilityIdentifiers.logSymptomButton].tap()
-            Thread.sleep(forTimeInterval: 0.3)
+            RunLoop.current.run(until: Date().addingTimeInterval(0.3))
         }
     }
 
@@ -166,12 +166,12 @@ final class PerformanceTests: XCTestCase {
             // Switch time periods to trigger chart re-render
             if app.buttons.matching(NSPredicate(format: "label CONTAINS '30'")).firstMatch.exists {
                 app.buttons.matching(NSPredicate(format: "label CONTAINS '30'")).firstMatch.tap()
-                Thread.sleep(forTimeInterval: 1.0)
+                RunLoop.current.run(until: Date().addingTimeInterval(1.0))
             }
 
             if app.buttons.matching(NSPredicate(format: "label CONTAINS '7'")).firstMatch.exists {
                 app.buttons.matching(NSPredicate(format: "label CONTAINS '7'")).firstMatch.tap()
-                Thread.sleep(forTimeInterval: 1.0)
+                RunLoop.current.run(until: Date().addingTimeInterval(1.0))
             }
         }
     }
@@ -198,7 +198,7 @@ final class PerformanceTests: XCTestCase {
             let cancelButton = app.buttons[AccessibilityIdentifiers.cancelButton]
             cancelButton.tap()
 
-            Thread.sleep(forTimeInterval: 0.5)
+            RunLoop.current.run(until: Date().addingTimeInterval(0.5))
         }
     }
 
@@ -229,11 +229,11 @@ final class PerformanceTests: XCTestCase {
         }
         // First launch to warm up
         app.launchWithData()
-        Thread.sleep(forTimeInterval: 2.0)
+        RunLoop.current.run(until: Date().addingTimeInterval(2.0))
 
         // Background the app
         XCUIDevice.shared.press(.home)
-        Thread.sleep(forTimeInterval: 1.0)
+        RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
         // Measure reactivation time
         measure(metrics: [XCTClockMetric()]) {
@@ -245,7 +245,7 @@ final class PerformanceTests: XCTestCase {
 
             // Background again for next iteration
             XCUIDevice.shared.press(.home)
-            Thread.sleep(forTimeInterval: 0.5)
+            RunLoop.current.run(until: Date().addingTimeInterval(0.5))
         }
     }
 
@@ -276,7 +276,7 @@ final class PerformanceTests: XCTestCase {
         if app.buttons.matching(NSPredicate(format: "label CONTAINS '90'")).firstMatch.exists {
             let start = Date()
             app.buttons.matching(NSPredicate(format: "label CONTAINS '90'")).firstMatch.tap()
-            Thread.sleep(forTimeInterval: 2.0)
+            RunLoop.current.run(until: Date().addingTimeInterval(2.0))
             let renderTime = Date().timeIntervalSince(start)
 
             XCTAssertLessThan(renderTime, 3.0,
@@ -301,7 +301,7 @@ final class PerformanceTests: XCTestCase {
         if app.buttons["Calendar"].exists {
             let start = Date()
             app.buttons["Calendar"].tap()
-            Thread.sleep(forTimeInterval: 2.0)
+            RunLoop.current.run(until: Date().addingTimeInterval(2.0))
             let renderTime = Date().timeIntervalSince(start)
 
             XCTAssertLessThan(renderTime, 3.0,
@@ -334,7 +334,7 @@ final class PerformanceTests: XCTestCase {
         if app.buttons["Symptom History"].exists {
             let start = Date()
             app.buttons["Symptom History"].tap()
-            Thread.sleep(forTimeInterval: 2.0)
+            RunLoop.current.run(until: Date().addingTimeInterval(2.0))
             let loadTime = Date().timeIntervalSince(start)
 
             XCTAssertLessThan(loadTime, 3.0,
@@ -344,7 +344,7 @@ final class PerformanceTests: XCTestCase {
             let scrollView = app.scrollViews.firstMatch
             if scrollView.exists {
                 scrollView.swipeUp()
-                Thread.sleep(forTimeInterval: 0.3)
+                RunLoop.current.run(until: Date().addingTimeInterval(0.3))
 
                 XCTAssertTrue(scrollView.isHittable,
                              "History list should remain responsive with large data")
@@ -356,7 +356,7 @@ final class PerformanceTests: XCTestCase {
             if symptomName.exists {
                 let start = Date()
                 symptomName.tap()
-                Thread.sleep(forTimeInterval: 2.0)
+                RunLoop.current.run(until: Date().addingTimeInterval(2.0))
                 let loadTime = Date().timeIntervalSince(start)
 
                 XCTAssertLessThan(loadTime, 3.0,
@@ -380,22 +380,22 @@ final class PerformanceTests: XCTestCase {
 
         // Navigate through all screens to verify no memory issues
         app.buttons[AccessibilityIdentifiers.analysisButton].tap()
-        Thread.sleep(forTimeInterval: 2.0)
+        RunLoop.current.run(until: Date().addingTimeInterval(2.0))
 
         let analysis = AnalysisScreen(app: app)
         XCTAssertTrue(analysis.waitForLoad(), "Analysis should load")
 
         app.navigationBars.buttons.firstMatch.tap()
-        Thread.sleep(forTimeInterval: 0.5)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
         app.buttons[AccessibilityIdentifiers.settingsButton].tap()
-        Thread.sleep(forTimeInterval: 1.0)
+        RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
         let settings = SettingsScreen(app: app)
         XCTAssertTrue(settings.waitForLoad(), "Settings should load")
 
         app.buttons[AccessibilityIdentifiers.logSymptomButton].tap()
-        Thread.sleep(forTimeInterval: 1.0)
+        RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
         // Should still be responsive
         assertHittable(timeline.logSymptomButton,
@@ -416,16 +416,16 @@ final class PerformanceTests: XCTestCase {
         // Perform rapid tab switches
         for _ in 0..<5 {
             app.buttons[AccessibilityIdentifiers.analysisButton].tap()
-            Thread.sleep(forTimeInterval: 0.1)
+            RunLoop.current.run(until: Date().addingTimeInterval(0.1))
 
             app.navigationBars.buttons.firstMatch.tap()
-            Thread.sleep(forTimeInterval: 0.1)
+            RunLoop.current.run(until: Date().addingTimeInterval(0.1))
 
             app.buttons[AccessibilityIdentifiers.settingsButton].tap()
-            Thread.sleep(forTimeInterval: 0.1)
+            RunLoop.current.run(until: Date().addingTimeInterval(0.1))
 
             app.navigationBars.buttons.firstMatch.tap()
-            Thread.sleep(forTimeInterval: 0.1)
+            RunLoop.current.run(until: Date().addingTimeInterval(0.1))
         }
 
         // Should still be responsive

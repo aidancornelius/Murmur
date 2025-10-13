@@ -39,6 +39,29 @@ The app includes an onboarding flow that will guide you through initial setup.
 - Supports iOS 16 and later
 - Integrates with HealthKit, Location Services, and Calendar
 - Includes StoreKit configuration for optional tip jar support
+- Automated testing and deployment with fastlane
+
+## Development and testing
+
+The project uses fastlane for test automation and screenshot generation:
+
+### Quick commands
+- `fastlane ios test` - Run unit tests with coverage (< 1 min)
+- `fastlane ios test_ui` - Run UI tests on iPhone and iPad (2-3 mins)
+- `fastlane ios test_smoke` - Quick validation of core functionality (~1 min)
+- `fastlane ios test_all` - Standard test suite (3-5 mins)
+- `fastlane ios test_complete` - Full test suite including all HealthKit tests (10-15 mins)
+
+### HealthKit testing
+- `fastlane ios test_healthkit` - Test with 7 days of synthetic data (1-2 mins)
+- `fastlane ios test_healthkit_extended` - Test with 30 days of data (3-5 mins)
+- `fastlane ios test_healthkit_deterministic` - Verify reproducible data generation (~1 min)
+
+### Screenshots
+- `fastlane ios screenshots` - Generate App Store screenshots
+- `fastlane ios prepare_framed_screenshots` - Generate screenshots with device frames
+
+Run `fastlane ios clean` to remove test outputs and screenshots.
 
 ## Privacy and data
 

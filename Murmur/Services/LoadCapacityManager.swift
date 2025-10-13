@@ -465,7 +465,7 @@ class LoadCapacityManager: ObservableObject {
 
         let average = calibrationDays.reduce(0, +) / Double(calibrationDays.count)
         baseline = PersonalBaseline(
-            establishedDate: Date(),
+            establishedDate: DateUtility.now(),
             averageGoodDayLoad: average,
             sampleCount: calibrationDays.count
         )

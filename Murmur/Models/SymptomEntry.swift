@@ -53,7 +53,7 @@ extension SymptomEntry {
 
     /// Safe access to creation date with validation
     var safeCreatedAt: Date {
-        createdAt ?? Date()
+        createdAt ?? DateUtility.now()
     }
 
     /// Safe access to note
@@ -113,7 +113,7 @@ extension SymptomEntry {
     }
 
     private func validateDates() throws {
-        let now = Date()
+        let now = DateUtility.now()
 
         // Validate createdAt is not in future
         if let created = createdAt, created > now.addingTimeInterval(60) {

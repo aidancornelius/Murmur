@@ -114,7 +114,7 @@ struct SettingsScreen {
     func addSymptomType(name: String, timeout: TimeInterval = 5) -> Bool {
         // Assumes we're already on tracked symptoms screen
         // Wait for any navigation animations to complete
-        Thread.sleep(forTimeInterval: 3.0)
+        RunLoop.current.run(until: Date().addingTimeInterval(3.0))
 
         // Try to find the add button by accessibility label first (more reliable)
         let addButton = app.buttons["Add symptom"]
@@ -124,25 +124,29 @@ struct SettingsScreen {
             guard fallbackButton.waitForExistence(timeout: timeout) else {
                 return false
             }
-            // Ensure button is fully ready
-            while !fallbackButton.isHittable && Date().timeIntervalSinceNow < timeout {
-                Thread.sleep(forTimeInterval: 0.1)
+            // Ensure button is fully ready using predicate
+            guard fallbackButton.waitForHittable(timeout: timeout) else {
+                return false
             }
             fallbackButton.tap()
-            Thread.sleep(forTimeInterval: 0.5)
-            // Second tap if needed
-            if !app.textFields.firstMatch.exists {
+
+            // Wait for text field to appear
+            let textField = app.textFields.firstMatch
+            if !textField.waitForExistence(timeout: 1.0) {
+                // Second tap if needed
                 fallbackButton.tap()
             }
         } else {
-            // Ensure button is fully ready
-            while !addButton.isHittable && Date().timeIntervalSinceNow < timeout {
-                Thread.sleep(forTimeInterval: 0.1)
+            // Ensure button is fully ready using predicate
+            guard addButton.waitForHittable(timeout: timeout) else {
+                return false
             }
             addButton.tap()
-            Thread.sleep(forTimeInterval: 0.5)
-            // Second tap if needed
-            if !app.textFields.firstMatch.exists {
+
+            // Wait for text field to appear
+            let textField = app.textFields.firstMatch
+            if !textField.waitForExistence(timeout: 1.0) {
+                // Second tap if needed
                 addButton.tap()
             }
         }
@@ -160,17 +164,20 @@ struct SettingsScreen {
             return false
         }
 
-        // Wait for button to be ready and tap twice to ensure it registers
-        Thread.sleep(forTimeInterval: 1.0)
-        saveButton.tap()
-        Thread.sleep(forTimeInterval: 0.3)
+        // Wait for button to be ready using predicate
+        guard saveButton.waitForHittable(timeout: 2.0) else {
+            return false
+        }
         saveButton.tap()
 
-        // Wait for sheet to dismiss by checking the text field is gone
-        let start = Date()
-        while textField.exists && Date().timeIntervalSince(start) < timeout {
-            Thread.sleep(forTimeInterval: 0.1)
+        // Try second tap if sheet doesn't dismiss
+        RunLoop.current.run(until: Date().addingTimeInterval(0.3))
+        if textField.exists {
+            saveButton.tap()
         }
+
+        // Wait for sheet to dismiss using predicate
+        _ = textField.waitForDisappearance(timeout: timeout)
 
         // Wait for the add button to reappear (confirms we're back on the list)
         let addButtonCheck = app.buttons["Add symptom"]
@@ -182,7 +189,7 @@ struct SettingsScreen {
         }
 
         // Additional wait for Core Data to save and FetchRequest to refresh
-        Thread.sleep(forTimeInterval: 1.5)
+        RunLoop.current.run(until: Date().addingTimeInterval(1.5))
 
         return true
     }

@@ -217,7 +217,7 @@ struct DayDetailView: View {
 
         // Group symptoms by date
         let groupedEntries = Dictionary(grouping: allEntries) { entry in
-            calendar.startOfDay(for: entry.backdatedAt ?? entry.createdAt ?? Date())
+            calendar.startOfDay(for: entry.backdatedAt ?? entry.createdAt ?? DateUtility.now())
         }
 
         // Combine all contributors and group by date
@@ -364,7 +364,7 @@ struct DayDetailView: View {
 
         if existing == nil {
             entry.id = UUID()
-            entry.createdAt = Date()
+            entry.createdAt = DateUtility.now()
             entry.backdatedAt = dayStart
             entry.symptomType = type
         }
@@ -407,8 +407,8 @@ struct DayDetailView: View {
     }
 
     private func sortEntries(_ lhs: SymptomEntry, _ rhs: SymptomEntry) -> Bool {
-        let lhsDate = lhs.backdatedAt ?? lhs.createdAt ?? Date()
-        let rhsDate = rhs.backdatedAt ?? rhs.createdAt ?? Date()
+        let lhsDate = lhs.backdatedAt ?? lhs.createdAt ?? DateUtility.now()
+        let rhsDate = rhs.backdatedAt ?? rhs.createdAt ?? DateUtility.now()
         if lhsDate != rhsDate {
             return lhsDate > rhsDate
         }
@@ -417,8 +417,8 @@ struct DayDetailView: View {
     }
 
     private func sortActivities(_ lhs: ActivityEvent, _ rhs: ActivityEvent) -> Bool {
-        let lhsDate = lhs.backdatedAt ?? lhs.createdAt ?? Date()
-        let rhsDate = rhs.backdatedAt ?? rhs.createdAt ?? Date()
+        let lhsDate = lhs.backdatedAt ?? lhs.createdAt ?? DateUtility.now()
+        let rhsDate = rhs.backdatedAt ?? rhs.createdAt ?? DateUtility.now()
         if lhsDate != rhsDate {
             return lhsDate > rhsDate
         }
@@ -427,8 +427,8 @@ struct DayDetailView: View {
     }
 
     private func sortSleepEvents(_ lhs: SleepEvent, _ rhs: SleepEvent) -> Bool {
-        let lhsDate = lhs.backdatedAt ?? lhs.createdAt ?? Date()
-        let rhsDate = rhs.backdatedAt ?? rhs.createdAt ?? Date()
+        let lhsDate = lhs.backdatedAt ?? lhs.createdAt ?? DateUtility.now()
+        let rhsDate = rhs.backdatedAt ?? rhs.createdAt ?? DateUtility.now()
         if lhsDate != rhsDate {
             return lhsDate > rhsDate
         }
@@ -437,8 +437,8 @@ struct DayDetailView: View {
     }
 
     private func sortMealEvents(_ lhs: MealEvent, _ rhs: MealEvent) -> Bool {
-        let lhsDate = lhs.backdatedAt ?? lhs.createdAt ?? Date()
-        let rhsDate = rhs.backdatedAt ?? rhs.createdAt ?? Date()
+        let lhsDate = lhs.backdatedAt ?? lhs.createdAt ?? DateUtility.now()
+        let rhsDate = rhs.backdatedAt ?? rhs.createdAt ?? DateUtility.now()
         if lhsDate != rhsDate {
             return lhsDate > rhsDate
         }

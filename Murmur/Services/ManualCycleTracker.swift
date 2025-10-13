@@ -114,7 +114,7 @@ final class ManualCycleTracker: ObservableObject {
     /// Set the cycle day directly
     func setCycleDay(_ day: Int) {
         let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
+        let today = calendar.startOfDay(for: DateUtility.now())
 
         UserDefaults.standard.set(day, forKey: UserDefaultsKeys.currentCycleDay)
         UserDefaults.standard.set(today, forKey: UserDefaultsKeys.cycleDaySetDate)
@@ -142,7 +142,7 @@ final class ManualCycleTracker: ObservableObject {
 
         do {
             let calendar = Calendar.current
-            let today = calendar.startOfDay(for: Date())
+            let today = calendar.startOfDay(for: DateUtility.now())
 
             // Check if user has manually set a cycle day
             if let setDate = UserDefaults.standard.object(forKey: UserDefaultsKeys.cycleDaySetDate) as? Date,
@@ -169,7 +169,7 @@ final class ManualCycleTracker: ObservableObject {
                 }
             } else {
                 // Fall back to calculating from period entries
-                let endDate = Date()
+                let endDate = DateUtility.now()
                 let startDate = endDate.addingTimeInterval(-45 * 24 * 3600)
                 let entries = try ManualCycleEntry.fetch(from: startDate, to: endDate, in: context)
 
@@ -194,7 +194,7 @@ final class ManualCycleTracker: ObservableObject {
             }
 
             // Get today's flow level from entries
-            let endDate = Date()
+            let endDate = DateUtility.now()
             let startDate = endDate.addingTimeInterval(-45 * 24 * 3600)
             let entries = try ManualCycleEntry.fetch(from: startDate, to: endDate, in: context)
             let todayEntries = entries.filter { calendar.isDate($0.date, inSameDayAs: today) }
