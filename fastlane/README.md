@@ -21,7 +21,7 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 [bundle exec] fastlane ios test
 ```
 
-Run unit tests with code coverage (<1 min, iPhone 17 Pro)
+Run unit tests with code coverage [<1 min, iPhone 17 Pro]
 
 ### ios test_ui
 
@@ -29,7 +29,7 @@ Run unit tests with code coverage (<1 min, iPhone 17 Pro)
 [bundle exec] fastlane ios test_ui
 ```
 
-Run UI tests on iPhone and iPad (2-3 mins, 2 devices)
+Run UI tests on iPhone and iPad [2-3 mins, 2 devices]
 
 ### ios test_ui_full
 
@@ -37,7 +37,7 @@ Run UI tests on iPhone and iPad (2-3 mins, 2 devices)
 [bundle exec] fastlane ios test_ui_full
 ```
 
-Run UI tests across 5 devices including multiple iPhone and iPad models (8-12 mins)
+Run UI tests across 5 devices including multiple iPhone and iPad models [8-12 mins]
 
 ### ios test_smoke
 
@@ -45,7 +45,7 @@ Run UI tests across 5 devices including multiple iPhone and iPad models (8-12 mi
 [bundle exec] fastlane ios test_smoke
 ```
 
-Run smoke tests for critical user journeys (~1 min, iPhone 17 Pro)
+Run smoke tests for critical user journeys [~1 min, iPhone 17 Pro]
 
 ### ios test_widgets
 
@@ -53,7 +53,7 @@ Run smoke tests for critical user journeys (~1 min, iPhone 17 Pro)
 [bundle exec] fastlane ios test_widgets
 ```
 
-Run widget tests (<1 min, iPhone 17 Pro)
+Run widget tests [<1 min, iPhone 17 Pro]
 
 ### ios test_unified_event
 
@@ -61,7 +61,7 @@ Run widget tests (<1 min, iPhone 17 Pro)
 [bundle exec] fastlane ios test_unified_event
 ```
 
-Run UnifiedEventView tests (<1 min, iPhone 17 Pro)
+Run UnifiedEventView tests [<1 min, iPhone 17 Pro]
 
 ### ios test_intents
 
@@ -69,7 +69,7 @@ Run UnifiedEventView tests (<1 min, iPhone 17 Pro)
 [bundle exec] fastlane ios test_intents
 ```
 
-Run App Intents tests (<1 min, iPhone 17 Pro)
+Run App Intents tests [<1 min, iPhone 17 Pro]
 
 ### ios test_background
 
@@ -77,7 +77,7 @@ Run App Intents tests (<1 min, iPhone 17 Pro)
 [bundle exec] fastlane ios test_background
 ```
 
-Run background tasks tests (<1 min, iPhone 17 Pro)
+Run background tasks tests [<1 min, iPhone 17 Pro]
 
 ### ios test_new_features
 
@@ -85,7 +85,7 @@ Run background tasks tests (<1 min, iPhone 17 Pro)
 [bundle exec] fastlane ios test_new_features
 ```
 
-Run all new feature tests: widgets, unified event, intents, background (2-3 mins)
+Run all new feature tests: widgets, unified event, intents, background [2-3 mins]
 
 ### ios test_core_data
 
@@ -93,7 +93,7 @@ Run all new feature tests: widgets, unified event, intents, background (2-3 mins
 [bundle exec] fastlane ios test_core_data
 ```
 
-Run core data tests (<1 min, iPhone 17 Pro)
+Run core data tests [<1 min, iPhone 17 Pro]
 
 ### ios test_analysis
 
@@ -101,7 +101,7 @@ Run core data tests (<1 min, iPhone 17 Pro)
 [bundle exec] fastlane ios test_analysis
 ```
 
-Run analysis engine tests (<1 min, iPhone 17 Pro)
+Run analysis engine tests [<1 min, iPhone 17 Pro]
 
 ### ios test_integrations
 
@@ -109,7 +109,7 @@ Run analysis engine tests (<1 min, iPhone 17 Pro)
 [bundle exec] fastlane ios test_integrations
 ```
 
-Run location and calendar tests (<1 min, iPhone 17 Pro)
+Run location and calendar tests [<1 min, iPhone 17 Pro]
 
 ### ios test_healthkit
 
@@ -117,7 +117,7 @@ Run location and calendar tests (<1 min, iPhone 17 Pro)
 [bundle exec] fastlane ios test_healthkit
 ```
 
-Run HealthKit integration tests with 7 days of synthetic data (1-2 mins)
+Run HealthKit integration tests with 7 days of synthetic data [1-2 mins]
 
 ### ios test_healthkit_extended
 
@@ -125,7 +125,7 @@ Run HealthKit integration tests with 7 days of synthetic data (1-2 mins)
 [bundle exec] fastlane ios test_healthkit_extended
 ```
 
-Run HealthKit integration tests with 30 days of synthetic data (3-5 mins)
+Run HealthKit integration tests with 30 days of synthetic data [3-5 mins]
 
 ### ios test_healthkit_deterministic
 
@@ -133,7 +133,7 @@ Run HealthKit integration tests with 30 days of synthetic data (3-5 mins)
 [bundle exec] fastlane ios test_healthkit_deterministic
 ```
 
-Verify deterministic data generation with seed=42 (~1 min)
+Verify deterministic data generation with seed=42 [~1 min]
 
 ### ios test_healthkit_utility
 
@@ -141,7 +141,7 @@ Verify deterministic data generation with seed=42 (~1 min)
 [bundle exec] fastlane ios test_healthkit_utility
 ```
 
-Run unit tests for HealthKitUtility synthetic data library (<30 secs)
+Run unit tests for HealthKitUtility synthetic data library [<30 secs]
 
 ### ios test_healthkit_full
 
@@ -149,7 +149,7 @@ Run unit tests for HealthKitUtility synthetic data library (<30 secs)
 [bundle exec] fastlane ios test_healthkit_full
 ```
 
-Run all HealthKit tests: utility + integration + deterministic + extended (5-8 mins)
+Run all HealthKit tests: utility + integration + deterministic + extended [5-8 mins]
 
 ### ios test_all
 
@@ -157,7 +157,7 @@ Run all HealthKit tests: utility + integration + deterministic + extended (5-8 m
 [bundle exec] fastlane ios test_all
 ```
 
-Run standard test suite: unit + UI + HealthKit integration (3-5 mins)
+Run standard test suite: unit + UI + HealthKit integration [3-5 mins]
 
 ### ios test_complete
 
@@ -165,7 +165,7 @@ Run standard test suite: unit + UI + HealthKit integration (3-5 mins)
 [bundle exec] fastlane ios test_complete
 ```
 
-Run complete test suite: unit + UI + full HealthKit (10-15 mins)
+Run complete test suite: unit + UI + full HealthKit [10-15 mins]
 
 ### ios screenshots
 
@@ -173,7 +173,7 @@ Run complete test suite: unit + UI + full HealthKit (10-15 mins)
 [bundle exec] fastlane ios screenshots
 ```
 
-Generate screenshots for App Store (standard devices)
+Generate screenshots for App Store [standard devices]
 
 ### ios screenshots_framed
 

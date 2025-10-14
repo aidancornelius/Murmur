@@ -28,6 +28,24 @@ struct NotificationScheduler {
 
     static func schedule(reminder: Reminder) async throws {
         let center = UNUserNotificationCenter.current()
+
+        // Check if we're running in a test environment
+        let isRunningTests = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+
+        // Check authorization status and request if needed (skip in tests)
+        if !isRunningTests {
+            let settings = await center.notificationSettings()
+
+            if settings.authorizationStatus == .notDetermined {
+                let granted = try await center.requestAuthorization(options: [.alert, .badge, .sound])
+                guard granted else {
+                    throw SchedulerError.authorizationDenied
+                }
+            } else if settings.authorizationStatus == .denied {
+                throw SchedulerError.authorizationDenied
+            }
+        }
+
         let content = UNMutableNotificationContent()
         content.title = "Murmur: check in reminder"
         content.body = "Tap to record your symptoms, events and sleep."

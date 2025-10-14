@@ -2,7 +2,7 @@
 //  UnifiedEventViewUITests.swift
 //  MurmurUITests
 //
-//  Created by Claude on 13/10/2025.
+//  Created by Aidan Cornelius-Bell on 13/10/2025.
 //
 
 import XCTest

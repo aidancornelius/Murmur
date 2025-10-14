@@ -166,10 +166,10 @@ final class MurmurUITests: XCTestCase {
         searchField.tap()
         searchField.typeText("Fatigue")
 
-        // Wait for search results
-        let fatigueCell = app.staticTexts["Fatigue"]
-        XCTAssertTrue(fatigueCell.waitForExistence(timeout: 3), "Fatigue symptom should appear in search results")
-        fatigueCell.tap()
+        // Wait for search results - use button query to avoid matching category headers or other text
+        let fatigueButton = app.buttons.matching(NSPredicate(format: "label == %@", "Fatigue")).firstMatch
+        XCTAssertTrue(fatigueButton.waitForExistence(timeout: 3), "Fatigue symptom button should appear in search results")
+        fatigueButton.tap()
 
         // Wait for severity slider to appear
         let slider = app.sliders.matching(identifier: "severity-slider").firstMatch
@@ -261,16 +261,22 @@ final class MurmurUITests: XCTestCase {
 
         // Test different severity levels with proper waits
         slider.adjust(toNormalizedSliderPosition: 0.0) // Level 1
-        let veryLowLabel = app.staticTexts["Very low"]
-        XCTAssertTrue(veryLowLabel.waitForExistence(timeout: 1), "Level 1 positive symptom should show 'Very low'")
+        // Wait for UI to update after slider adjustment
+        waitForUIToSettle(timeout: 0.5)
+        // The severity label is combined with numeric indicator in accessibility tree
+        // Look for any element (staticText or other) containing "Very low"
+        let veryLowLabel = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] 'Very low'")).firstMatch
+        XCTAssertTrue(veryLowLabel.waitForExistence(timeout: 2), "Level 1 positive symptom should show 'Very low'")
 
         slider.adjust(toNormalizedSliderPosition: 0.5) // Level 3
-        let moderateLabel = app.staticTexts["Moderate"]
-        XCTAssertTrue(moderateLabel.waitForExistence(timeout: 1), "Level 3 positive symptom should show 'Moderate'")
+        waitForUIToSettle(timeout: 0.3)
+        let moderateLabel = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] 'Moderate'")).firstMatch
+        XCTAssertTrue(moderateLabel.waitForExistence(timeout: 2), "Level 3 positive symptom should show 'Moderate'")
 
         slider.adjust(toNormalizedSliderPosition: 1.0) // Level 5
-        let veryHighLabel = app.staticTexts["Very high"]
-        XCTAssertTrue(veryHighLabel.waitForExistence(timeout: 1), "Level 5 positive symptom should show 'Very high'")
+        waitForUIToSettle(timeout: 0.3)
+        let veryHighLabel = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] 'Very high'")).firstMatch
+        XCTAssertTrue(veryHighLabel.waitForExistence(timeout: 2), "Level 5 positive symptom should show 'Very high'")
 
         // Cancel using accessibility identifier
         let cancelButton = app.buttons.matching(identifier: "cancel-button").firstMatch
@@ -285,13 +291,19 @@ final class MurmurUITests: XCTestCase {
             return
         }
         // Wait for app to load
-        // Navigate to settings
-        let settingsButton = require(app.navigationBars.buttons.matching(NSPredicate(format: "identifier CONTAINS[c] 'gear' OR label CONTAINS[c] 'settings'")).firstMatch,
-                                     timeout: 10)
-        tap(element: settingsButton)
+        // Navigate to settings using the proper accessibility identifier
+        let settingsButton = app.buttons[AccessibilityIdentifiers.settingsButton]
+        XCTAssertTrue(settingsButton.waitForExistence(timeout: 10), "Settings button should exist")
+        settingsButton.tap()
 
-        let trackedSymptomsButton = require(app.buttons["tracked-symptoms-button"], timeout: 10)
-        trackedSymptomsButton.tap()
+        // Wait for settings screen to load
+        let settingsNavBar = app.navigationBars["Settings"]
+        XCTAssertTrue(settingsNavBar.waitForExistence(timeout: 5), "Settings screen should load")
+
+        // NavigationLink can appear as different element types - check all possibilities
+        let trackedSymptomsElement = app.descendants(matching: .any).matching(identifier: AccessibilityIdentifiers.trackedSymptomsButton).firstMatch
+        XCTAssertTrue(trackedSymptomsElement.waitForExistence(timeout: 10), "Tracked symptoms element should exist")
+        tap(element: trackedSymptomsElement)
 
         // Tap add button (+ button in navigation)
         let addButton = require(app.navigationBars.buttons.matching(NSPredicate(format: "identifier == 'plus' OR label == 'Add'")).firstMatch, timeout: 5)
@@ -343,9 +355,9 @@ final class MurmurUITests: XCTestCase {
             return
         }
         // Wait for app to load
-        // Navigate to settings
-        let settingsButton = require(app.navigationBars.buttons.matching(NSPredicate(format: "identifier CONTAINS[c] 'gear' OR label CONTAINS[c] 'settings'")).firstMatch,
-                                     timeout: 10)
+        // Navigate to settings using the proper accessibility identifier
+        let settingsButton = app.buttons[AccessibilityIdentifiers.settingsButton]
+        XCTAssertTrue(settingsButton.waitForExistence(timeout: 10), "Settings button should exist")
         settingsButton.tap()
 
         // Look for notification/reminder settings
@@ -402,10 +414,10 @@ final class MurmurUITests: XCTestCase {
         searchField.tap()
         searchField.typeText("Energy")
 
-        // Wait for Energy symptom to appear
-        let energyCell = app.staticTexts["Energy"]
-        XCTAssertTrue(energyCell.waitForExistence(timeout: 3), "Energy symptom should appear in search results")
-        energyCell.tap()
+        // Wait for Energy symptom button to appear - use button query to avoid matching category headers
+        let energyButton = app.buttons.matching(NSPredicate(format: "label == %@", "Energy")).firstMatch
+        XCTAssertTrue(energyButton.waitForExistence(timeout: 3), "Energy symptom button should appear in search results")
+        energyButton.tap()
 
         // Wait for severity slider
         let slider = app.sliders.matching(identifier: "severity-slider").firstMatch
@@ -414,8 +426,8 @@ final class MurmurUITests: XCTestCase {
         // Set severity to 5 (should show "Very high" for positive symptoms)
         slider.adjust(toNormalizedSliderPosition: 1.0)
 
-        // Wait for label to update
-        let veryHighLabel = app.staticTexts["Very high"]
+        // Wait for label to update - use descendants to find any element type with this label
+        let veryHighLabel = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] 'Very high'")).firstMatch
         XCTAssertTrue(veryHighLabel.waitForExistence(timeout: 2), "Positive symptom at level 5 should show 'Very high'")
 
         // Verify NO "Crisis" label (would be for negative symptoms)
@@ -490,8 +502,8 @@ final class MurmurUITests: XCTestCase {
 
         // Screenshot 2: Day detail view
         let firstCell = app.cells.firstMatch
-        if firstCell.waitForExistence(timeout: timeout(10)) {
-            firstCell.tap()
+        if firstCell.waitForExistence(timeout: timeout(10)) && firstCell.waitForHittable(timeout: timeout(3)) {
+            tap(element: firstCell)
             let detailBackButton = app.navigationBars.buttons.element(boundBy: 0)
             if detailBackButton.waitForExistence(timeout: timeout(5)) {
                 snapshot("02DayDetail")
@@ -605,45 +617,49 @@ final class MurmurUITests: XCTestCase {
 
     private func findSettingsButton(timeout: TimeInterval) -> XCUIElement? {
         guard let app = app else { return nil }
-        let identifierMatch = app.buttons[AccessibilityIdentifiers.settingsButton]
-        if identifierMatch.waitForExistence(timeout: timeout) {
-            return identifierMatch
+
+        // First check if we're already on the timeline (where the settings button lives)
+        // The button should be in the navigation bar
+        let settingsButton = app.buttons[AccessibilityIdentifiers.settingsButton]
+        if settingsButton.waitForExistence(timeout: timeout) {
+            return settingsButton
         }
 
+        // Fallback: search more broadly
         let anyMatch = app.descendants(matching: .any).matching(identifier: AccessibilityIdentifiers.settingsButton).firstMatch
         if anyMatch.waitForExistence(timeout: 1) {
             return anyMatch
         }
 
-        let fallbackPredicate = NSPredicate(format: "identifier CONTAINS[c] 'gear' OR label CONTAINS[c] 'settings'")
-        let fallback = app.navigationBars.buttons.matching(fallbackPredicate).firstMatch
-        if fallback.waitForExistence(timeout: 1) {
-            return fallback
+        NSLog("⚠️ Settings button not found with identifier. Available buttons:")
+        for button in app.buttons.allElementsBoundByIndex.prefix(10) {
+            NSLog("  Button: label='\(button.label)', identifier='\(button.identifier)'")
         }
-
-        NSLog("⚠️ Settings button not found. Debug tree: \(app.debugDescription)")
         return nil
     }
 
     private func findLoadCapacityButton(timeout: TimeInterval) -> XCUIElement? {
         guard let app = app else { return nil }
+
+        // NavigationLinks in SwiftUI List appear as buttons in the accessibility tree
         let button = app.buttons[AccessibilityIdentifiers.loadCapacityButton]
         if button.waitForExistence(timeout: timeout) {
             return button
         }
 
+        // Fallback: search more broadly for any element with this identifier
         let anyMatch = app.descendants(matching: .any).matching(identifier: AccessibilityIdentifiers.loadCapacityButton).firstMatch
         if anyMatch.waitForExistence(timeout: 1) {
             return anyMatch
         }
 
-        let fallback = app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'load capacity'"))
-        let firstMatch = fallback.firstMatch
-        if firstMatch.waitForExistence(timeout: 1) {
-            return firstMatch
+        NSLog("⚠️ Load capacity button not found with identifier. Available elements in settings:")
+        for element in app.descendants(matching: .any).allElementsBoundByIndex.prefix(20) {
+            let label = element.label
+            if !label.isEmpty && label.lowercased().contains("load") {
+                NSLog("  Element: label='\(label)', identifier='\(element.identifier)', type=\(element.elementType.rawValue)")
+            }
         }
-
-        NSLog("⚠️ Load capacity button not found. Debug tree: \(app.debugDescription)")
         return nil
     }
 

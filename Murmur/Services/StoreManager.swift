@@ -31,7 +31,6 @@ class StoreManager: ObservableObject {
     init() {
         Task {
             await loadProducts()
-            await checkPurchaseHistory()
         }
 
         // Listen for transaction updates to handle purchases that complete
@@ -58,6 +57,32 @@ class StoreManager: ObservableObject {
                 }
             }
         }
+    }
+
+    /// Silently checks purchase history in the background without affecting UI state
+    /// Runs off the main actor to avoid blocking the main thread
+    /// Returns true if a purchase was found, false otherwise
+    nonisolated func silentRestorePurchases() async -> Bool {
+        let productIDsToCheck = productIDs
+        var foundPurchase = false
+
+        for await result in Transaction.currentEntitlements {
+            if case .verified(let transaction) = result {
+                if productIDsToCheck.contains(transaction.productID) {
+                    foundPurchase = true
+                    break
+                }
+            }
+        }
+
+        // Only update hasTipped on main actor if we found a purchase
+        if foundPurchase {
+            await MainActor.run { [weak self] in
+                self?.hasTipped = true
+            }
+        }
+
+        return foundPurchase
     }
 
     func loadProducts() async {
@@ -140,7 +165,9 @@ extension StoreManager: ResourceManageable {
     }
 
     nonisolated func cleanup() {
-        Task { @MainActor in
+        // Assume we're on the main actor (safe in tests and normal app usage)
+        // This avoids creating an unstructured Task that completes asynchronously
+        MainActor.assumeIsolated {
             _cleanup()
         }
     }

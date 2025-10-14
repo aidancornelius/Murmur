@@ -298,6 +298,44 @@ struct UnifiedEventView: View {
                 }
             }
 
+            // Check if we should autofill sleep in the morning (5-8am)
+            let currentTime = DateUtility.now()
+            let hour = Calendar.current.component(.hour, from: currentTime)
+            let isMorning = hour >= 5 && hour < 8
+
+            #if DEBUG
+            print("[Sleep Autofill] Current time: \(currentTime)")
+            print("[Sleep Autofill] Hour: \(hour)")
+            print("[Sleep Autofill] Is morning (5-8am): \(isMorning)")
+            #endif
+
+            if isMorning {
+                let hasRecentSleep = hasSleepInLast12Hours()
+                #if DEBUG
+                print("[Sleep Autofill] Has sleep in last 12 hours: \(hasRecentSleep)")
+                #endif
+
+                if !hasRecentSleep {
+                    #if DEBUG
+                    print("[Sleep Autofill] Triggering sleep mode autofill")
+                    #endif
+
+                    // Auto-switch to sleep mode
+                    eventType = .sleep
+                    hasManuallySelectedEventType = false  // Allow parseInput to override if needed
+                    showSleepQualityCard = true
+                    showExertionCard = false
+                    showTimeCard = false
+                    showMealTypeCard = false
+
+                    // Pre-populate with "Sleep" text
+                    mainInput = "Sleep"
+
+                    // Indicate this is an automatic suggestion
+                    hasUserEdited = false
+                }
+            }
+
             // Focus the input field
             Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(200))
@@ -323,6 +361,7 @@ struct UnifiedEventView: View {
                 }
                 .disabled(isSaving || mainInput.trimmingCharacters(in: .whitespaces).isEmpty)
                 .foregroundStyle(isSaving || mainInput.trimmingCharacters(in: .whitespaces).isEmpty ? .secondary : palette.accentColor)
+                .accessibilityIdentifier(AccessibilityIdentifiers.saveButton)
             }
         }
         .onChange(of: mainInput) { oldValue, newValue in
@@ -488,6 +527,7 @@ struct UnifiedEventView: View {
                             // Dismiss keyboard on return/done
                             isInputFocused = false
                         }
+                        .accessibilityIdentifier(AccessibilityIdentifiers.mainInputField)
                 }
                 .padding()
                 .background(
@@ -575,7 +615,7 @@ struct UnifiedEventView: View {
                     showSleepQualityCard = false
                     showMealTypeCard = false
                 }
-                HapticFeedback.selection.trigger()
+                // Removed haptic feedback - too frequent
             }) {
                 Label("Activity", systemImage: "figure.walk")
             }
@@ -593,7 +633,7 @@ struct UnifiedEventView: View {
                         mainInput = "Sleep"
                     }
                 }
-                HapticFeedback.selection.trigger()
+                // Removed haptic feedback - too frequent
             }) {
                 Label("Sleep", systemImage: "moon.stars.fill")
             }
@@ -607,7 +647,7 @@ struct UnifiedEventView: View {
                     showSleepQualityCard = false
                     showMealTypeCard = true
                 }
-                HapticFeedback.selection.trigger()
+                // Removed haptic feedback - too frequent
             }) {
                 Label("Meal", systemImage: "fork.knife")
             }
@@ -623,6 +663,8 @@ struct UnifiedEventView: View {
             }
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier(AccessibilityIdentifiers.eventTypeButton)
+        .accessibilityLabel(labelForEventType(eventType))
     }
 
     @ViewBuilder
@@ -638,7 +680,7 @@ struct UnifiedEventView: View {
                 timestamp = chip.date
             }
 
-            HapticFeedback.selection.trigger()
+            // Removed haptic feedback - too frequent for time chips
 
             // Mark as interacted
             if !hasInteracted {
@@ -666,7 +708,7 @@ struct UnifiedEventView: View {
         Button(action: {
             selectedDurationChip = chip
             durationMinutes = "\(chip.minutes)"
-            HapticFeedback.selection.trigger()
+            // Removed haptic feedback - too frequent for duration chips
         }) {
             Text(chip.rawValue)
                 .font(.subheadline)
@@ -692,17 +734,20 @@ struct UnifiedEventView: View {
                 ExertionRingSelector(
                     label: "Physical",
                     value: $physicalExertion,
-                    color: .orange
+                    color: .orange,
+                    accessibilityId: AccessibilityIdentifiers.physicalExertionRing
                 )
                 ExertionRingSelector(
                     label: "Mental",
                     value: $cognitiveExertion,
-                    color: .purple
+                    color: .purple,
+                    accessibilityId: AccessibilityIdentifiers.cognitiveExertionRing
                 )
                 ExertionRingSelector(
                     label: "Emotional",
                     value: $emotionalLoad,
-                    color: .pink
+                    color: .pink,
+                    accessibilityId: AccessibilityIdentifiers.emotionalLoadRing
                 )
             }
         }
@@ -741,7 +786,9 @@ struct UnifiedEventView: View {
                 }
 
                 DatePicker("Bed time", selection: $bedTime, displayedComponents: [.date, .hourAndMinute])
+                    .accessibilityIdentifier(AccessibilityIdentifiers.bedTimePicker)
                 DatePicker("Wake time", selection: $wakeTime, displayedComponents: [.date, .hourAndMinute])
+                    .accessibilityIdentifier(AccessibilityIdentifiers.wakeTimePicker)
 
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
@@ -768,7 +815,8 @@ struct UnifiedEventView: View {
                         label: "",  // Empty label since we show it above
                         value: $sleepQuality,
                         color: .indigo,
-                        showScale: false  // Don't show the built-in scale
+                        showScale: false,  // Don't show the built-in scale
+                        accessibilityId: AccessibilityIdentifiers.sleepQualityRing
                     )
                 }
             }
@@ -840,6 +888,7 @@ struct UnifiedEventView: View {
                     Text("Snack").tag("snack")
                 }
                 .pickerStyle(.segmented)
+                .accessibilityIdentifier(AccessibilityIdentifiers.mealTypePicker)
 
                 // Optional exertion toggle
                 Button(action: {
@@ -1003,6 +1052,7 @@ struct UnifiedEventView: View {
                 )
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier(AccessibilityIdentifiers.notesToggleButton)
 
             if showNotesCard {
                 TextField("Add any details...", text: $note, axis: .vertical)
@@ -1022,6 +1072,7 @@ struct UnifiedEventView: View {
                         insertion: .push(from: .top).combined(with: .opacity),
                         removal: .push(from: .bottom).combined(with: .opacity)
                     ))
+                    .accessibilityIdentifier(AccessibilityIdentifiers.notesField)
             }
         }
     }
@@ -1424,7 +1475,14 @@ struct UnifiedEventView: View {
 
     private func hasSleepInLast12Hours() -> Bool {
         let request = SleepEvent.fetchRequest()
-        let twelveHoursAgo = DateUtility.now().addingTimeInterval(-12 * 3600)
+        let now = DateUtility.now()
+        let twelveHoursAgo = now.addingTimeInterval(-12 * 3600)
+
+        #if DEBUG
+        print("[Sleep Check] Now: \(now)")
+        print("[Sleep Check] 12 hours ago: \(twelveHoursAgo)")
+        #endif
+
         request.predicate = NSPredicate(
             format: "createdAt >= %@",
             twelveHoursAgo as NSDate
@@ -1433,8 +1491,23 @@ struct UnifiedEventView: View {
 
         do {
             let count = try context.count(for: request)
+
+            #if DEBUG
+            if count > 0 {
+                // Fetch the actual sleep event to see when it was created
+                let sleeps = try context.fetch(request)
+                if let sleep = sleeps.first {
+                    print("[Sleep Check] Found sleep created at: \(sleep.createdAt ?? Date())")
+                }
+            }
+            print("[Sleep Check] Sleep count in last 12 hours: \(count)")
+            #endif
+
             return count > 0
         } catch {
+            #if DEBUG
+            print("[Sleep Check] Error checking for sleep: \(error)")
+            #endif
             return false
         }
     }

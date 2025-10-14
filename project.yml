@@ -16,8 +16,8 @@ packages:
 settings:
   base:
     SWIFT_VERSION: "6.0"
-    MARKETING_VERSION: "1.51"
-    CURRENT_PROJECT_VERSION: "210"
+    MARKETING_VERSION: "1.50"
+    CURRENT_PROJECT_VERSION: "583"
     ENABLE_HARDENED_RUNTIME: NO
     DEVELOPMENT_TEAM: HK6R36PLNR
     ENABLE_USER_SCRIPT_SANDBOXING: YES
@@ -227,14 +227,10 @@ schemes:
     run:
       config: Debug
       commandLineArguments:
-        "-UITestMode":
-          enabled: true
-        "-SeedHealthKitNormal":
-          enabled: true
-        "-HealthKitHistoryDays 7":
-          enabled: true
-        "-HealthKitSeed 42":
-          enabled: true
+        "-UITestMode": true
+        "-SeedHealthKitNormal": true
+        "-HealthKitHistoryDays 7": true
+        "-HealthKitSeed 42": true
 
   Murmur (HealthKit Lower Stress):
     build:
@@ -244,14 +240,10 @@ schemes:
     run:
       config: Debug
       commandLineArguments:
-        "-UITestMode":
-          enabled: true
-        "-SeedHealthKitLowerStress":
-          enabled: true
-        "-HealthKitHistoryDays 7":
-          enabled: true
-        "-HealthKitSeed 42":
-          enabled: true
+        "-UITestMode": true
+        "-SeedHealthKitLowerStress": true
+        "-HealthKitHistoryDays 7": true
+        "-HealthKitSeed 42": true
 
   Murmur (HealthKit Higher Stress):
     build:
@@ -261,14 +253,10 @@ schemes:
     run:
       config: Debug
       commandLineArguments:
-        "-UITestMode":
-          enabled: true
-        "-SeedHealthKitHigherStress":
-          enabled: true
-        "-HealthKitHistoryDays 7":
-          enabled: true
-        "-HealthKitSeed 42":
-          enabled: true
+        "-UITestMode": true
+        "-SeedHealthKitHigherStress": true
+        "-HealthKitHistoryDays 7": true
+        "-HealthKitSeed 42": true
 
   Murmur (HealthKit Edge Cases):
     build:
@@ -278,14 +266,10 @@ schemes:
     run:
       config: Debug
       commandLineArguments:
-        "-UITestMode":
-          enabled: true
-        "-SeedHealthKitEdgeCases":
-          enabled: true
-        "-HealthKitHistoryDays 7":
-          enabled: true
-        "-HealthKitSeed 42":
-          enabled: true
+        "-UITestMode": true
+        "-SeedHealthKitEdgeCases": true
+        "-HealthKitHistoryDays 7": true
+        "-HealthKitSeed 42": true
 
   Murmur (HealthKit Live Data):
     build:
@@ -295,16 +279,11 @@ schemes:
     run:
       config: Debug
       commandLineArguments:
-        "-UITestMode":
-          enabled: true
-        "-SeedHealthKitNormal":
-          enabled: true
-        "-EnableLiveHealthData":
-          enabled: true
-        "-HealthKitHistoryDays 7":
-          enabled: true
-        "-HealthKitSeed 42":
-          enabled: true
+        "-UITestMode": true
+        "-SeedHealthKitNormal": true
+        "-EnableLiveHealthData": true
+        "-HealthKitHistoryDays 7": true
+        "-HealthKitSeed 42": true
 
   Murmur (HealthKit 30 Days):
     build:
@@ -314,14 +293,10 @@ schemes:
     run:
       config: Debug
       commandLineArguments:
-        "-UITestMode":
-          enabled: true
-        "-SeedHealthKitNormal":
-          enabled: true
-        "-HealthKitHistoryDays 30":
-          enabled: true
-        "-HealthKitSeed 42":
-          enabled: true
+        "-UITestMode": true
+        "-SeedHealthKitNormal": true
+        "-HealthKitHistoryDays 30": true
+        "-HealthKitSeed 42": true
 
   Murmur (Sleep Testing - 6:30am):
     build:
@@ -331,16 +306,12 @@ schemes:
     run:
       config: Debug
       commandLineArguments:
-        "-UITestMode":
-          enabled: true
-        "-SeedHealthKitNormal":
-          enabled: true
-        "-HealthKitHistoryDays 7":
-          enabled: true
-        "-HealthKitSeed 42":
-          enabled: true
-        "-OverrideTime 06:30":
-          enabled: true
+        "-UITestMode": true
+        "-SeedHealthKitNormal": true
+        "-HealthKitHistoryDays 7": true
+        "-HealthKitSeed 42": true
+        "-OverrideTime 06:30": true
+        "-ClearRecentSleep": true
 
   MurmurWidgetsExtension:
     build:
@@ -359,5 +330,4 @@ schemes:
       targets:
         - name: MurmurUITests
       commandLineArguments:
-        "-CaptureTestScreenshots":
-          enabled: true
+        "-CaptureTestScreenshots": true

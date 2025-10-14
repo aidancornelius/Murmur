@@ -15,13 +15,11 @@ struct UnifiedEventScreen {
     // MARK: - Elements
 
     var mainInputField: XCUIElement {
-        // The main text field for natural language input
-        app.textFields.matching(NSPredicate(format: "placeholderValue CONTAINS 'What did you' OR placeholderValue CONTAINS 'What happened' OR placeholderValue CONTAINS 'How did you sleep' OR placeholderValue CONTAINS 'What did you eat'")).firstMatch
+        app.textFields.matching(identifier: AccessibilityIdentifiers.mainInputField).firstMatch
     }
 
     var eventTypeButton: XCUIElement {
-        // The menu button for selecting event type (activity/sleep/meal)
-        app.buttons.matching(NSPredicate(format: "label CONTAINS 'Activity' OR label CONTAINS 'Sleep' OR label CONTAINS 'Meal' OR identifier CONTAINS 'event-type'")).firstMatch
+        app.buttons.matching(identifier: AccessibilityIdentifiers.eventTypeButton).firstMatch
     }
 
     var saveButton: XCUIElement {
@@ -33,44 +31,46 @@ struct UnifiedEventScreen {
     }
 
     var notesField: XCUIElement {
-        // Notes field - appears as textView in accessibility tree
-        app.textViews.matching(NSPredicate(format: "placeholderValue CONTAINS 'Add any details' OR identifier CONTAINS 'note'")).firstMatch
+        app.textFields.matching(identifier: AccessibilityIdentifiers.notesField).firstMatch
     }
 
     var notesToggleButton: XCUIElement {
-        // Button to show/hide notes section
-        app.buttons.matching(NSPredicate(format: "label CONTAINS 'Add notes' OR label CONTAINS 'Notes'")).firstMatch
+        app.buttons.matching(identifier: AccessibilityIdentifiers.notesToggleButton).firstMatch
     }
 
     // Exertion ring selectors (for activities and meals)
     var physicalExertionRing: XCUIElement {
-        app.otherElements.matching(NSPredicate(format: "label CONTAINS 'Physical'")).firstMatch
+        app.staticTexts.matching(identifier: AccessibilityIdentifiers.physicalExertionRing).firstMatch
     }
 
     var cognitiveExertionRing: XCUIElement {
-        app.otherElements.matching(NSPredicate(format: "label CONTAINS 'Mental'")).firstMatch
+        app.staticTexts.matching(identifier: AccessibilityIdentifiers.cognitiveExertionRing).firstMatch
     }
 
     var emotionalLoadRing: XCUIElement {
-        app.otherElements.matching(NSPredicate(format: "label CONTAINS 'Emotional'")).firstMatch
+        app.staticTexts.matching(identifier: AccessibilityIdentifiers.emotionalLoadRing).firstMatch
     }
 
-    // Sleep quality
+    // Sleep quality - can be either staticTexts or otherElements depending on label visibility
     var sleepQualityRing: XCUIElement {
-        app.otherElements.matching(NSPredicate(format: "label CONTAINS 'Sleep quality' OR identifier CONTAINS 'sleep-quality'")).firstMatch
+        let staticText = app.staticTexts.matching(identifier: AccessibilityIdentifiers.sleepQualityRing).firstMatch
+        if staticText.exists {
+            return staticText
+        }
+        return app.otherElements.matching(identifier: AccessibilityIdentifiers.sleepQualityRing).firstMatch
     }
 
     var bedTimePicker: XCUIElement {
-        app.datePickers.matching(NSPredicate(format: "label CONTAINS 'Bed time' OR identifier CONTAINS 'bed-time'")).firstMatch
+        app.datePickers.matching(identifier: AccessibilityIdentifiers.bedTimePicker).firstMatch
     }
 
     var wakeTimePicker: XCUIElement {
-        app.datePickers.matching(NSPredicate(format: "label CONTAINS 'Wake time' OR identifier CONTAINS 'wake-time'")).firstMatch
+        app.datePickers.matching(identifier: AccessibilityIdentifiers.wakeTimePicker).firstMatch
     }
 
     // Meal type picker
     var mealTypePicker: XCUIElement {
-        app.segmentedControls.matching(NSPredicate(format: "label CONTAINS 'Meal type' OR identifier CONTAINS 'meal-type'")).firstMatch
+        app.segmentedControls.matching(identifier: AccessibilityIdentifiers.mealTypePicker).firstMatch
     }
 
     // Time chips
@@ -285,20 +285,21 @@ struct UnifiedEventScreen {
 
     /// Check if an event type is currently selected
     func hasEventTypeSelected(_ type: EventType) -> Bool {
-        // Check if the event type button label matches
-        guard eventTypeButton.exists else { return false }
+        // Check if the event type button's accessibility label matches
+        guard eventTypeButton.waitForExistence(timeout: 2.0) else { return false }
 
-        let expectedIcon: String
+        let expectedLabel: String
         switch type {
         case .activity:
-            expectedIcon = "Activity"
+            expectedLabel = "Activity"
         case .sleep:
-            expectedIcon = "Sleep"
+            expectedLabel = "Sleep"
         case .meal:
-            expectedIcon = "Meal"
+            expectedLabel = "Meal"
         }
 
-        return eventTypeButton.label.contains(expectedIcon)
+        // The button has an accessibility label set to the event type name
+        return eventTypeButton.label == expectedLabel
     }
 
     /// Check if error message is displayed

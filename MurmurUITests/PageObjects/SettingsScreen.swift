@@ -114,7 +114,7 @@ struct SettingsScreen {
     func addSymptomType(name: String, timeout: TimeInterval = 5) -> Bool {
         // Assumes we're already on tracked symptoms screen
         // Wait for any navigation animations to complete
-        RunLoop.current.run(until: Date().addingTimeInterval(3.0))
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
         // Try to find the add button by accessibility label first (more reliable)
         let addButton = app.buttons["Add symptom"]
@@ -204,11 +204,25 @@ struct SettingsScreen {
 
         symptomCell.swipeLeft()
 
-        let deleteButton = app.buttons["Delete"]
-        guard deleteButton.waitForExistence(timeout: 2) else {
+        // Tap the swipe action delete button
+        let swipeDeleteButton = app.buttons["Delete"]
+        guard swipeDeleteButton.waitForExistence(timeout: 2) else {
             return false
         }
-        deleteButton.tap()
+        swipeDeleteButton.tap()
+
+        // Wait for confirmation alert to appear
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
+
+        // Tap the confirmation dialog delete button
+        let confirmDeleteButton = app.buttons["Delete"]
+        guard confirmDeleteButton.waitForExistence(timeout: 2) else {
+            return false
+        }
+        confirmDeleteButton.tap()
+
+        // Wait for deletion to complete and Core Data to update
+        RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
         return true
     }
@@ -222,34 +236,49 @@ struct SettingsScreen {
 
     /// Check if symptom type exists
     func hasSymptomType(named name: String, timeout: TimeInterval = 5) -> Bool {
-        // Check in cells first (List items appear as cells in the accessibility tree)
-        let symptomCell = app.cells.matching(NSPredicate(format: "label CONTAINS[c] %@", name)).firstMatch
-        if symptomCell.waitForExistence(timeout: timeout) {
-            // Try to scroll to make it visible if it exists but isn't on screen
-            if symptomCell.exists && !symptomCell.isHittable {
-                symptomCell.scrollToVisible()
+        // Use a polling approach to wait for the UI to stabilize
+        // This handles both checking for appearance (when adding) and disappearance (when deleting)
+        let endTime = Date().addingTimeInterval(timeout)
+        var lastCheckResult = false
+
+        while Date() < endTime {
+            // Check in cells first (List items appear as cells in the accessibility tree)
+            let symptomCell = app.cells.matching(NSPredicate(format: "label CONTAINS[c] %@", name)).firstMatch
+            if symptomCell.exists {
+                lastCheckResult = true
+                // If found, give it a brief moment to confirm it's stable
+                RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+                if symptomCell.exists {
+                    return true
+                }
             }
-            return true
+
+            // Check for the symptom name in static texts
+            let symptomText = app.staticTexts[name]
+            if symptomText.exists {
+                return true
+            }
+
+            // Check in links (NavigationLinks appear as links in the accessibility tree)
+            let symptomLink = app.links.matching(NSPredicate(format: "label CONTAINS[c] %@", name)).firstMatch
+            if symptomLink.exists {
+                return true
+            }
+
+            let symptomButton = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", name)).firstMatch
+            if symptomButton.exists {
+                return true
+            }
+
+            let symptomElement = app.otherElements.matching(NSPredicate(format: "label CONTAINS[c] %@", name)).firstMatch
+            if symptomElement.exists {
+                return true
+            }
+
+            // Not found, wait a bit before checking again
+            RunLoop.current.run(until: Date().addingTimeInterval(0.2))
         }
 
-        // Check for the symptom name in static texts
-        let symptomText = app.staticTexts[name]
-        if symptomText.waitForExistence(timeout: timeout) {
-            return true
-        }
-
-        // Check in links (NavigationLinks appear as links in the accessibility tree)
-        let symptomLink = app.links.matching(NSPredicate(format: "label CONTAINS[c] %@", name)).firstMatch
-        if symptomLink.waitForExistence(timeout: timeout) {
-            return true
-        }
-
-        let symptomButton = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", name)).firstMatch
-        if symptomButton.waitForExistence(timeout: timeout) {
-            return true
-        }
-
-        let symptomElement = app.otherElements.matching(NSPredicate(format: "label CONTAINS[c] %@", name)).firstMatch
-        return symptomElement.waitForExistence(timeout: timeout)
+        return false
     }
 }

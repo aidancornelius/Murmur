@@ -65,6 +65,10 @@ final class NotificationSchedulerTests: XCTestCase {
         let center = UNUserNotificationCenter.current()
         let pendingRequests = await center.pendingNotificationRequests()
 
+        print("Pending requests count: \(pendingRequests.count)")
+        print("Looking for identifier: \(reminder.id?.uuidString ?? "nil")")
+        print("All identifiers: \(pendingRequests.map { $0.identifier })")
+
         let matchingRequest = pendingRequests.first { $0.identifier == reminder.id?.uuidString }
         XCTAssertNotNil(matchingRequest, "Notification request should be scheduled")
         XCTAssertEqual(matchingRequest?.content.title, "Murmur: check in reminder")

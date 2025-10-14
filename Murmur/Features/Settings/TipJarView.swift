@@ -9,10 +9,13 @@ import SwiftUI
 import StoreKit
 
 struct TipJarView: View {
-    @StateObject private var store = StoreManager()
+    @ObservedObject var store: StoreManager
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var appearanceManager: AppearanceManager
     @Environment(\.colorScheme) private var colorScheme
+
+    @State private var isCheckingPurchases = false
+    @State private var restoreFeedback: String?
 
     private var palette: ColorPalette {
         appearanceManager.currentPalette(for: colorScheme)
@@ -89,6 +92,42 @@ struct TipJarView: View {
             } else {
                 ProgressView()
             }
+
+            VStack(spacing: 8) {
+                Button(action: {
+                    Task {
+                        isCheckingPurchases = true
+                        restoreFeedback = nil
+
+                        let found = await store.silentRestorePurchases()
+
+                        isCheckingPurchases = false
+                        restoreFeedback = found ? "Thank you for your tip!" : "No tips or donations found yet"
+
+                        // Clear feedback after 3 seconds
+                        try? await Task.sleep(nanoseconds: 3_000_000_000)
+                        restoreFeedback = nil
+                    }
+                }) {
+                    if isCheckingPurchases {
+                        ProgressView()
+                            .progressViewStyle(.circular)
+                            .controlSize(.small)
+                    } else {
+                        Text("Check for purchases")
+                            .font(.body)
+                            .foregroundStyle(.blue)
+                    }
+                }
+                .disabled(isCheckingPurchases)
+
+                if let feedback = restoreFeedback {
+                    Text(feedback)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.top, 8)
 
             Spacer()
         }
@@ -189,7 +228,7 @@ struct TipJarView: View {
 
 #Preview {
     NavigationStack {
-        TipJarView()
+        TipJarView(store: StoreManager())
     }
     .environmentObject(AppearanceManager.shared)
 }

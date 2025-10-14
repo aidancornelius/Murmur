@@ -7,12 +7,24 @@
 
 import SwiftUI
 
+extension View {
+    /// Applies a transformation if a condition is true
+    @ViewBuilder func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
+        if condition {
+            transform(self)
+        } else {
+            self
+        }
+    }
+}
+
 /// A ring-based selector for exertion levels (1-5 scale)
 struct ExertionRingSelector: View {
     let label: String
     @Binding var value: Int
     let color: Color
     var showScale: Bool = true
+    var accessibilityId: String? = nil
 
     private let levels = [1, 2, 3, 4, 5]
 
@@ -23,6 +35,9 @@ struct ExertionRingSelector: View {
                     Text(label)
                         .font(.caption.weight(.medium))
                         .foregroundStyle(.secondary)
+                        .if(accessibilityId != nil) { view in
+                            view.accessibilityIdentifier(accessibilityId!)
+                        }
 
                     Spacer()
 
@@ -52,6 +67,11 @@ struct ExertionRingSelector: View {
                         value = level
                     }
                 }
+            }
+            // Add an invisible accessibility element when label is empty
+            .if(label.isEmpty && accessibilityId != nil) { view in
+                view.accessibilityElement(children: .contain)
+                    .accessibilityIdentifier(accessibilityId!)
             }
         }
     }

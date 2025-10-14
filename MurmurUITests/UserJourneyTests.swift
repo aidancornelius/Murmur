@@ -279,6 +279,8 @@ final class UserJourneyTests: XCTestCase {
             // Wait for sheet to close and UI to update
             RunLoop.current.run(until: Date().addingTimeInterval(1.0))
 
+            // Wait for severity slider to appear after symptom creation
+            _ = addEntry.severitySlider.waitForExistence(timeout: 3)
             addEntry.setSeverity(4)
             addEntry.save()
 
@@ -333,7 +335,11 @@ final class UserJourneyTests: XCTestCase {
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
-        assertExists(timeline.timeline, message: "Timeline should be visible")
+        XCTAssertTrue(timeline.waitForLoad(), "Timeline should load")
+
+        // Wait for timeline element to be ready
+        _ = timeline.timeline.waitForExistence(timeout: 3)
+        XCTAssertTrue(timeline.timeline.exists, "Timeline should be visible")
 
         // Scroll up
         timeline.scrollUp()
@@ -344,6 +350,7 @@ final class UserJourneyTests: XCTestCase {
         RunLoop.current.run(until: Date().addingTimeInterval(0.5))
 
         // Verify timeline still exists after scrolling
+        // Re-query the timeline element as it may have changed
         XCTAssertTrue(timeline.timeline.exists, "Timeline should still exist after scrolling")
     }
 
@@ -377,6 +384,7 @@ final class UserJourneyTests: XCTestCase {
         app.launchWithData()
 
         let timeline = TimelineScreen(app: app)
+        XCTAssertTrue(timeline.waitForLoad(), "Timeline should load")
         XCTAssertTrue(timeline.hasEntries(), "Timeline should have entries")
 
         // Tap on first entry
@@ -402,8 +410,13 @@ final class UserJourneyTests: XCTestCase {
         let timeline = TimelineScreen(app: app)
         XCTAssertTrue(timeline.waitForLoad(), "Timeline should load")
 
+        // Wait a moment for data to load and sections to render
+        RunLoop.current.run(until: Date().addingTimeInterval(1.0))
+
         // Look for date headers (grouped by day)
-        let dateHeaders = app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Today' OR label CONTAINS 'Yesterday' OR label CONTAINS 'Mon' OR label CONTAINS 'Tue'"))
+        // Section headers are NavigationLinks, so check for links with date-related accessibility labels
+        // They contain the formatted date and entry summary
+        let dateHeaders = app.links.matching(NSPredicate(format: "label CONTAINS 'entries' OR label CONTAINS 'entry'"))
         XCTAssertGreaterThan(dateHeaders.count, 0, "Timeline should show date groupings")
     }
 
@@ -436,6 +449,13 @@ final class UserJourneyTests: XCTestCase {
 
         let timeline = TimelineScreen(app: app)
         XCTAssertTrue(timeline.waitForLoad(), "Timeline should load")
+
+        // Wait for timeline element to be available and data to load
+        _ = timeline.timeline.waitForExistence(timeout: 3)
+        RunLoop.current.run(until: Date().addingTimeInterval(1.0))
+
+        // Verify timeline is accessible before scrolling
+        XCTAssertTrue(timeline.timeline.exists, "Timeline should exist before scrolling")
 
         // Scroll up to see older entries
         for _ in 1...5 {
@@ -747,7 +767,11 @@ final class UserJourneyTests: XCTestCase {
 
         // Add a symptom to delete
         let symptomToDelete = "DeleteMe\(Int.random(in: 1000...9999))"
-        _ = settings.addSymptomType(name: symptomToDelete)
+        let addSuccess = settings.addSymptomType(name: symptomToDelete)
+        XCTAssertTrue(addSuccess, "Should be able to add symptom")
+
+        // Verify symptom appears before trying to delete
+        XCTAssertTrue(settings.hasSymptomType(named: symptomToDelete, timeout: 3), "Added symptom should appear in list")
 
         // Delete the symptom
         let deleteSuccess = settings.deleteSymptomType(named: symptomToDelete)

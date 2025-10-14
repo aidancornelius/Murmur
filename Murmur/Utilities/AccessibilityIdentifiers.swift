@@ -32,6 +32,19 @@ public enum AccessibilityIdentifiers {
     public static let timestampPicker = "timestamp-picker"
     public static let sameSeverityToggle = "same-severity-toggle"
 
+    // MARK: - Unified Event View
+    public static let mainInputField = "unified-event-main-input"
+    public static let eventTypeButton = "unified-event-type-button"
+    public static let notesToggleButton = "unified-event-notes-toggle"
+    public static let notesField = "unified-event-notes-field"
+    public static let physicalExertionRing = "unified-event-physical-exertion"
+    public static let cognitiveExertionRing = "unified-event-cognitive-exertion"
+    public static let emotionalLoadRing = "unified-event-emotional-load"
+    public static let sleepQualityRing = "unified-event-sleep-quality"
+    public static let bedTimePicker = "unified-event-bed-time"
+    public static let wakeTimePicker = "unified-event-wake-time"
+    public static let mealTypePicker = "unified-event-meal-type"
+
     // MARK: - Settings
     public static let trackedSymptomsButton = "tracked-symptoms-button"
     public static let remindersButton = "reminders-button"
@@ -67,6 +80,9 @@ public enum AccessibilityIdentifiers {
     public static let timePeriod90Days = "time-period-90"
     public static let chartView = "chart-view"
     public static let calendarGrid = "calendar-grid"
+    public static let healthMetricHRV = "health-metric-hrv"
+    public static let healthMetricRestingHR = "health-metric-resting-hr"
+    public static let healthMetricSleep = "health-metric-sleep"
 
     // MARK: - Day Detail
     public static let dayDetailScrollView = "day-detail-scroll-view"

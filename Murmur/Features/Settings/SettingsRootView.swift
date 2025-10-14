@@ -109,28 +109,28 @@ struct SettingsRootView: View {
                 .listRowBackground(palette.surfaceColor)
 
                 // Revisit onboarding option
-                Button(action: {
-                    showingOnboarding = true
-                }) {
-                    HStack(spacing: 12) {
-                        Image(systemName: "arrow.clockwise.circle")
-                            .foregroundStyle(palette.accentColor)
-                            .font(.title3)
-                            .frame(width: 28)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Revisit tour")
-                                .font(.subheadline)
-                                .foregroundStyle(.primary)
-                            Text("See the onboarding screens again")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                    }
-                    .padding(.vertical, 8)
-                }
-                .buttonStyle(.plain)
-                .listRowBackground(palette.surfaceColor)
+//                Button(action: {
+//                    showingOnboarding = true
+//                }) {
+//                    HStack(spacing: 12) {
+//                        Image(systemName: "arrow.clockwise.circle")
+//                            .foregroundStyle(palette.accentColor)
+//                            .font(.title3)
+//                            .frame(width: 28)
+//                        VStack(alignment: .leading, spacing: 2) {
+//                            Text("Revisit tour")
+//                                .font(.subheadline)
+//                                .foregroundStyle(.primary)
+//                            Text("See the onboarding screens again")
+//                                .font(.caption)
+//                                .foregroundStyle(.secondary)
+//                        }
+//                        Spacer()
+//                    }
+//                    .padding(.vertical, 8)
+//                }
+//                .buttonStyle(.plain)
+//                .listRowBackground(palette.surfaceColor)
 
                 // Support option
                 if store.hasTipped {
@@ -267,7 +267,7 @@ struct SettingsRootView: View {
             case .accessibility:
                 AccessibilityOptionsView()
             case .tipJar:
-                TipJarView()
+                TipJarView(store: store)
             }
         }
     }

@@ -34,7 +34,8 @@ final class EdgeCaseTests: XCTestCase {
         assertExists(timeline.logSymptomButton, timeout: 10, message: "Timeline should be visible")
 
         // Check for empty state message
-        let emptyMessage = app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'No entries' OR label CONTAINS 'Get started' OR label CONTAINS 'track'")).firstMatch
+        // The actual message is: "Record an event or how you're feeling with the buttons in the bottom right to get started."
+        let emptyMessage = app.staticTexts.matching(NSPredicate(format: "label CONTAINS[cd] 'get started' OR label CONTAINS[cd] 'Record an event'")).firstMatch
 
         XCTAssertTrue(emptyMessage.waitForExistence(timeout: 3),
                      "Empty timeline should show helpful message")
@@ -279,20 +280,17 @@ final class EdgeCaseTests: XCTestCase {
         }
         app.launch(scenario: .heavyUser)
 
-        // On launch with large data, should show loading indicator briefly
+        // On launch with large data, should show loading indicator briefly or go straight to content
         let timeline = TimelineScreen(app: app)
 
-        // Either loading indicator or timeline should appear
-        let loadingOrContent = waitForAny([
-            app.activityIndicators.firstMatch,
-            timeline.logSymptomButton
-        ], timeout: 10)
-
-        XCTAssertNotNil(loadingOrContent, "Should show loading indicator or content")
-
-        // Eventually timeline should load
+        // Timeline should eventually load (loading indicator is optional and brief)
         assertExists(timeline.logSymptomButton, timeout: 15,
-                    message: "Timeline should load after initial loading")
+                    message: "Timeline should load")
+
+        // If we see a loading indicator, that's fine, but the main requirement is that
+        // the app doesn't hang and eventually shows content
+        XCTAssertTrue(timeline.logSymptomButton.exists,
+                     "Should show content after loading")
     }
 
     /// Tests pull to refresh loading
@@ -330,13 +328,10 @@ final class EdgeCaseTests: XCTestCase {
 
         app.buttons[AccessibilityIdentifiers.analysisButton].tap()
 
-        // Analysis might show loading while calculating
-        let loadingOrContent = waitForAny([
-            app.activityIndicators.firstMatch,
-            app.buttons["Trends"]
-        ], timeout: 10)
-
-        XCTAssertNotNil(loadingOrContent, "Should show loading or analysis content")
+        // Analysis should eventually show content (loading indicator is optional and brief)
+        let trendsButton = app.buttons["Trends"]
+        XCTAssertTrue(trendsButton.waitForExistence(timeout: 10),
+                     "Analysis should show content")
     }
 
     // MARK: - Boundary Conditions (8 tests)
@@ -573,9 +568,17 @@ final class EdgeCaseTests: XCTestCase {
         _ = addEntry.selectSymptom(named: "Headache")
         addEntry.setSeverity(3)
 
-        // Try to change timestamp
-        if app.buttons.matching(NSPredicate(format: "label CONTAINS 'Date' OR label CONTAINS 'Time'")).firstMatch.exists {
-            let timestampButton = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Date' OR label CONTAINS 'Time'")).firstMatch
+        // Try to find timestamp picker button using accessibility identifier
+        let timestampButton = app.buttons[AccessibilityIdentifiers.timestampPicker]
+        if timestampButton.waitForExistence(timeout: 3) {
+            // Wait for it to be hittable
+            if !timestampButton.waitForHittable(timeout: 3) {
+                // If it's not hittable, scroll to make it visible
+                timestampButton.scrollToVisible()
+                XCTAssertTrue(timestampButton.waitForHittable(timeout: 2),
+                             "Timestamp button should be hittable after scrolling")
+            }
+
             timestampButton.tap()
 
             if app.datePickers.count > 0 {
@@ -588,7 +591,9 @@ final class EdgeCaseTests: XCTestCase {
                 if app.buttons["Done"].exists {
                     app.buttons["Done"].tap()
                 } else {
-                    app.tap() // Tap outside to dismiss
+                    // Tap outside to dismiss
+                    let coordinate = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.1))
+                    coordinate.tap()
                 }
             }
         }

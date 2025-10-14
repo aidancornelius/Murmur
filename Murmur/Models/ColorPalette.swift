@@ -58,7 +58,7 @@ struct ColorPalette: Identifiable, Hashable, Codable {
         ),
         ColorPalette(
             id: "lavender",
-            name: "Lavender fields",
+            name: "Emu flower",
             background: "#F9F7FF",
             surface: "#FFFFFF",
             accent: "#9D4EDD",

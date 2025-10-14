@@ -2,7 +2,7 @@
 //  MurmurWidgetTestsBase.swift
 //  MurmurWidgetTests
 //
-//  Created by Claude Code on 13/10/2025.
+//  Created by Aidan Cornelius-Bell on 13/10/2025.
 //
 
 import CoreData

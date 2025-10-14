@@ -57,6 +57,10 @@ struct UITestConfiguration {
         CommandLine.arguments.contains("-RecentOnly")
     }
 
+    static var shouldClearRecentSleep: Bool {
+        CommandLine.arguments.contains("-ClearRecentSleep")
+    }
+
     // MARK: - HealthKit Seeding Arguments
 
     static var shouldSeedHealthKitNormal: Bool {
@@ -150,26 +154,41 @@ struct UITestConfiguration {
     // MARK: - Time Override
 
     static var overrideTime: Date? {
+        // Debug: Print all command line arguments
+        print("[UITestConfiguration] Command line arguments: \(CommandLine.arguments)")
+
         // Look for -OverrideTime HH:MM pattern
         if let index = CommandLine.arguments.firstIndex(of: "-OverrideTime"),
            index + 1 < CommandLine.arguments.count {
             let timeString = CommandLine.arguments[index + 1]
+            print("[UITestConfiguration] Found -OverrideTime with value: \(timeString)")
+
             let components = timeString.split(separator: ":")
             guard components.count == 2,
                   let hour = Int(components[0]),
                   let minute = Int(components[1]) else {
+                print("[UITestConfiguration] Failed to parse time components from: \(timeString)")
                 return nil
             }
 
+            print("[UITestConfiguration] Parsed hour: \(hour), minute: \(minute)")
+
             // Create a date for today at the specified time
             let calendar = Calendar.current
-            var dateComponents = calendar.dateComponents([.year, .month, .day], from: Date())
+            // Use a stable reference date for testing - always use the actual current date
+            // to ensure consistency with other date operations
+            let referenceDate = Date()
+            var dateComponents = calendar.dateComponents([.year, .month, .day], from: referenceDate)
             dateComponents.hour = hour
             dateComponents.minute = minute
             dateComponents.second = 0
+            dateComponents.timeZone = calendar.timeZone  // Ensure we use the same timezone
 
-            return calendar.date(from: dateComponents)
+            let result = calendar.date(from: dateComponents)
+            print("[UITestConfiguration] Created override time: \(result?.description ?? "nil")")
+            return result
         }
+        print("[UITestConfiguration] No -OverrideTime argument found")
         return nil
     }
 
@@ -185,14 +204,38 @@ struct UITestConfiguration {
 
         logger.info("Configuring app for UI testing")
 
+        // Clear recent sleep data FIRST if requested (before any seeding)
+        if shouldClearRecentSleep {
+            logger.info("Clearing recent sleep data for sleep autofill testing (early)")
+            // Clear the sample data flag to ensure we don't get cached data
+            UserDefaults.standard.set(false, forKey: UserDefaultsKeys.hasGeneratedSampleData)
+            UserDefaults.standard.set(false, forKey: UserDefaultsKeys.hasSeededHealthKitData)
+
+            await context.perform {
+                let request = SleepEvent.fetchRequest()
+                // Clear ALL sleep data to ensure autofill triggers
+                logger.info("Fetching all sleep entries to delete")
+
+                if let allSleep = try? context.fetch(request) {
+                    logger.info("Deleting \(allSleep.count) sleep entries (early)")
+                    for sleep in allSleep {
+                        context.delete(sleep)
+                    }
+                    try? context.save()
+                } else {
+                    logger.info("No sleep entries found to delete (early)")
+                }
+            }
+        }
+
         // Seed HealthKit data FIRST, before any other configuration
         #if targetEnvironment(simulator)
         await configureHealthKitSeeding()
 
         // If we seeded HealthKit data, also generate Core Data sample entries for analysis views
-        // Only do this once to avoid duplicates
+        // Only do this once to avoid duplicates - BUT skip if clearing sleep for testing
         if (shouldSeedHealthKitNormal || shouldSeedHealthKitLowerStress ||
-           shouldSeedHealthKitHigherStress || shouldSeedHealthKitEdgeCases) {
+           shouldSeedHealthKitHigherStress || shouldSeedHealthKitEdgeCases) && !shouldClearRecentSleep {
             let hasGeneratedSampleData = UserDefaults.standard.bool(forKey: UserDefaultsKeys.hasGeneratedSampleData)
             logger.info("HealthKit test mode: hasGeneratedSampleData = \(hasGeneratedSampleData)")
 
@@ -219,6 +262,8 @@ struct UITestConfiguration {
                     logger.info("Found \(entryCount) symptom entries and \(activityCount) activities in database")
                 }
             }
+        } else if shouldClearRecentSleep {
+            logger.info("Skipping Core Data sample entry generation due to ClearRecentSleep flag")
         }
         #endif
 

@@ -132,8 +132,8 @@ final class ExampleUserJourneyTest: XCTestCase {
         let deleted = settings.deleteSymptomType(named: "Test Custom Symptom")
         XCTAssertTrue(deleted, "Should delete custom symptom")
 
-        // Verify it's gone
-        XCTAssertFalse(settings.hasSymptomType(named: "Test Custom Symptom"),
+        // Verify it's gone - allow time for Core Data to update and SwiftUI to refresh
+        XCTAssertFalse(settings.hasSymptomType(named: "Test Custom Symptom", timeout: 3),
                       "Custom symptom should be removed")
     }
 

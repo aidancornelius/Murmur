@@ -30,7 +30,23 @@ struct TimelineScreen {
     }
 
     var timeline: XCUIElement {
-        app.tables.matching(identifier: AccessibilityIdentifiers.timelineList).firstMatch
+        // In SwiftUI, List can appear as either a table or scrollView depending on iOS version
+        // Try table first, then fall back to scrollView, then collectionView (iOS 17+)
+        let table = app.tables.matching(identifier: AccessibilityIdentifiers.timelineList).firstMatch
+        if table.exists {
+            return table
+        }
+        let scrollView = app.scrollViews.matching(identifier: AccessibilityIdentifiers.timelineList).firstMatch
+        if scrollView.exists {
+            return scrollView
+        }
+        // iOS 17+ Lists with insetGrouped style may appear as collectionViews
+        let collectionView = app.collectionViews.matching(identifier: AccessibilityIdentifiers.timelineList).firstMatch
+        if collectionView.exists {
+            return collectionView
+        }
+        // Fallback to any element with the identifier
+        return app.otherElements.matching(identifier: AccessibilityIdentifiers.timelineList).firstMatch
     }
 
     var firstEntry: XCUIElement {
@@ -81,8 +97,26 @@ struct TimelineScreen {
 
     /// Pull to refresh
     func pullToRefresh() {
-        let start = timeline.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.1))
-        let end = timeline.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.9))
+        // If the timeline element with the identifier doesn't exist, fall back to using the first cell
+        // or any scrollable element
+        var scrollElement: XCUIElement?
+
+        if timeline.exists {
+            scrollElement = timeline
+        } else if firstEntry.exists {
+            // Use the first cell as the scroll element
+            scrollElement = firstEntry
+        } else {
+            // Fall back to any table or scroll view
+            scrollElement = app.tables.firstMatch.exists ? app.tables.firstMatch : app.scrollViews.firstMatch
+        }
+
+        guard let element = scrollElement, element.exists else {
+            return
+        }
+
+        let start = element.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.1))
+        let end = element.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.9))
         start.press(forDuration: 0.1, thenDragTo: end)
     }
 
@@ -100,12 +134,24 @@ struct TimelineScreen {
 
     /// Check if timeline has entries
     func hasEntries() -> Bool {
-        firstEntry.exists
+        // Check for actual entry cells (not the empty state cell)
+        // Empty state is identified by the heart.text.square icon or the message text
+        let emptyStateIcon = app.images["heart.text.square"]
+        if emptyStateIcon.exists {
+            return false
+        }
+
+        // Check if there are any actual timeline entries (entries have the entryCell identifier pattern)
+        let entryCells = app.cells.matching(NSPredicate(format: "identifier BEGINSWITH 'entry-cell-'"))
+        return entryCells.count > 0
     }
 
     /// Get count of visible entries
     func entryCount() -> Int {
-        allEntries.count
+        // Count only actual entry cells, not section headers or empty state
+        // Entry cells have identifiers that start with "entry-cell-"
+        let entryCells = app.cells.matching(NSPredicate(format: "identifier BEGINSWITH 'entry-cell-'"))
+        return entryCells.count
     }
 
     /// Check if entry exists containing text

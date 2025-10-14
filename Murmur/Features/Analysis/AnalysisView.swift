@@ -763,6 +763,7 @@ private struct HealthCorrelationRow: View {
                         Spacer()
                         Text(formatMetricValue(high, metric: correlation.metricName))
                             .font(.caption.weight(.medium))
+                            .accessibilityIdentifier(metricAccessibilityIdentifier)
                     }
 
                     HStack {
@@ -804,6 +805,15 @@ private struct HealthCorrelationRow: View {
             return String(format: "%.0f bpm", value)
         default:
             return String(format: "%.1f", value)
+        }
+    }
+
+    private var metricAccessibilityIdentifier: String {
+        switch correlation.metricName {
+        case "HRV": return AccessibilityIdentifiers.healthMetricHRV
+        case "Resting heart rate": return AccessibilityIdentifiers.healthMetricRestingHR
+        case "Sleep hours": return AccessibilityIdentifiers.healthMetricSleep
+        default: return "health-metric-\(correlation.metricName.lowercased().replacingOccurrences(of: " ", with: "-"))"
         }
     }
 

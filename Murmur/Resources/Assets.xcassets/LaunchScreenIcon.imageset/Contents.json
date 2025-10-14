@@ -1,17 +1,7 @@
 {
   "images" : [
     {
-      "filename" : "hand-ls-L.png",
-      "idiom" : "universal"
-    },
-    {
-      "appearances" : [
-        {
-          "appearance" : "luminosity",
-          "value" : "dark"
-        }
-      ],
-      "filename" : "hand-ls-D.png",
+      "filename" : "emu-bush-launch.png",
       "idiom" : "universal"
     }
   ],

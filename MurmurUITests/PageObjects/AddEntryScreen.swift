@@ -22,7 +22,14 @@ struct AddEntryScreen {
     }
 
     var severitySlider: XCUIElement {
-        app.sliders.matching(identifier: AccessibilityIdentifiers.severitySlider).firstMatch
+        // First try the shared severity slider
+        let sharedSlider = app.sliders.matching(identifier: AccessibilityIdentifiers.severitySlider).firstMatch
+        if sharedSlider.exists {
+            return sharedSlider
+        }
+        // If no shared slider, return the first individual symptom slider
+        // Individual sliders have identifiers like "severity-slider-<symptomName>"
+        return app.sliders.matching(NSPredicate(format: "identifier BEGINSWITH 'severity-slider-'")).firstMatch
     }
 
     var severityLabel: XCUIElement {

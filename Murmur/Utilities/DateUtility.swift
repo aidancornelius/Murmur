@@ -26,7 +26,10 @@ enum DateUtility {
     static func now() -> Date {
         #if targetEnvironment(simulator)
         if let overrideTime = UITestConfiguration.overrideTime {
+            print("[DateUtility] Using override time: \(overrideTime)")
             return overrideTime
+        } else {
+            print("[DateUtility] No override time, using real time")
         }
         #endif
         return Date()
