@@ -165,9 +165,10 @@ final class TimelineDataController: NSObject, ObservableObject {
     private func rebuildDaySections() {
         // Group data by date
         groupedEntries = groupByDate(entriesFRC?.fetchedObjects ?? [])
-        groupedActivities = groupByDate(activitiesFRC?.fetchedObjects ?? [])
-        groupedSleepEvents = groupByDate(sleepEventsFRC?.fetchedObjects ?? [])
-        groupedMealEvents = groupByDate(mealEventsFRC?.fetchedObjects ?? [])
+        // Use effectiveDate for contributors to match LoadCalculator's grouping logic
+        groupedActivities = groupContributorsByDate(activitiesFRC?.fetchedObjects ?? [])
+        groupedSleepEvents = groupContributorsByDate(sleepEventsFRC?.fetchedObjects ?? [])
+        groupedMealEvents = groupContributorsByDate(mealEventsFRC?.fetchedObjects ?? [])
 
         // Calculate display dates (union of all dates with display data)
         let displayDates = Set(groupedEntries.keys)
@@ -233,6 +234,13 @@ final class TimelineDataController: NSObject, ObservableObject {
                 date = DateUtility.now()
             }
             return calendar.startOfDay(for: date)
+        }
+    }
+
+    /// Group contributors by their effectiveDate (matches LoadCalculator's grouping logic)
+    private func groupContributorsByDate<T: LoadContributor>(_ contributors: [T]) -> [Date: [T]] {
+        Dictionary(grouping: contributors) { contributor in
+            calendar.startOfDay(for: contributor.effectiveDate)
         }
     }
 
