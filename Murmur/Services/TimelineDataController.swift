@@ -51,7 +51,8 @@ final class TimelineDataController: NSObject, ObservableObject {
         let today = Calendar.current.startOfDay(for: DateUtility.now())
         self.displayStartDate = calendar.date(byAdding: .day, value: -30, to: today) ?? today
         // Use consistent lookback period from LoadCalculator for all data types
-        self.dataStartDate = calendar.date(byAdding: .day, value: -LoadCalculator.lookbackDays, to: today) ?? today
+        // Fetch from lookbackDays before the earliest displayed date to ensure full historical context
+        self.dataStartDate = calendar.date(byAdding: .day, value: -LoadCalculator.lookbackDays, to: displayStartDate) ?? displayStartDate
 
         super.init()
 
@@ -264,7 +265,8 @@ final class TimelineDataController: NSObject, ObservableObject {
         let today = calendar.startOfDay(for: DateUtility.now())
         let newDisplayStart = calendar.date(byAdding: .day, value: -30, to: today) ?? today
         // Use consistent lookback period from LoadCalculator for all data types
-        let newDataStart = calendar.date(byAdding: .day, value: -LoadCalculator.lookbackDays, to: today) ?? today
+        // Fetch from lookbackDays before the earliest displayed date to ensure full historical context
+        let newDataStart = calendar.date(byAdding: .day, value: -LoadCalculator.lookbackDays, to: newDisplayStart) ?? newDisplayStart
 
         guard newDisplayStart != displayStartDate || newDataStart != dataStartDate else {
             return
