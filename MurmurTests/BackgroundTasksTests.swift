@@ -307,8 +307,8 @@ final class BackgroundTasksTests: XCTestCase {
     func testPerformBackupIfNeededWithRecentBackup() async {
         autoBackupService?.isEnabled = true
 
-        // Set a recent backup time (less than 23 hours ago)
-        let recentBackup = Date().addingTimeInterval(-22 * 60 * 60)
+        // Set a recent backup time (less than 12 hours ago)
+        let recentBackup = Date().addingTimeInterval(-11 * 60 * 60)
         UserDefaults.standard.set(recentBackup, forKey: "autoBackupLastDate")
 
         // Should skip backup
@@ -325,8 +325,8 @@ final class BackgroundTasksTests: XCTestCase {
 
         autoBackupService?.isEnabled = true
 
-        // Set an old backup time (more than 23 hours ago)
-        let oldBackup = Date().addingTimeInterval(-24 * 60 * 60)
+        // Set an old backup time (at least 12 hours ago)
+        let oldBackup = Date().addingTimeInterval(-12 * 60 * 60)
         UserDefaults.standard.set(oldBackup, forKey: "autoBackupLastDate")
 
         // Note: performBackupIfNeeded will attempt backup but silently fail

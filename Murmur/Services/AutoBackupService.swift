@@ -371,10 +371,10 @@ final class AutoBackupService {
     func performBackupIfNeeded() async {
         guard isEnabled else { return }
 
-        // Check if we need to backup (at least 23 hours since last backup)
+        // Check if we need to backup (at least 12 hours since last backup)
         if let lastDate = lastBackupDate {
             let timeSinceLastBackup = DateUtility.now().timeIntervalSince(lastDate)
-            guard timeSinceLastBackup >= 23 * 60 * 60 else { return }
+            guard timeSinceLastBackup >= 12 * 60 * 60 else { return }
         }
 
         do {
