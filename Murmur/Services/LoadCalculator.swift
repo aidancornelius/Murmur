@@ -13,6 +13,12 @@ import CoreData
 @MainActor
 final class LoadCalculator {
 
+    // MARK: - Configuration
+
+    /// Consistent lookback period for load score calculations (in days)
+    /// This ensures all views calculate load scores with the same historical data
+    static let lookbackDays: Int = 60
+
     // MARK: - Singleton
 
     static let shared = LoadCalculator()
@@ -295,5 +301,127 @@ struct LoadBreakdown {
 
     var symptomPercentage: Double {
         totalLoad > 0 ? (symptomLoad / totalLoad) * 100 : 0
+    }
+}
+
+// MARK: - Centralized Data Fetching
+
+extension LoadCalculator {
+    /// Calculate load score for a specific date by fetching all necessary data
+    /// Uses consistent lookback period for all event types
+    /// - Parameters:
+    ///   - targetDate: The date to calculate load for
+    ///   - context: Core Data managed object context
+    /// - Returns: LoadScore for the target date, or nil if no data exists
+    func calculateWithFetch(
+        for targetDate: Date,
+        context: NSManagedObjectContext
+    ) throws -> LoadScore? {
+        let calendar = Calendar.current
+        let dayStart = calendar.startOfDay(for: targetDate)
+
+        // Use consistent lookback period for all event types
+        guard let lookbackStart = calendar.date(byAdding: .day, value: -Self.lookbackDays, to: dayStart) else {
+            return nil
+        }
+
+        // Fetch all data with same lookback period
+        let allEntries = try fetchEntries(since: lookbackStart, context: context)
+        let allActivities = try fetchActivities(since: lookbackStart, context: context)
+        let allMeals = try fetchMeals(since: lookbackStart, context: context)
+        let allSleep = try fetchSleep(since: lookbackStart, context: context)
+
+        guard !allEntries.isEmpty || !allActivities.isEmpty || !allMeals.isEmpty || !allSleep.isEmpty else {
+            return nil
+        }
+
+        // Group symptoms by date
+        let groupedEntries = groupSymptomsByDate(allEntries, calendar: calendar)
+
+        // Combine all contributors and group by date
+        var allContributors: [LoadContributor] = []
+        allContributors.append(contentsOf: allActivities as [LoadContributor])
+        allContributors.append(contentsOf: allMeals as [LoadContributor])
+        allContributors.append(contentsOf: allSleep as [LoadContributor])
+        let groupedContributors = groupContributorsByDate(allContributors)
+
+        // Get all unique dates to process
+        let allDates = Set(groupedEntries.keys).union(Set(groupedContributors.keys)).sorted()
+        guard let firstDate = allDates.first else { return nil }
+
+        // Calculate load scores using the range calculator
+        let loadScores = calculateRange(
+            from: firstDate,
+            to: dayStart,
+            contributorsByDate: groupedContributors,
+            symptomsByDate: groupedEntries
+        )
+
+        return loadScores.first { $0.date == dayStart }
+    }
+
+    // MARK: - Private Fetch Methods
+
+    private func fetchEntries(since date: Date, context: NSManagedObjectContext) throws -> [SymptomEntry] {
+        let request = SymptomEntry.fetchRequest()
+        request.predicate = NSPredicate(
+            format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
+            date as NSDate,
+            date as NSDate
+        )
+        request.sortDescriptors = [
+            NSSortDescriptor(keyPath: \SymptomEntry.backdatedAt, ascending: true),
+            NSSortDescriptor(keyPath: \SymptomEntry.createdAt, ascending: true)
+        ]
+        request.relationshipKeyPathsForPrefetching = ["symptomType"]
+        return try context.fetch(request)
+    }
+
+    private func fetchActivities(since date: Date, context: NSManagedObjectContext) throws -> [ActivityEvent] {
+        let request = ActivityEvent.fetchRequest()
+        request.predicate = NSPredicate(
+            format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
+            date as NSDate,
+            date as NSDate
+        )
+        request.sortDescriptors = [
+            NSSortDescriptor(keyPath: \ActivityEvent.backdatedAt, ascending: true),
+            NSSortDescriptor(keyPath: \ActivityEvent.createdAt, ascending: true)
+        ]
+        return try context.fetch(request)
+    }
+
+    private func fetchMeals(since date: Date, context: NSManagedObjectContext) throws -> [MealEvent] {
+        let request = MealEvent.fetchRequest()
+        request.predicate = NSPredicate(
+            format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
+            date as NSDate,
+            date as NSDate
+        )
+        request.sortDescriptors = [
+            NSSortDescriptor(keyPath: \MealEvent.backdatedAt, ascending: true),
+            NSSortDescriptor(keyPath: \MealEvent.createdAt, ascending: true)
+        ]
+        return try context.fetch(request)
+    }
+
+    private func fetchSleep(since date: Date, context: NSManagedObjectContext) throws -> [SleepEvent] {
+        let request = SleepEvent.fetchRequest()
+        request.predicate = NSPredicate(
+            format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
+            date as NSDate,
+            date as NSDate
+        )
+        request.sortDescriptors = [
+            NSSortDescriptor(keyPath: \SleepEvent.backdatedAt, ascending: true),
+            NSSortDescriptor(keyPath: \SleepEvent.createdAt, ascending: true)
+        ]
+        return try context.fetch(request)
+    }
+
+    private func groupSymptomsByDate(_ symptoms: [SymptomEntry], calendar: Calendar = Calendar.current) -> [Date: [SymptomEntry]] {
+        Dictionary(grouping: symptoms) { entry in
+            calendar.startOfDay(for: entry.backdatedAt ?? entry.createdAt ?? DateUtility.now())
+        }
     }
 }

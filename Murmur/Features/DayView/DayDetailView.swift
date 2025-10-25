@@ -200,80 +200,8 @@ struct DayDetailView: View {
     }
 
     private func calculateLoadScore(for targetDate: Date) throws -> LoadScore? {
-        // Load scores decay over time, so we only need recent data (60 days before target date)
-        let dayStart = calendar.startOfDay(for: targetDate)
-        guard let lookbackStart = calendar.date(byAdding: .day, value: -60, to: dayStart) else { return nil }
-
-        // Fetch all event types
-        let allEntries = try fetchRecentEntries(since: lookbackStart)
-        let allActivities = try fetchRecentActivities(since: lookbackStart)
-        let allMeals = try fetchRecentMealEvents(since: lookbackStart)
-        let allSleep = try fetchRecentSleepEvents(since: lookbackStart)
-
-        // Check if we have any data to calculate
-        guard !allEntries.isEmpty || !allActivities.isEmpty || !allMeals.isEmpty || !allSleep.isEmpty else {
-            return nil
-        }
-
-        // Group symptoms by date
-        let groupedEntries = Dictionary(grouping: allEntries) { entry in
-            calendar.startOfDay(for: entry.backdatedAt ?? entry.createdAt ?? DateUtility.now())
-        }
-
-        // Combine all contributors and group by date
-        var allContributors: [LoadContributor] = []
-        allContributors.append(contentsOf: allActivities as [LoadContributor])
-        allContributors.append(contentsOf: allMeals as [LoadContributor])
-        allContributors.append(contentsOf: allSleep as [LoadContributor])
-
-        let groupedContributors = LoadCalculator.shared.groupContributorsByDate(allContributors)
-
-        // Get all unique dates to process
-        let allDates = Set(groupedEntries.keys).union(Set(groupedContributors.keys)).sorted()
-        guard let firstDate = allDates.first else { return nil }
-
-        // Calculate load scores using new calculator
-        let loadScores = LoadCalculator.shared.calculateRange(
-            from: firstDate,
-            to: dayStart,
-            contributorsByDate: groupedContributors,
-            symptomsByDate: groupedEntries
-        )
-
-        return loadScores.first { $0.date == dayStart }
-    }
-
-    private func fetchRecentEntries(since date: Date) throws -> [SymptomEntry] {
-        let request = SymptomEntry.fetchRequest()
-        request.predicate = NSPredicate(format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))", date as NSDate, date as NSDate)
-        request.sortDescriptors = [NSSortDescriptor(keyPath: \SymptomEntry.backdatedAt, ascending: true),
-                                   NSSortDescriptor(keyPath: \SymptomEntry.createdAt, ascending: true)]
-        request.relationshipKeyPathsForPrefetching = ["symptomType"]
-        return try context.fetch(request)
-    }
-
-    private func fetchRecentActivities(since date: Date) throws -> [ActivityEvent] {
-        let request = ActivityEvent.fetchRequest()
-        request.predicate = NSPredicate(format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))", date as NSDate, date as NSDate)
-        request.sortDescriptors = [NSSortDescriptor(keyPath: \ActivityEvent.backdatedAt, ascending: true),
-                                   NSSortDescriptor(keyPath: \ActivityEvent.createdAt, ascending: true)]
-        return try context.fetch(request)
-    }
-
-    private func fetchRecentMealEvents(since date: Date) throws -> [MealEvent] {
-        let request = MealEvent.fetchRequest()
-        request.predicate = NSPredicate(format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))", date as NSDate, date as NSDate)
-        request.sortDescriptors = [NSSortDescriptor(keyPath: \MealEvent.backdatedAt, ascending: true),
-                                   NSSortDescriptor(keyPath: \MealEvent.createdAt, ascending: true)]
-        return try context.fetch(request)
-    }
-
-    private func fetchRecentSleepEvents(since date: Date) throws -> [SleepEvent] {
-        let request = SleepEvent.fetchRequest()
-        request.predicate = NSPredicate(format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))", date as NSDate, date as NSDate)
-        request.sortDescriptors = [NSSortDescriptor(keyPath: \SleepEvent.backdatedAt, ascending: true),
-                                   NSSortDescriptor(keyPath: \SleepEvent.createdAt, ascending: true)]
-        return try context.fetch(request)
+        // Use centralised calculation method for consistency across the app
+        return try LoadCalculator.shared.calculateWithFetch(for: targetDate, context: context)
     }
 
     private func refreshMetrics() {

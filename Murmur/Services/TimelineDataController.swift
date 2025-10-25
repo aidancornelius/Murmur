@@ -50,7 +50,8 @@ final class TimelineDataController: NSObject, ObservableObject {
         // Calculate date ranges
         let today = Calendar.current.startOfDay(for: DateUtility.now())
         self.displayStartDate = calendar.date(byAdding: .day, value: -30, to: today) ?? today
-        self.dataStartDate = calendar.date(byAdding: .day, value: -90, to: today) ?? today
+        // Use consistent lookback period from LoadCalculator for all data types
+        self.dataStartDate = calendar.date(byAdding: .day, value: -LoadCalculator.lookbackDays, to: today) ?? today
 
         super.init()
 
@@ -61,7 +62,8 @@ final class TimelineDataController: NSObject, ObservableObject {
     // MARK: - Setup
 
     private func setupFetchedResultsControllers() {
-        // Symptom entries (90 days for load score calculation)
+        // All event types use consistent lookback period for accurate load score calculations
+        // Symptom entries
         let entriesRequest = SymptomEntry.fetchRequest()
         entriesRequest.predicate = NSPredicate(
             format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
@@ -82,7 +84,7 @@ final class TimelineDataController: NSObject, ObservableObject {
         )
         entriesFRC?.delegate = self
 
-        // Activity events (90 days for load score calculation)
+        // Activity events
         let activitiesRequest = ActivityEvent.fetchRequest()
         activitiesRequest.predicate = NSPredicate(
             format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
@@ -102,17 +104,17 @@ final class TimelineDataController: NSObject, ObservableObject {
         )
         activitiesFRC?.delegate = self
 
-        // Sleep events (30 days display only)
+        // Sleep events (now uses dataStartDate for consistent load calculations)
         let sleepRequest = SleepEvent.fetchRequest()
         sleepRequest.predicate = NSPredicate(
             format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
-            displayStartDate as NSDate, displayStartDate as NSDate
+            dataStartDate as NSDate, dataStartDate as NSDate
         )
         sleepRequest.sortDescriptors = [
             NSSortDescriptor(keyPath: \SleepEvent.backdatedAt, ascending: false),
             NSSortDescriptor(keyPath: \SleepEvent.createdAt, ascending: false)
         ]
-        sleepRequest.fetchBatchSize = 20
+        sleepRequest.fetchBatchSize = 50
 
         sleepEventsFRC = NSFetchedResultsController(
             fetchRequest: sleepRequest,
@@ -122,17 +124,17 @@ final class TimelineDataController: NSObject, ObservableObject {
         )
         sleepEventsFRC?.delegate = self
 
-        // Meal events (30 days display only)
+        // Meal events (now uses dataStartDate for consistent load calculations)
         let mealsRequest = MealEvent.fetchRequest()
         mealsRequest.predicate = NSPredicate(
             format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
-            displayStartDate as NSDate, displayStartDate as NSDate
+            dataStartDate as NSDate, dataStartDate as NSDate
         )
         mealsRequest.sortDescriptors = [
             NSSortDescriptor(keyPath: \MealEvent.backdatedAt, ascending: false),
             NSSortDescriptor(keyPath: \MealEvent.createdAt, ascending: false)
         ]
-        mealsRequest.fetchBatchSize = 20
+        mealsRequest.fetchBatchSize = 50
 
         mealEventsFRC = NSFetchedResultsController(
             fetchRequest: mealsRequest,
@@ -261,7 +263,8 @@ final class TimelineDataController: NSObject, ObservableObject {
     func updateDateRanges() {
         let today = calendar.startOfDay(for: DateUtility.now())
         let newDisplayStart = calendar.date(byAdding: .day, value: -30, to: today) ?? today
-        let newDataStart = calendar.date(byAdding: .day, value: -90, to: today) ?? today
+        // Use consistent lookback period from LoadCalculator for all data types
+        let newDataStart = calendar.date(byAdding: .day, value: -LoadCalculator.lookbackDays, to: today) ?? today
 
         guard newDisplayStart != displayStartDate || newDataStart != dataStartDate else {
             return
@@ -336,7 +339,7 @@ extension TimelineDataController: ResourceManageable {
         groupedMealEvents.removeAll()
         daySections.removeAll()
 
-        // Prune old cache entries (keep last 90 days)
-        loadScoreCache.pruneOlderThan(days: 90)
+        // Prune old cache entries (keep lookback period + buffer)
+        loadScoreCache.pruneOlderThan(days: LoadCalculator.lookbackDays)
     }
 }
