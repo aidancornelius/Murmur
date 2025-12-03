@@ -446,4 +446,11 @@ extension HealthKitAssistant: ResourceManageable {
     func fetchDetailedSleepData() async -> (bedTime: Date?, wakeTime: Date?, totalHours: Double?)? {
         await queryService.fetchDetailedSleepData()
     }
+
+    // MARK: - Sleep Import Support
+
+    /// Fetches raw sleep samples for a date range (used by SleepImportService)
+    func fetchSleepSamples(from startDate: Date, to endDate: Date) async throws -> [HKCategorySample] {
+        try await queryService.fetchSleepSamples(start: startDate, end: endDate)
+    }
 }

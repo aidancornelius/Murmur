@@ -5,14 +5,22 @@
 //  Extracted from DayDetailView.swift on 10/10/2025.
 //
 
+import CoreData
 import SwiftUI
 
 /// A row displaying a sleep event with quality, duration, and health metrics
 struct DaySleepRow: View {
-    let sleep: SleepEvent
+    @Environment(\.managedObjectContext) private var context
+    @ObservedObject var sleep: SleepEvent
+    @State private var showingQualityPicker = false
 
     private var hasHealthMetrics: Bool {
         sleep.hkSleepHours != nil || sleep.hkHRV != nil || sleep.hkRestingHR != nil
+    }
+
+    /// Whether the quality is still the default (unrated by user)
+    private var isUnrated: Bool {
+        sleep.isImported && sleep.quality == 3
     }
 
     var body: some View {
@@ -22,6 +30,25 @@ struct DaySleepRow: View {
                     .labelStyle(.titleAndIcon)
                     .foregroundStyle(.indigo)
                 Spacer()
+                if sleep.isImported {
+                    Button {
+                        openHealthApp()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "heart.fill")
+                                .font(.caption2)
+                            Text("From Health")
+                                .font(.caption2)
+                        }
+                        .foregroundStyle(.pink)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(.pink.opacity(0.1))
+                        .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Imported from Health. Tap to open Health app.")
+                }
             }
             HStack(spacing: 12) {
                 if let bedTime = sleep.bedTime {
@@ -34,9 +61,32 @@ struct DaySleepRow: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                Text("\(sleep.quality)/5")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                // Tappable quality rating for imported sleep
+                if sleep.isImported {
+                    Button {
+                        showingQualityPicker = true
+                    } label: {
+                        HStack(spacing: 2) {
+                            if isUnrated {
+                                Text("Rate quality")
+                                    .font(.caption)
+                                    .foregroundStyle(.indigo)
+                            } else {
+                                Text("\(sleep.quality)/5")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Image(systemName: "chevron.right")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    Text("\(sleep.quality)/5")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             if hasHealthMetrics {
                 HStack(spacing: 12) {
@@ -71,7 +121,11 @@ struct DaySleepRow: View {
         .padding(.vertical, 6)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityDescription)
-        .accessibilityHint("Swipe left to delete this sleep event")
+        .accessibilityHint(sleep.isImported ? "Imported from Health. Tap to rate quality or tap badge to open Health app." : "Swipe left to delete this sleep event")
+        .sheet(isPresented: $showingQualityPicker) {
+            SleepQualityPicker(sleep: sleep, context: context)
+                .presentationDetents([.height(280)])
+        }
     }
 
     private var sleepDuration: String? {
@@ -82,6 +136,9 @@ struct DaySleepRow: View {
 
     private var accessibilityDescription: String {
         var parts: [String] = []
+        if sleep.isImported {
+            parts.append("Imported from Health")
+        }
         if let bedTime = sleep.bedTime {
             parts.append("Sleep at \(DateFormatters.shortTime.string(from: bedTime))")
         } else {
@@ -108,5 +165,115 @@ struct DaySleepRow: View {
             parts.append("Note: \(note)")
         }
         return parts.joined(separator: ". ")
+    }
+
+    /// Opens the Health app to the sleep data section
+    private func openHealthApp() {
+        // Deep link to Health app's sleep section
+        if let url = URL(string: "x-apple-health://") {
+            UIApplication.shared.open(url)
+        }
+    }
+}
+
+// MARK: - Sleep Quality Picker
+
+/// A sheet for rating imported sleep quality
+private struct SleepQualityPicker: View {
+    @ObservedObject var sleep: SleepEvent
+    let context: NSManagedObjectContext
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedQuality: Int
+
+    init(sleep: SleepEvent, context: NSManagedObjectContext) {
+        self.sleep = sleep
+        self.context = context
+        self._selectedQuality = State(initialValue: Int(sleep.quality))
+    }
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 24) {
+                // Sleep info header
+                if let bedTime = sleep.bedTime, let wakeTime = sleep.wakeTime {
+                    VStack(spacing: 4) {
+                        Text("Sleep on \(DateFormatters.shortDate.string(from: wakeTime))")
+                            .font(.headline)
+                        Text("\(DateFormatters.shortTime.string(from: bedTime)) – \(DateFormatters.shortTime.string(from: wakeTime))")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                // Quality rating
+                VStack(spacing: 12) {
+                    Text("How did you feel after this sleep?")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+
+                    HStack(spacing: 16) {
+                        ForEach(1...5, id: \.self) { rating in
+                            Button {
+                                selectedQuality = rating
+                            } label: {
+                                VStack(spacing: 4) {
+                                    Image(systemName: rating <= selectedQuality ? "moon.fill" : "moon")
+                                        .font(.title2)
+                                        .foregroundStyle(rating <= selectedQuality ? .indigo : .secondary)
+                                    Text("\(rating)")
+                                        .font(.caption)
+                                        .foregroundStyle(rating == selectedQuality ? .primary : .secondary)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Rate \(rating) out of 5")
+                        }
+                    }
+
+                    Text(qualityDescription)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(height: 20)
+                }
+
+                Spacer()
+            }
+            .padding()
+            .navigationTitle("Rate sleep quality")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        saveQuality()
+                    }
+                }
+            }
+        }
+    }
+
+    private var qualityDescription: String {
+        switch selectedQuality {
+        case 1: return "Very poor – woke up exhausted"
+        case 2: return "Poor – didn't feel rested"
+        case 3: return "Okay – average sleep"
+        case 4: return "Good – felt refreshed"
+        case 5: return "Excellent – best sleep"
+        default: return ""
+        }
+    }
+
+    private func saveQuality() {
+        sleep.quality = Int16(selectedQuality)
+        do {
+            try context.save()
+        } catch {
+            // Silently fail - the UI will still show the old value
+        }
+        dismiss()
     }
 }

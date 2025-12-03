@@ -11,6 +11,7 @@ import SwiftUI
 struct HealthKitSettingsView: View {
     @EnvironmentObject private var healthKit: HealthKitAssistant
     @EnvironmentObject private var appearanceManager: AppearanceManager
+    @EnvironmentObject private var sleepImportService: SleepImportService
     @Environment(\.colorScheme) private var colorScheme
     @StateObject private var baselines = HealthMetricBaselines.shared
     @State private var errorMessage: String?
@@ -67,6 +68,16 @@ struct HealthKitSettingsView: View {
                 }
                 .listRowBackground(palette.surfaceColor)
             }
+
+            Section {
+                Toggle("Auto-import sleep data", isOn: $sleepImportService.isEnabled)
+                    .disabled(!healthKit.isHealthDataAvailable)
+            } header: {
+                Text("Automatic import")
+            } footer: {
+                Text("When enabled, sleep data from Health will be automatically imported as sleep entries. Imported entries are read-only.")
+            }
+            .listRowBackground(palette.surfaceColor)
 
             Section {
                 if let hrvBaseline = baselines.hrvBaseline {

@@ -38,6 +38,7 @@ struct MurmurApp: App {
                     .environment(\.managedObjectContext, stack.context)
                     .environmentObject(appDelegate.healthKitAssistant)
                     .environmentObject(appDelegate.calendarAssistant)
+                    .environmentObject(appDelegate.sleepImportService)
                     .environmentObject(manualCycleTracker)
                     .environmentObject(appearanceManager)
                     .task {
@@ -59,6 +60,7 @@ private struct RootContainer: View {
     @Environment(\.managedObjectContext) private var context
     @EnvironmentObject private var healthKit: HealthKitAssistant
     @EnvironmentObject private var calendar: CalendarAssistant
+    @EnvironmentObject private var sleepImportService: SleepImportService
     @Environment(\.scenePhase) private var scenePhase
     @State private var showingAddEntry = false
     @State private var showingAddActivity = false
@@ -179,8 +181,10 @@ private struct RootContainer: View {
                 // Prepare for possible termination
                 break
             case .active:
-                // App returned to foreground
-                break
+                // App returned to foreground - trigger sleep import if enabled
+                Task {
+                    await sleepImportService.performImportIfNeeded()
+                }
             @unknown default:
                 break
             }

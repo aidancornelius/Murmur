@@ -278,7 +278,7 @@ private struct PhysiologicalStateBadge: View {
 }
 
 private struct TimelineSleepRow: View {
-    let sleep: SleepEvent
+    @ObservedObject var sleep: SleepEvent
 
     private var hasHealthMetrics: Bool {
         sleep.hkSleepHours != nil || sleep.hkHRV != nil || sleep.hkRestingHR != nil

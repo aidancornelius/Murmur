@@ -126,7 +126,14 @@ struct DayDetailView: View {
                     ForEach(daySleepEvents.sorted(by: sortSleepEvents)) { sleep in
                         DaySleepRow(sleep: sleep)
                     }
-                    .onDelete(perform: deleteSleepEvents)
+                    .onDelete { offsets in
+                        // Only allow deletion of non-imported sleep events
+                        let sortedEvents = daySleepEvents.sorted(by: sortSleepEvents)
+                        let deletableOffsets = offsets.filter { !sortedEvents[$0].isImported }
+                        if !deletableOffsets.isEmpty {
+                            deleteSleepEvents(at: IndexSet(deletableOffsets))
+                        }
+                    }
                 }
                 .listRowBackground(palette.surfaceColor)
             }

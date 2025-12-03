@@ -14,6 +14,7 @@ import BackgroundTasks
 final class MurmurAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     let healthKitAssistant: HealthKitAssistant
     let calendarAssistant: CalendarAssistant
+    let sleepImportService: SleepImportService
     private(set) var manualCycleTracker: ManualCycleTracker?
 
     // Resource manager for coordinated lifecycle management
@@ -23,7 +24,11 @@ final class MurmurAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificati
         // Conditionally initialize services based on UI test flags
         self.healthKitAssistant = UITestConfiguration.shouldDisableHealthKit ? HealthKitAssistant() : HealthKitAssistant()
         self.calendarAssistant = UITestConfiguration.shouldDisableCalendar ? CalendarAssistant() : CalendarAssistant()
+        self.sleepImportService = SleepImportService()
         super.init()
+
+        // Connect sleep import service to HealthKit
+        sleepImportService.setHealthKit(healthKitAssistant)
 
         // Register services with resource manager
         Task {

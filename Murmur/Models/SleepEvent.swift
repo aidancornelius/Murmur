@@ -28,7 +28,14 @@ extension SleepEvent {
     @NSManaged public var hkSleepHours: NSNumber?
     @NSManaged public var hkHRV: NSNumber?
     @NSManaged public var hkRestingHR: NSNumber?
+    @NSManaged public var source: String?
+    @NSManaged public var healthKitUUID: String?
     @NSManaged public var symptoms: NSSet?
+
+    /// Whether this sleep event was imported from HealthKit
+    var isImported: Bool {
+        source == "healthkit"
+    }
 }
 
 // MARK: Generated accessors for symptoms

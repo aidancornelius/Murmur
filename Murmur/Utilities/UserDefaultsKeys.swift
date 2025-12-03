@@ -44,4 +44,8 @@ enum UserDefaultsKeys {
 
     // MARK: - UI Testing
     static let hasSeededHealthKitData = "hasSeededHealthKitData"
+
+    // MARK: - Sleep import
+    static let autoImportSleepEnabled = "autoImportSleepEnabled"
+    static let lastSleepImportDate = "lastSleepImportDate"
 }
