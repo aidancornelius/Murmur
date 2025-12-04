@@ -31,6 +31,7 @@ final class TimelineDataController: NSObject, ObservableObject {
     private var activitiesFRC: NSFetchedResultsController<ActivityEvent>?
     private var sleepEventsFRC: NSFetchedResultsController<SleepEvent>?
     private var mealEventsFRC: NSFetchedResultsController<MealEvent>?
+    private var reflectionsFRC: NSFetchedResultsController<DayReflection>?
 
     // Date ranges
     private var displayStartDate: Date
@@ -41,6 +42,7 @@ final class TimelineDataController: NSObject, ObservableObject {
     private var groupedActivities: [Date: [ActivityEvent]] = [:]
     private var groupedSleepEvents: [Date: [SleepEvent]] = [:]
     private var groupedMealEvents: [Date: [MealEvent]] = [:]
+    private var groupedReflections: [Date: Double] = [:]
 
     // MARK: - Initialisation
 
@@ -144,6 +146,25 @@ final class TimelineDataController: NSObject, ObservableObject {
             cacheName: nil
         )
         mealEventsFRC?.delegate = self
+
+        // Day reflections (for load multiplier adjustments)
+        let reflectionsRequest = DayReflection.fetchRequest()
+        reflectionsRequest.predicate = NSPredicate(
+            format: "date >= %@",
+            dataStartDate as NSDate
+        )
+        reflectionsRequest.sortDescriptors = [
+            NSSortDescriptor(keyPath: \DayReflection.date, ascending: false)
+        ]
+        reflectionsRequest.fetchBatchSize = 50
+
+        reflectionsFRC = NSFetchedResultsController(
+            fetchRequest: reflectionsRequest,
+            managedObjectContext: context,
+            sectionNameKeyPath: nil,
+            cacheName: nil
+        )
+        reflectionsFRC?.delegate = self
     }
 
     private func performInitialFetch() {
@@ -152,6 +173,7 @@ final class TimelineDataController: NSObject, ObservableObject {
             try activitiesFRC?.performFetch()
             try sleepEventsFRC?.performFetch()
             try mealEventsFRC?.performFetch()
+            try reflectionsFRC?.performFetch()
 
             rebuildDaySections()
             isLoading = false
@@ -169,6 +191,8 @@ final class TimelineDataController: NSObject, ObservableObject {
         groupedActivities = groupContributorsByDate(activitiesFRC?.fetchedObjects ?? [])
         groupedSleepEvents = groupContributorsByDate(sleepEventsFRC?.fetchedObjects ?? [])
         groupedMealEvents = groupContributorsByDate(mealEventsFRC?.fetchedObjects ?? [])
+        // Group reflection multipliers by date
+        groupedReflections = LoadCalculator.shared.groupReflectionsByDate(reflectionsFRC?.fetchedObjects ?? [])
 
         // Calculate display dates (union of all dates with display data)
         let displayDates = Set(groupedEntries.keys)
@@ -205,7 +229,8 @@ final class TimelineDataController: NSObject, ObservableObject {
             from: firstDate,
             to: lastDate,
             contributorsByDate: contributorsByDate,
-            symptomsByDate: groupedEntries
+            symptomsByDate: groupedEntries,
+            reflectionsByDate: groupedReflections
         )
 
         let loadScoresByDate: [Date: LoadScore] = Dictionary(uniqueKeysWithValues: loadScores.map { ($0.date, $0) })
@@ -341,12 +366,14 @@ extension TimelineDataController: ResourceManageable {
         activitiesFRC?.delegate = nil
         sleepEventsFRC?.delegate = nil
         mealEventsFRC?.delegate = nil
+        reflectionsFRC?.delegate = nil
 
         // Clear cached data
         groupedEntries.removeAll()
         groupedActivities.removeAll()
         groupedSleepEvents.removeAll()
         groupedMealEvents.removeAll()
+        groupedReflections.removeAll()
         daySections.removeAll()
 
         // Prune old cache entries (keep lookback period + buffer)

@@ -18,6 +18,12 @@ struct ColorPalette: Identifiable, Hashable, Codable {
     let severity3: String
     let severity4: String
     let severity5: String
+    let reflection: String
+    // Legible text colours for load indicators (good contrast on surface)
+    let loadSafe: String
+    let loadCaution: String
+    let loadHigh: String
+    let loadCritical: String
 
     static let lightPalettes: [ColorPalette] = [
         ColorPalette(
@@ -30,7 +36,12 @@ struct ColorPalette: Identifiable, Hashable, Codable {
             severity2: "#FFB4A2",
             severity3: "#E5989B",
             severity4: "#B5838D",
-            severity5: "#6D6875"
+            severity5: "#6D6875",
+            reflection: "#7BA38E",  // Soft sage green - calming contrast to warm tones
+            loadSafe: "#3D8B5F",     // Warm forest green
+            loadCaution: "#C67D3A", // Burnt orange
+            loadHigh: "#B54D4D",    // Muted coral red
+            loadCritical: "#8B3A3A" // Deep brick
         ),
         ColorPalette(
             id: "cool",
@@ -42,7 +53,12 @@ struct ColorPalette: Identifiable, Hashable, Codable {
             severity2: "#99D1E7",
             severity3: "#E68FB7",
             severity4: "#BD5780",
-            severity5: "#8B3B50"
+            severity5: "#8B3B50",
+            reflection: "#5B9A8B",  // Soft teal - harmonious with blue
+            loadSafe: "#2E8B6E",     // Teal green
+            loadCaution: "#C4842D", // Amber
+            loadHigh: "#C44D4D",    // Clear red
+            loadCritical: "#9B2D2D" // Deep red
         ),
         ColorPalette(
             id: "forest",
@@ -54,7 +70,12 @@ struct ColorPalette: Identifiable, Hashable, Codable {
             severity2: "#B7E4C7",
             severity3: "#74C69D",
             severity4: "#40916C",
-            severity5: "#2D6A4F"
+            severity5: "#2D6A4F",
+            reflection: "#6B8E9B",  // Dusty blue-grey - gentle contrast to greens
+            loadSafe: "#2D6A4F",     // Forest green (matches accent)
+            loadCaution: "#A67C3D", // Earthy ochre
+            loadHigh: "#9B5A5A",    // Muted wine
+            loadCritical: "#7A3D3D" // Dark burgundy
         ),
         ColorPalette(
             id: "lavender",
@@ -66,7 +87,12 @@ struct ColorPalette: Identifiable, Hashable, Codable {
             severity2: "#C77DFF",
             severity3: "#9D4EDD",
             severity4: "#7B2CBF",
-            severity5: "#5A189A"
+            severity5: "#5A189A",
+            reflection: "#7BA38E",  // Soft sage - complementary to purple
+            loadSafe: "#4A8B6E",     // Sage green
+            loadCaution: "#B8862D", // Golden amber
+            loadHigh: "#A84D6A",    // Berry
+            loadCritical: "#8B2E50" // Deep magenta
         ),
         ColorPalette(
             id: "peach",
@@ -78,7 +104,12 @@ struct ColorPalette: Identifiable, Hashable, Codable {
             severity2: "#FFBAA8",
             severity3: "#FF9B85",
             severity4: "#E67E68",
-            severity5: "#C96850"
+            severity5: "#C96850",
+            reflection: "#88A99B",  // Soft seafoam - cooling balance to warm peach
+            loadSafe: "#4A9B7A",     // Seafoam green
+            loadCaution: "#D4853A", // Warm amber
+            loadHigh: "#C45A4A",    // Terracotta
+            loadCritical: "#A33D3D" // Deep rust
         )
     ]
 
@@ -93,7 +124,12 @@ struct ColorPalette: Identifiable, Hashable, Codable {
             severity2: "#2E5C7A",
             severity3: "#8B4E6F",
             severity4: "#A23B5E",
-            severity5: "#B8304F"
+            severity5: "#B8304F",
+            reflection: "#4A8B7C",  // Muted teal - visible but calm on dark
+            loadSafe: "#4ADE80",     // Bright mint green
+            loadCaution: "#FBBF24", // Bright amber
+            loadHigh: "#F87171",    // Coral red
+            loadCritical: "#EF4444" // Bright red
         ),
         ColorPalette(
             id: "royal",
@@ -105,7 +141,12 @@ struct ColorPalette: Identifiable, Hashable, Codable {
             severity2: "#4F2D7F",
             severity3: "#7B3FA3",
             severity4: "#9D4EDD",
-            severity5: "#C77DFF"
+            severity5: "#C77DFF",
+            reflection: "#5B9A8B",  // Soft teal - elegant contrast to purple
+            loadSafe: "#6EE7B7",     // Soft mint
+            loadCaution: "#FCD34D", // Soft gold
+            loadHigh: "#FDA4AF",    // Soft rose
+            loadCritical: "#FB7185" // Bright rose
         )
     ]
 
@@ -119,6 +160,11 @@ struct ColorPalette: Identifiable, Hashable, Codable {
         case "severity3": return Color(hex: severity3)
         case "severity4": return Color(hex: severity4)
         case "severity5": return Color(hex: severity5)
+        case "reflection": return Color(hex: reflection)
+        case "loadSafe": return Color(hex: loadSafe)
+        case "loadCaution": return Color(hex: loadCaution)
+        case "loadHigh": return Color(hex: loadHigh)
+        case "loadCritical": return Color(hex: loadCritical)
         default: return .clear
         }
     }
@@ -126,6 +172,7 @@ struct ColorPalette: Identifiable, Hashable, Codable {
     var backgroundColor: Color { color(for: "background") }
     var surfaceColor: Color { color(for: "surface") }
     var accentColor: Color { color(for: "accent") }
+    var reflectionColor: Color { color(for: "reflection") }
 }
 
 @MainActor

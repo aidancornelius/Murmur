@@ -43,7 +43,7 @@ struct AllSymptomsSheet: View {
         }
 
         // Show user added symptoms first, then the rest
-        let categoryOrder = ["User added", "Positive wellbeing", "Energy", "Pain", "Cognitive", "Sleep", "Neurological", "Digestive", "Mental health", "Reproductive & hormonal", "Respiratory & cardiovascular", "Other"]
+        let categoryOrder = ["User added", "Energy", "Pain", "Cognitive", "Sleep", "Neurological", "Digestive", "Mental health", "Positive wellbeing", "Reproductive & hormonal", "Respiratory & cardiovascular", "Other"]
 
         return categoryOrder.compactMap { category in
             guard let symptoms = grouped[category], !symptoms.isEmpty else { return nil }

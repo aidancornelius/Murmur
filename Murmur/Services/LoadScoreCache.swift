@@ -27,9 +27,11 @@ final class LoadScoreCache {
             let symptomsHash: Int
             let previousLoad: Double
             let configHash: Int
+            let reflectionMultiplier: Double?
 
             init(contributors: [LoadContributor], symptoms: [SymptomEntry],
-                 previousLoad: Double, config: LoadConfiguration) {
+                 previousLoad: Double, config: LoadConfiguration,
+                 reflectionMultiplier: Double? = nil) {
                 // Hash based on object IDs for Core Data objects
                 self.contributorsHash = contributors.compactMap { contributor in
                     // Cast to NSManagedObject to get objectID
@@ -44,6 +46,9 @@ final class LoadScoreCache {
 
                 // Hash configuration
                 self.configHash = config.hashValue
+
+                // Include reflection multiplier
+                self.reflectionMultiplier = reflectionMultiplier
             }
         }
     }
@@ -65,7 +70,8 @@ final class LoadScoreCache {
 
     /// Retrieves a cached load score if valid, otherwise returns nil
     func get(for date: Date, contributors: [LoadContributor], symptoms: [SymptomEntry],
-             previousLoad: Double, config: LoadConfiguration) -> LoadScore? {
+             previousLoad: Double, config: LoadConfiguration,
+             reflectionMultiplier: Double? = nil) -> LoadScore? {
         let dayStart = calendar.startOfDay(for: date)
 
         guard let entry = cache[dayStart] else {
@@ -77,7 +83,8 @@ final class LoadScoreCache {
             contributors: contributors,
             symptoms: symptoms,
             previousLoad: previousLoad,
-            config: config
+            config: config,
+            reflectionMultiplier: reflectionMultiplier
         )
 
         if entry.dataHash == currentHash {
@@ -91,13 +98,15 @@ final class LoadScoreCache {
 
     /// Stores a load score in the cache with its dependencies
     func set(_ loadScore: LoadScore, for date: Date, contributors: [LoadContributor],
-             symptoms: [SymptomEntry], previousLoad: Double, config: LoadConfiguration) {
+             symptoms: [SymptomEntry], previousLoad: Double, config: LoadConfiguration,
+             reflectionMultiplier: Double? = nil) {
         let dayStart = calendar.startOfDay(for: date)
         let dataHash = CachedEntry.DataHash(
             contributors: contributors,
             symptoms: symptoms,
             previousLoad: previousLoad,
-            config: config
+            config: config,
+            reflectionMultiplier: reflectionMultiplier
         )
         let entry = CachedEntry(loadScore: loadScore, dataHash: dataHash, timestamp: DateUtility.now())
         cache[dayStart] = entry
@@ -108,40 +117,46 @@ final class LoadScoreCache {
     func calculateRange(from startDate: Date, to endDate: Date,
                        contributorsByDate: [Date: [LoadContributor]],
                        symptomsByDate: [Date: [SymptomEntry]],
+                       reflectionsByDate: [Date: Double] = [:],
                        config: LoadConfiguration? = nil) -> [LoadScore] {
         var scores: [LoadScore] = []
-        var previousLoad: Double = 0.0
+        var previousEffectiveLoad: Double = 0.0
         var currentDate = calendar.startOfDay(for: startDate)
         let endDay = calendar.startOfDay(for: endDate)
 
         while currentDate <= endDay {
             let contributors = contributorsByDate[currentDate] ?? []
             let symptoms = symptomsByDate[currentDate] ?? []
+            let reflectionMultiplier = reflectionsByDate[currentDate]
 
             // Get configuration
             let activeConfig = config ?? LoadCapacityManager.shared.configuration
 
             // Try to get from cache
             if let cachedScore = get(for: currentDate, contributors: contributors,
-                                    symptoms: symptoms, previousLoad: previousLoad,
-                                    config: activeConfig) {
+                                    symptoms: symptoms, previousLoad: previousEffectiveLoad,
+                                    config: activeConfig, reflectionMultiplier: reflectionMultiplier) {
                 scores.append(cachedScore)
-                previousLoad = cachedScore.decayedLoad
+                // Use effective load (felt load if available) for the decay chain
+                previousEffectiveLoad = cachedScore.effectiveLoad
             } else {
-                // Cache miss - calculate and store using new LoadCalculator
+                // Cache miss - calculate and store using LoadCalculator
                 let score = LoadCalculator.shared.calculate(
                     for: currentDate,
                     contributors: contributors,
                     symptoms: symptoms,
-                    previousLoad: previousLoad,
+                    previousLoad: previousEffectiveLoad,
+                    reflectionMultiplier: reflectionMultiplier,
                     configuration: config
                 )
 
                 set(score, for: currentDate, contributors: contributors,
-                    symptoms: symptoms, previousLoad: previousLoad, config: activeConfig)
+                    symptoms: symptoms, previousLoad: previousEffectiveLoad,
+                    config: activeConfig, reflectionMultiplier: reflectionMultiplier)
 
                 scores.append(score)
-                previousLoad = score.decayedLoad
+                // Use effective load (felt load if available) for the decay chain
+                previousEffectiveLoad = score.effectiveLoad
             }
 
             currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate

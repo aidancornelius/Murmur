@@ -31,7 +31,8 @@ final class LoadCalculator {
     ///   - date: The date to calculate load for
     ///   - contributors: Array of load contributors (activities, meals, sleep)
     ///   - symptoms: Symptom entries for the day
-    ///   - previousLoad: The decayed load from the previous day
+    ///   - previousLoad: The decayed load from the previous day (should be effective load, i.e. felt load if available)
+    ///   - reflectionMultiplier: Optional multiplier from user's day reflection (0.5-2.0)
     ///   - configuration: Optional configuration override (uses LoadCapacityManager if nil)
     /// - Returns: LoadScore for the day
     func calculate(
@@ -39,6 +40,7 @@ final class LoadCalculator {
         contributors: [LoadContributor],
         symptoms: [SymptomEntry],
         previousLoad: Double,
+        reflectionMultiplier: Double? = nil,
         configuration: LoadConfiguration? = nil
     ) -> LoadScore {
         // Get configuration from LoadCapacityManager or use provided override
@@ -87,7 +89,8 @@ final class LoadCalculator {
             date: date,
             rawLoad: min(todayRawLoad, 100.0),
             decayedLoad: totalLoad,
-            riskLevel: risk
+            riskLevel: risk,
+            reflectionMultiplier: reflectionMultiplier
         )
     }
 
@@ -99,6 +102,7 @@ final class LoadCalculator {
     ///   - endDate: End of date range
     ///   - contributorsByDate: Dictionary of load contributors grouped by day
     ///   - symptomsByDate: Dictionary of symptoms grouped by day
+    ///   - reflectionsByDate: Dictionary of reflection multipliers grouped by day
     ///   - configuration: Optional configuration override
     /// - Returns: Array of LoadScores, one per day
     func calculateRange(
@@ -106,10 +110,11 @@ final class LoadCalculator {
         to endDate: Date,
         contributorsByDate: [Date: [LoadContributor]],
         symptomsByDate: [Date: [SymptomEntry]],
+        reflectionsByDate: [Date: Double] = [:],
         configuration: LoadConfiguration? = nil
     ) -> [LoadScore] {
         var scores: [LoadScore] = []
-        var previousLoad: Double = 0.0
+        var previousEffectiveLoad: Double = 0.0
 
         let calendar = Calendar.current
         var currentDate = startDate
@@ -118,17 +123,21 @@ final class LoadCalculator {
             let dayStart = calendar.startOfDay(for: currentDate)
             let contributors = contributorsByDate[dayStart] ?? []
             let symptoms = symptomsByDate[dayStart] ?? []
+            let reflectionMultiplier = reflectionsByDate[dayStart]
 
             let score = calculate(
                 for: dayStart,
                 contributors: contributors,
                 symptoms: symptoms,
-                previousLoad: previousLoad,
+                previousLoad: previousEffectiveLoad,
+                reflectionMultiplier: reflectionMultiplier,
                 configuration: configuration
             )
 
             scores.append(score)
-            previousLoad = score.decayedLoad
+            // Use effective load (felt load if available) for the decay chain
+            // This ensures user's reflection affects subsequent days
+            previousEffectiveLoad = score.effectiveLoad
 
             guard let nextDate = calendar.date(byAdding: .day, value: 1, to: currentDate) else {
                 break
@@ -246,6 +255,21 @@ extension LoadCalculator {
         }
     }
 
+    /// Group reflection multipliers by date for range calculations
+    func groupReflectionsByDate(
+        _ reflections: [DayReflection]
+    ) -> [Date: Double] {
+        let calendar = Calendar.current
+        var result: [Date: Double] = [:]
+        for reflection in reflections {
+            guard let date = reflection.date,
+                  let multiplier = reflection.loadMultiplierValue else { continue }
+            let dayStart = calendar.startOfDay(for: date)
+            result[dayStart] = multiplier
+        }
+        return result
+    }
+
     /// Analyse load contribution breakdown for a day
     func analyseContributions(
         contributors: [LoadContributor],
@@ -330,6 +354,7 @@ extension LoadCalculator {
         let allActivities = try fetchActivities(since: lookbackStart, context: context)
         let allMeals = try fetchMeals(since: lookbackStart, context: context)
         let allSleep = try fetchSleep(since: lookbackStart, context: context)
+        let allReflections = try fetchReflections(since: lookbackStart, context: context)
 
         guard !allEntries.isEmpty || !allActivities.isEmpty || !allMeals.isEmpty || !allSleep.isEmpty else {
             return nil
@@ -345,6 +370,9 @@ extension LoadCalculator {
         allContributors.append(contentsOf: allSleep as [LoadContributor])
         let groupedContributors = groupContributorsByDate(allContributors)
 
+        // Group reflection multipliers by date
+        let reflectionsByDate = groupReflectionMultipliersByDate(allReflections, calendar: calendar)
+
         // Get all unique dates to process
         let allDates = Set(groupedEntries.keys).union(Set(groupedContributors.keys)).sorted()
         guard let firstDate = allDates.first else { return nil }
@@ -354,7 +382,8 @@ extension LoadCalculator {
             from: firstDate,
             to: dayStart,
             contributorsByDate: groupedContributors,
-            symptomsByDate: groupedEntries
+            symptomsByDate: groupedEntries,
+            reflectionsByDate: reflectionsByDate
         )
 
         return loadScores.first { $0.date == dayStart }
@@ -423,5 +452,23 @@ extension LoadCalculator {
         Dictionary(grouping: symptoms) { entry in
             calendar.startOfDay(for: entry.backdatedAt ?? entry.createdAt ?? DateUtility.now())
         }
+    }
+
+    private func fetchReflections(since date: Date, context: NSManagedObjectContext) throws -> [DayReflection] {
+        let request = DayReflection.fetchRequest()
+        request.predicate = NSPredicate(format: "date >= %@", date as NSDate)
+        request.sortDescriptors = [NSSortDescriptor(keyPath: \DayReflection.date, ascending: true)]
+        return try context.fetch(request)
+    }
+
+    private func groupReflectionMultipliersByDate(_ reflections: [DayReflection], calendar: Calendar = Calendar.current) -> [Date: Double] {
+        var result: [Date: Double] = [:]
+        for reflection in reflections {
+            guard let date = reflection.date,
+                  let multiplier = reflection.loadMultiplierValue else { continue }
+            let dayStart = calendar.startOfDay(for: date)
+            result[dayStart] = multiplier
+        }
+        return result
     }
 }

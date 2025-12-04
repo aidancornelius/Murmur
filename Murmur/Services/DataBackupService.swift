@@ -40,6 +40,9 @@ final class DataBackupService {
         }
     }
 
+    /// Current backup format version. Increment when adding new fields or entities.
+    nonisolated static let currentBackupVersion = 2
+
     struct BackupData: Codable {
         let version: Int
         let createdAt: Date
@@ -49,16 +52,23 @@ final class DataBackupService {
         let manualCycleEntries: [ManualCycleEntryBackup]
         let reminders: [ReminderBackup]
         let manualCyclePreferences: ManualCyclePreferences
+        // Added in version 2
+        let sleepEvents: [SleepEventBackup]?
+        let mealEvents: [MealEventBackup]?
+        let dayReflections: [DayReflectionBackup]?
 
         init(
-            version: Int = 1,
+            version: Int = DataBackupService.currentBackupVersion,
             createdAt: Date,
             entries: [EntryBackup],
             symptomTypes: [SymptomTypeBackup],
             activities: [ActivityBackup],
             manualCycleEntries: [ManualCycleEntryBackup],
             reminders: [ReminderBackup],
-            manualCyclePreferences: ManualCyclePreferences
+            manualCyclePreferences: ManualCyclePreferences,
+            sleepEvents: [SleepEventBackup]? = nil,
+            mealEvents: [MealEventBackup]? = nil,
+            dayReflections: [DayReflectionBackup]? = nil
         ) {
             self.version = version
             self.createdAt = createdAt
@@ -68,6 +78,9 @@ final class DataBackupService {
             self.manualCycleEntries = manualCycleEntries
             self.reminders = reminders
             self.manualCyclePreferences = manualCyclePreferences
+            self.sleepEvents = sleepEvents
+            self.mealEvents = mealEvents
+            self.dayReflections = dayReflections
         }
 
         struct EntryBackup: Codable {
@@ -125,6 +138,46 @@ final class DataBackupService {
             let minute: Int16
             let repeatsOn: [String]
             let isEnabled: Bool
+        }
+
+        struct SleepEventBackup: Codable {
+            let id: UUID
+            let createdAt: Date
+            let backdatedAt: Date?
+            let bedTime: Date
+            let wakeTime: Date
+            let quality: Int16
+            let note: String?
+            let hkSleepHours: Double?
+            let hkHRV: Double?
+            let hkRestingHR: Double?
+            let source: String?
+            let healthKitUUID: String?
+            let symptomTypeIDs: [UUID]
+        }
+
+        struct MealEventBackup: Codable {
+            let id: UUID
+            let createdAt: Date
+            let backdatedAt: Date?
+            let mealType: String
+            let mealDescription: String
+            let note: String?
+            let physicalExertion: Int16?
+            let cognitiveExertion: Int16?
+            let emotionalLoad: Int16?
+        }
+
+        struct DayReflectionBackup: Codable {
+            let id: UUID
+            let date: Date
+            let bodyToMood: Int16?
+            let mindToBody: Int16?
+            let selfCareSpace: Int16?
+            let loadMultiplier: Double?
+            let notes: String?
+            let createdAt: Date
+            let updatedAt: Date
         }
 
         struct ManualCyclePreferences: Codable {
@@ -267,6 +320,89 @@ final class DataBackupService {
             cycleDaySetDate: UserDefaults.standard.object(forKey: UserDefaultsKeys.cycleDaySetDate) as? Date
         )
 
+        // Fetch sleep events (added in v2)
+        let sleepRequest = SleepEvent.fetchRequest()
+        sleepRequest.sortDescriptors = [
+            NSSortDescriptor(keyPath: \SleepEvent.createdAt, ascending: false)
+        ]
+        sleepRequest.fetchBatchSize = 100
+        let sleepEvents = try context.fetch(sleepRequest)
+
+        let sleepBackups = sleepEvents.compactMap { sleep -> BackupData.SleepEventBackup? in
+            guard let id = sleep.id, let createdAt = sleep.createdAt,
+                  let bedTime = sleep.bedTime, let wakeTime = sleep.wakeTime else {
+                return nil
+            }
+            let symptomIDs = (sleep.symptoms as? Set<SymptomType>)?.compactMap { $0.id } ?? []
+            return BackupData.SleepEventBackup(
+                id: id,
+                createdAt: createdAt,
+                backdatedAt: sleep.backdatedAt,
+                bedTime: bedTime,
+                wakeTime: wakeTime,
+                quality: sleep.quality,
+                note: sleep.note,
+                hkSleepHours: sleep.hkSleepHours?.doubleValue,
+                hkHRV: sleep.hkHRV?.doubleValue,
+                hkRestingHR: sleep.hkRestingHR?.doubleValue,
+                source: sleep.source,
+                healthKitUUID: sleep.healthKitUUID,
+                symptomTypeIDs: symptomIDs
+            )
+        }
+
+        // Fetch meal events (added in v2)
+        let mealRequest = MealEvent.fetchRequest()
+        mealRequest.sortDescriptors = [
+            NSSortDescriptor(keyPath: \MealEvent.createdAt, ascending: false)
+        ]
+        mealRequest.fetchBatchSize = 100
+        let mealEvents = try context.fetch(mealRequest)
+
+        let mealBackups = mealEvents.compactMap { meal -> BackupData.MealEventBackup? in
+            guard let id = meal.id, let createdAt = meal.createdAt,
+                  let mealType = meal.mealType, let mealDescription = meal.mealDescription else {
+                return nil
+            }
+            return BackupData.MealEventBackup(
+                id: id,
+                createdAt: createdAt,
+                backdatedAt: meal.backdatedAt,
+                mealType: mealType,
+                mealDescription: mealDescription,
+                note: meal.note,
+                physicalExertion: meal.physicalExertion?.int16Value,
+                cognitiveExertion: meal.cognitiveExertion?.int16Value,
+                emotionalLoad: meal.emotionalLoad?.int16Value
+            )
+        }
+
+        // Fetch day reflections (added in v2)
+        let reflectionRequest = DayReflection.fetchRequest()
+        reflectionRequest.sortDescriptors = [
+            NSSortDescriptor(keyPath: \DayReflection.date, ascending: false)
+        ]
+        reflectionRequest.fetchBatchSize = 100
+        let dayReflections = try context.fetch(reflectionRequest)
+
+        let reflectionBackups = dayReflections.compactMap { reflection -> BackupData.DayReflectionBackup? in
+            guard let id = reflection.id, let date = reflection.date,
+                  let createdAt = reflection.createdAt, let updatedAt = reflection.updatedAt else {
+                return nil
+            }
+            return BackupData.DayReflectionBackup(
+                id: id,
+                date: date,
+                bodyToMood: reflection.bodyToMood?.int16Value,
+                mindToBody: reflection.mindToBody?.int16Value,
+                selfCareSpace: reflection.selfCareSpace?.int16Value,
+                loadMultiplier: reflection.loadMultiplier?.doubleValue,
+                notes: reflection.notes,
+                createdAt: createdAt,
+                updatedAt: updatedAt
+            )
+        }
+
         return BackupData(
             createdAt: DateUtility.now(),
             entries: entryBackups,
@@ -274,7 +410,10 @@ final class DataBackupService {
             activities: activityBackups,
             manualCycleEntries: manualCycleBackups,
             reminders: reminderBackups,
-            manualCyclePreferences: manualCyclePreferences
+            manualCyclePreferences: manualCyclePreferences,
+            sleepEvents: sleepBackups,
+            mealEvents: mealBackups,
+            dayReflections: reflectionBackups
         )
     }
 
@@ -288,12 +427,21 @@ final class DataBackupService {
         let activityCount: Int
         let manualCycleEntryCount: Int
         let reminderCount: Int
+        // Added in v2
+        let sleepEventCount: Int
+        let mealEventCount: Int
+        let dayReflectionCount: Int
 
         var formattedCreatedAt: String {
             let formatter = DateFormatter()
             formatter.dateStyle = .medium
             formatter.timeStyle = .short
             return formatter.string(from: createdAt)
+        }
+
+        /// Indicates if this backup was made with an older format that may be missing data
+        var isLegacyBackup: Bool {
+            version < DataBackupService.currentBackupVersion
         }
 
         var summary: String {
@@ -312,6 +460,15 @@ final class DataBackupService {
             }
             if reminderCount > 0 {
                 parts.append("\(reminderCount) \(reminderCount == 1 ? "reminder" : "reminders")")
+            }
+            if sleepEventCount > 0 {
+                parts.append("\(sleepEventCount) sleep \(sleepEventCount == 1 ? "event" : "events")")
+            }
+            if mealEventCount > 0 {
+                parts.append("\(mealEventCount) \(mealEventCount == 1 ? "meal" : "meals")")
+            }
+            if dayReflectionCount > 0 {
+                parts.append("\(dayReflectionCount) \(dayReflectionCount == 1 ? "reflection" : "reflections")")
             }
             return parts.isEmpty ? "No data" : parts.joined(separator: ", ")
         }
@@ -333,7 +490,10 @@ final class DataBackupService {
             symptomTypeCount: backupData.symptomTypes.count,
             activityCount: backupData.activities.count,
             manualCycleEntryCount: backupData.manualCycleEntries.count,
-            reminderCount: backupData.reminders.count
+            reminderCount: backupData.reminders.count,
+            sleepEventCount: backupData.sleepEvents?.count ?? 0,
+            mealEventCount: backupData.mealEvents?.count ?? 0,
+            dayReflectionCount: backupData.dayReflections?.count ?? 0
         )
     }
 
@@ -371,7 +531,10 @@ final class DataBackupService {
                 deleteAll(entityName: "SymptomType"),
                 deleteAll(entityName: "ActivityEvent"),
                 deleteAll(entityName: "ManualCycleEntry"),
-                deleteAll(entityName: "Reminder")
+                deleteAll(entityName: "Reminder"),
+                deleteAll(entityName: "SleepEvent"),
+                deleteAll(entityName: "MealEvent"),
+                deleteAll(entityName: "DayReflection")
             ].flatMap { $0 }
 
             // Merge the deletions into the view context
@@ -453,6 +616,60 @@ final class DataBackupService {
                 reminder.isEnabled = reminderBackup.isEnabled
                 if reminderBackup.isEnabled {
                     ids.append(reminderBackup.id)
+                }
+            }
+
+            // Restore sleep events (v2+)
+            if let sleepBackups = backupData.sleepEvents {
+                for sleepBackup in sleepBackups {
+                    let sleep = SleepEvent(context: context)
+                    sleep.id = sleepBackup.id
+                    sleep.createdAt = sleepBackup.createdAt
+                    sleep.backdatedAt = sleepBackup.backdatedAt
+                    sleep.bedTime = sleepBackup.bedTime
+                    sleep.wakeTime = sleepBackup.wakeTime
+                    sleep.quality = sleepBackup.quality
+                    sleep.note = sleepBackup.note
+                    sleep.hkSleepHours = sleepBackup.hkSleepHours.map { NSNumber(value: $0) }
+                    sleep.hkHRV = sleepBackup.hkHRV.map { NSNumber(value: $0) }
+                    sleep.hkRestingHR = sleepBackup.hkRestingHR.map { NSNumber(value: $0) }
+                    sleep.source = sleepBackup.source
+                    sleep.healthKitUUID = sleepBackup.healthKitUUID
+                    // Restore symptom type relationships
+                    let symptoms = sleepBackup.symptomTypeIDs.compactMap { typeMap[$0] }
+                    sleep.symptoms = NSSet(array: symptoms)
+                }
+            }
+
+            // Restore meal events (v2+)
+            if let mealBackups = backupData.mealEvents {
+                for mealBackup in mealBackups {
+                    let meal = MealEvent(context: context)
+                    meal.id = mealBackup.id
+                    meal.createdAt = mealBackup.createdAt
+                    meal.backdatedAt = mealBackup.backdatedAt
+                    meal.mealType = mealBackup.mealType
+                    meal.mealDescription = mealBackup.mealDescription
+                    meal.note = mealBackup.note
+                    meal.physicalExertion = mealBackup.physicalExertion.map { NSNumber(value: $0) }
+                    meal.cognitiveExertion = mealBackup.cognitiveExertion.map { NSNumber(value: $0) }
+                    meal.emotionalLoad = mealBackup.emotionalLoad.map { NSNumber(value: $0) }
+                }
+            }
+
+            // Restore day reflections (v2+)
+            if let reflectionBackups = backupData.dayReflections {
+                for reflectionBackup in reflectionBackups {
+                    let reflection = DayReflection(context: context)
+                    reflection.id = reflectionBackup.id
+                    reflection.date = reflectionBackup.date
+                    reflection.bodyToMood = reflectionBackup.bodyToMood.map { NSNumber(value: $0) }
+                    reflection.mindToBody = reflectionBackup.mindToBody.map { NSNumber(value: $0) }
+                    reflection.selfCareSpace = reflectionBackup.selfCareSpace.map { NSNumber(value: $0) }
+                    reflection.loadMultiplier = reflectionBackup.loadMultiplier.map { NSNumber(value: $0) }
+                    reflection.notes = reflectionBackup.notes
+                    reflection.createdAt = reflectionBackup.createdAt
+                    reflection.updatedAt = reflectionBackup.updatedAt
                 }
             }
 

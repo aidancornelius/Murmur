@@ -7,87 +7,91 @@
 
 import SwiftUI
 
-/// A card displaying a summary of the day's symptoms with metrics
+/// A unified day summary - delegates to LoadScoreCard when load data exists,
+/// otherwise shows a minimal intensity-only view
 struct DaySummaryCard: View {
     let summary: DaySummary
     let comparison: DaySummary?
     let metrics: DayMetrics?
+    var feltLoadMultiplier: Double?
 
     @Environment(\.colorScheme) private var colorScheme
+    @EnvironmentObject private var appearanceManager: AppearanceManager
+
+    private var palette: ColorPalette {
+        appearanceManager.currentPalette(for: colorScheme)
+    }
 
     private var severityTint: Color {
         summary.dominantColor(for: colorScheme)
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .center) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Average intensity")
-                        .font(.headline)
-                    ProgressView(value: min(summary.rawAverageSeverity, 5), total: 5)
-                        .tint(severityTint)
-                }
-                Spacer()
-                SeverityBadge(value: summary.rawAverageSeverity)
-            }
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel("Average intensity: \(SeverityScale.descriptor(for: Int(summary.rawAverageSeverity)))")
-
-            HStack(spacing: 16) {
-                MetricTile(title: "Logged", value: "\(summary.entryCount)")
-                MetricTile(title: "Different symptoms", value: "\(summary.uniqueSymptoms)")
-                if let comparison, let delta = delta(from: comparison) {
-                    MetricTile(title: "vs yesterday", value: delta, emphasizesTrend: true)
-                }
-            }
-
-            if let metrics, (metrics.predominantState != nil || metrics.cycleDay != nil || (metrics.averageHRV ?? 0) > 0 || (metrics.averageRestingHR ?? 0) > 0 || metrics.primaryLocation != nil) {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 16) {
-                        if let state = metrics.predominantState {
-                            MetricTile(title: "Feeling", value: state.displayText)
-                        }
-                        if let cycleDay = metrics.cycleDay, cycleDay > 0 {
-                            MetricTile(title: "Cycle day", value: "Day \(cycleDay)")
-                        }
-                        if let hrv = metrics.averageHRV, hrv > 0 {
-                            MetricTile(title: "HRV", value: String(format: "%.0f ms", hrv))
-                        }
-                        if let resting = metrics.averageRestingHR, resting > 0 {
-                            MetricTile(title: "Heart rate", value: String(format: "%.0f bpm", resting))
-                        }
-                    }
-
-                    if let location = metrics.primaryLocation {
-                        Label(location, systemImage: "location.circle")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-
-            if let loadScore = summary.loadScore, shouldShowLoadScore(loadScore) {
-                LoadScoreCard(loadScore: loadScore)
-            }
+        if let loadScore = summary.loadScore, shouldShowLoadScore(loadScore) {
+            // Integrated view with load as hero
+            LoadScoreCard(
+                loadScore: loadScore,
+                feltLoadMultiplier: feltLoadMultiplier,
+                intensity: summary.rawAverageSeverity,
+                entryCount: summary.entryCount
+            )
+        } else {
+            // Fallback: intensity-only view when no load data
+            IntensityOnlyCard(
+                severity: summary.rawAverageSeverity,
+                entryCount: summary.entryCount,
+                tint: severityTint
+            )
         }
-        .padding(.vertical, 8)
     }
 
     private func shouldShowLoadScore(_ loadScore: LoadScore) -> Bool {
-        // Only show if there's meaningful load (> 0) or activities have been logged
         return loadScore.decayedLoad > 0.1 || loadScore.rawLoad > 0.1
-    }
-
-    private func delta(from comparison: DaySummary) -> String? {
-        let difference = summary.averageSeverity - comparison.averageSeverity
-        guard abs(difference) >= 0.1 else { return "∙" }
-        let symbol = difference >= 0 ? "▲" : "▼"
-        return "\(symbol) \(String(format: "%.1f", abs(difference)))"
     }
 }
 
-/// A small tile displaying a metric label and value
+// MARK: - Intensity-only card (no load data)
+
+private struct IntensityOnlyCard: View {
+    let severity: Double
+    let entryCount: Int
+    let tint: Color
+
+    var body: some View {
+        VStack(spacing: 12) {
+            // Intensity as hero when no load
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text(String(format: "%.1f", severity))
+                    .font(.system(size: 48, weight: .ultraLight, design: .rounded))
+                    .foregroundStyle(tint)
+
+                Text("intensity")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .offset(y: -4)
+            }
+
+            if entryCount > 0 {
+                HStack(spacing: 4) {
+                    Image(systemName: "list.bullet")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Text("\(entryCount) logged")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Average intensity: \(String(format: "%.1f", severity)). \(entryCount) entries logged.")
+    }
+}
+
+// MARK: - Legacy support
+
+/// A small tile displaying a metric label and value (retained for compatibility)
 struct MetricTile: View {
     let title: String
     let value: String

@@ -14,6 +14,71 @@ struct LoadScore: Hashable {
     let decayedLoad: Double
     let riskLevel: RiskLevel
 
+    /// The felt load after applying reflection multiplier (nil if no reflection)
+    let feltLoad: Double?
+
+    /// The reflection multiplier applied (nil if no reflection)
+    let reflectionMultiplier: Double?
+
+    /// The effective load used for subsequent day calculations
+    /// Uses felt load if available, otherwise calculated decayed load
+    var effectiveLoad: Double {
+        feltLoad ?? decayedLoad
+    }
+
+    /// Risk level based on felt load if available
+    @MainActor
+    var effectiveRiskLevel: RiskLevel {
+        guard let felt = feltLoad else { return riskLevel }
+        return LoadScore.riskLevel(for: felt)
+    }
+
+    /// Convenience initialiser for backwards compatibility (no reflection)
+    init(date: Date, rawLoad: Double, decayedLoad: Double, riskLevel: RiskLevel) {
+        self.date = date
+        self.rawLoad = rawLoad
+        self.decayedLoad = decayedLoad
+        self.riskLevel = riskLevel
+        self.feltLoad = nil
+        self.reflectionMultiplier = nil
+    }
+
+    /// Full initialiser with reflection support
+    init(date: Date, rawLoad: Double, decayedLoad: Double, riskLevel: RiskLevel,
+         reflectionMultiplier: Double?) {
+        self.date = date
+        self.rawLoad = rawLoad
+        self.decayedLoad = decayedLoad
+        self.riskLevel = riskLevel
+        self.reflectionMultiplier = reflectionMultiplier
+        if let multiplier = reflectionMultiplier {
+            self.feltLoad = decayedLoad * multiplier
+        } else {
+            self.feltLoad = nil
+        }
+    }
+
+    /// Calculate risk level for a given load value using default thresholds
+    /// For custom thresholds, use the overload with explicit thresholds parameter
+    @MainActor
+    static func riskLevel(for load: Double) -> RiskLevel {
+        let config = LoadCapacityManager.shared.configuration.thresholds
+        return riskLevel(for: load, thresholds: config)
+    }
+
+    /// Calculate risk level for a given load value with explicit thresholds
+    static func riskLevel(for load: Double, thresholds: LoadThresholds) -> RiskLevel {
+        if load < thresholds.safe {
+            return .safe
+        } else if load < thresholds.caution {
+            return .caution
+        } else if load < thresholds.high {
+            return .high
+        } else {
+            return .critical
+        }
+    }
+
     enum RiskLevel: Int, Comparable, Hashable {
         case safe = 0
         case caution = 1

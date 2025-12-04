@@ -862,7 +862,7 @@ struct SampleDataSeeder {
                 ("Shortness of breath", "#A6D9E8", "lungs", "Respiratory & cardiovascular"),
                 ("Sore throat", "#FF9AA2", "mouth", "Respiratory & cardiovascular"),
                 ("Rapid heartbeat", "#F39C9C", "heart.circle.fill", "Respiratory & cardiovascular"),
-                ("Chest tightness", "#E08E8E", "square.compress", "Respiratory & cardiovascular"),
+                ("Chest tightness", "#E08E8E", "rectangle.compress.vertical", "Respiratory & cardiovascular"),
                 ("Exercise intolerance", "#FF9AA2", "figure.run.circle", "Respiratory & cardiovascular"),
                 ("Cough", "#FFB8C6", "wind", "Respiratory & cardiovascular"),
 

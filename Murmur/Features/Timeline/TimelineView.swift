@@ -19,6 +19,12 @@ struct TimelineView: View {
     // Centralised data controller for efficient fetching and caching
     @StateObject private var dataController: TimelineDataController
 
+    // Edit sheet state
+    @State private var entryToEdit: SymptomEntry?
+    @State private var activityToEdit: ActivityEvent?
+    @State private var sleepToEdit: SleepEvent?
+    @State private var mealToEdit: MealEvent?
+
     init(context: NSManagedObjectContext) {
         _dataController = StateObject(wrappedValue: TimelineDataController(context: context))
     }
@@ -31,17 +37,83 @@ struct TimelineView: View {
         List {
             ForEach(dataController.daySections) { section in
                 Section(header: sectionHeader(for: section)) {
-                    ForEach(section.timelineItems) { item in
-                        switch item {
-                        case .symptom(let entry):
-                            TimelineEntryRow(entry: entry)
-                        case .activity(let activity):
-                            TimelineActivityRow(activity: activity)
-                        case .sleep(let sleep):
-                            TimelineSleepRow(sleep: sleep)
-                        case .meal(let meal):
-                            TimelineMealRow(meal: meal)
-                        }
+                    // Group symptoms by type for a cleaner view
+                    ForEach(groupedSymptoms(for: section), id: \.type.objectID) { group in
+                        TimelineSymptomGroupRow(group: group, palette: palette)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    deleteSymptomGroup(group)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                            .swipeActions(edge: .leading) {
+                                if let entry = group.entries.first {
+                                    Button {
+                                        entryToEdit = entry
+                                    } label: {
+                                        Label("Edit", systemImage: "pencil")
+                                    }
+                                    .tint(.orange)
+                                }
+                            }
+                    }
+                    // Show activities, sleep, and meals individually (typically fewer)
+                    ForEach(section.activities, id: \.objectID) { activity in
+                        TimelineActivityRow(activity: activity)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    deleteActivity(activity)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                            .swipeActions(edge: .leading) {
+                                Button {
+                                    activityToEdit = activity
+                                } label: {
+                                    Label("Edit", systemImage: "pencil")
+                                }
+                                .tint(.orange)
+                            }
+                    }
+                    ForEach(section.sleepEvents, id: \.objectID) { sleep in
+                        TimelineSleepRow(sleep: sleep)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: !sleep.isImported) {
+                                if !sleep.isImported {
+                                    Button(role: .destructive) {
+                                        deleteSleep(sleep)
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                }
+                            }
+                            .swipeActions(edge: .leading) {
+                                Button {
+                                    sleepToEdit = sleep
+                                } label: {
+                                    Label("Edit", systemImage: "pencil")
+                                }
+                                .tint(.orange)
+                            }
+                    }
+                    ForEach(section.mealEvents, id: \.objectID) { meal in
+                        TimelineMealRow(meal: meal)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    deleteMeal(meal)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                            .swipeActions(edge: .leading) {
+                                Button {
+                                    mealToEdit = meal
+                                } label: {
+                                    Label("Edit", systemImage: "pencil")
+                                }
+                                .tint(.orange)
+                            }
                     }
                 }
                 .listRowBackground(palette.surfaceColor)
@@ -54,6 +126,63 @@ struct TimelineView: View {
         .themedScrollBackground()
         .navigationTitle("Murmur")
         .accessibilityIdentifier(AccessibilityIdentifiers.timelineList)
+        .sheet(item: $entryToEdit) { entry in
+            EditEntrySheet(entry: entry, onSave: saveContext)
+        }
+        .sheet(item: $activityToEdit) { activity in
+            EditActivitySheet(activity: activity, onSave: saveContext)
+        }
+        .sheet(item: $sleepToEdit) { sleep in
+            EditSleepSheet(sleep: sleep, onSave: saveContext)
+        }
+        .sheet(item: $mealToEdit) { meal in
+            EditMealSheet(meal: meal, onSave: saveContext)
+        }
+    }
+
+    // MARK: - Delete Actions
+
+    private func deleteSymptomGroup(_ group: SymptomGroup) {
+        for entry in group.entries {
+            context.delete(entry)
+        }
+        saveContext()
+    }
+
+    private func deleteActivity(_ activity: ActivityEvent) {
+        context.delete(activity)
+        saveContext()
+    }
+
+    private func deleteSleep(_ sleep: SleepEvent) {
+        guard !sleep.isImported else { return } // Don't delete HealthKit imports
+        context.delete(sleep)
+        saveContext()
+    }
+
+    private func deleteMeal(_ meal: MealEvent) {
+        context.delete(meal)
+        saveContext()
+    }
+
+    private func saveContext() {
+        do {
+            try context.save()
+        } catch {
+            logger.error("Failed to save after delete: \(error.localizedDescription)")
+            context.rollback()
+        }
+    }
+
+    /// Groups symptom entries by type for consolidated display
+    private func groupedSymptoms(for section: DaySection) -> [SymptomGroup] {
+        let grouped = Dictionary(grouping: section.entries) { $0.symptomType }
+        return grouped.compactMap { (type, entries) -> SymptomGroup? in
+            guard let type = type else { return nil }
+            let avgSeverity = entries.map { Double($0.severity) }.reduce(0, +) / Double(entries.count)
+            let latestTime = entries.compactMap { $0.backdatedAt ?? $0.createdAt }.max() ?? DateUtility.now()
+            return SymptomGroup(type: type, entries: entries, averageSeverity: avgSeverity, latestTime: latestTime)
+        }.sorted { $0.latestTime > $1.latestTime }
     }
 
     private func sectionHeader(for section: DaySection) -> some View {
@@ -65,17 +194,13 @@ struct TimelineView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(section.date, style: .date)
                         .font(.headline)
-                    if let summary = section.summary {
-                        HStack(spacing: 6) {
-                            Text(String(format: "%.1f average • %d logged", summary.rawAverageSeverity, summary.entryCount))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            if let loadScore = summary.loadScore, loadScore.decayedLoad > 0.1 {
-                                Text("• \(Int(loadScore.decayedLoad))% load")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
+                    if let summary = section.summary, let loadScore = summary.loadScore, loadScore.effectiveLoad > 0.1 {
+                        HStack(spacing: 5) {
+                            Image(systemName: loadIconName(for: loadScore.riskLevel))
+                            Text(loadDescriptor(for: loadScore.riskLevel))
                         }
+                        .font(.caption)
+                        .foregroundStyle(loadIconColour(for: loadScore.riskLevel))
                     }
                 }
                 Spacer()
@@ -88,6 +213,33 @@ struct TimelineView: View {
             .accessibilityHint("Double tap to view all entries for this day")
         }
         .buttonStyle(.plain)
+    }
+
+    private func loadDescriptor(for riskLevel: LoadScore.RiskLevel) -> String {
+        switch riskLevel {
+        case .safe: return "Light day"
+        case .caution: return "Moderate day"
+        case .high: return "Busy day"
+        case .critical: return "Heavy day"
+        }
+    }
+
+    private func loadIconName(for riskLevel: LoadScore.RiskLevel) -> String {
+        switch riskLevel {
+        case .safe: return "leaf.fill"
+        case .caution: return "wind"
+        case .high: return "flame"
+        case .critical: return "flame.fill"
+        }
+    }
+
+    private func loadIconColour(for riskLevel: LoadScore.RiskLevel) -> Color {
+        switch riskLevel {
+        case .safe: return palette.color(for: "loadSafe")
+        case .caution: return palette.color(for: "loadCaution")
+        case .high: return palette.color(for: "loadHigh")
+        case .critical: return palette.color(for: "loadCritical")
+        }
     }
 
     private var emptyState: some View {
@@ -120,6 +272,77 @@ struct TimelineView: View {
         return "\(dateString). \(summary.entryCount) \(summary.entryCount == 1 ? "entry" : "entries"). Average: Level \(Int(summary.rawAverageSeverity)), \(severityDesc)"
     }
 
+}
+
+/// Represents a group of symptom entries of the same type
+struct SymptomGroup {
+    let type: SymptomType
+    let entries: [SymptomEntry]
+    let averageSeverity: Double
+    let latestTime: Date
+}
+
+/// Compact row showing grouped symptoms with a severity colour dot
+private struct TimelineSymptomGroupRow: View {
+    let group: SymptomGroup
+    let palette: ColorPalette
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // Severity colour dot using the palette
+            Circle()
+                .fill(severityColour)
+                .frame(width: 10, height: 10)
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text(group.type.name ?? "Unnamed")
+                        .font(.subheadline.weight(.medium))
+                    if group.entries.count > 1 {
+                        Text("×\(group.entries.count)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Text(timeRange)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            // Severity indicator badge
+            SeverityBadge(value: group.averageSeverity, precision: .integer, isPositive: group.type.isPositive)
+        }
+        .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityDescription)
+        .accessibilityIdentifier(AccessibilityIdentifiers.entryCell(group.entries.first?.id?.uuidString ?? "unknown"))
+    }
+
+    private var severityColour: Color {
+        let level = Int(round(group.averageSeverity))
+        return palette.color(for: "severity\(max(1, min(5, level)))")
+    }
+
+    private var timeRange: String {
+        let times = group.entries.compactMap { $0.backdatedAt ?? $0.createdAt }
+        guard let earliest = times.min(), let latest = times.max() else {
+            return ""
+        }
+        if group.entries.count == 1 {
+            return DateFormatters.shortTime.string(from: latest)
+        }
+        return "\(DateFormatters.shortTime.string(from: earliest)) – \(DateFormatters.shortTime.string(from: latest))"
+    }
+
+    private var accessibilityDescription: String {
+        let count = group.entries.count
+        let severityDesc = SeverityScale.descriptor(for: Int(group.averageSeverity), isPositive: group.type.isPositive)
+        if count == 1 {
+            return "\(group.type.name ?? "Unnamed"), \(severityDesc)"
+        }
+        return "\(group.type.name ?? "Unnamed"), \(count) entries, average \(severityDesc)"
+    }
 }
 
 private struct TimelineEntryRow: View {
@@ -181,21 +404,13 @@ private struct TimelineActivityRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            RoundedRectangle(cornerRadius: 4)
-                .fill(Color.purple.opacity(0.6))
-                .frame(width: 6)
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 4) {
-                    Image(systemName: "calendar")
-                        .font(.caption)
-                        .foregroundStyle(.purple)
+            Circle()
+                .fill(Color.purple.opacity(0.7))
+                .frame(width: 10, height: 10)
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
                     Text(activity.name ?? "Unnamed activity")
-                        .font(.headline)
-                }
-                HStack(spacing: 8) {
-                    Text(timeLabel)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(.subheadline.weight(.medium))
                     if let duration = activity.durationMinutes?.intValue {
                         Text("\(duration) min")
                             .font(.caption)
@@ -203,20 +418,19 @@ private struct TimelineActivityRow: View {
                     }
                 }
                 HStack(spacing: 8) {
-                    ExertionBadge(icon: "figure.walk", value: activity.physicalExertion)
-                    ExertionBadge(icon: "brain.head.profile", value: activity.cognitiveExertion)
-                    ExertionBadge(icon: "heart", value: activity.emotionalLoad)
-                }
-                if let note = activity.note, !note.isEmpty {
-                    Text(note)
+                    Text(timeLabel)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                    HStack(spacing: 6) {
+                        ExertionBadge(icon: "figure.walk", value: activity.physicalExertion)
+                        ExertionBadge(icon: "brain.head.profile", value: activity.cognitiveExertion)
+                        ExertionBadge(icon: "heart", value: activity.emotionalLoad)
+                    }
                 }
             }
             Spacer()
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityDescription)
     }
@@ -280,68 +494,35 @@ private struct PhysiologicalStateBadge: View {
 private struct TimelineSleepRow: View {
     @ObservedObject var sleep: SleepEvent
 
-    private var hasHealthMetrics: Bool {
-        sleep.hkSleepHours != nil || sleep.hkHRV != nil || sleep.hkRestingHR != nil
-    }
-
     var body: some View {
         HStack(spacing: 12) {
-            RoundedRectangle(cornerRadius: 4)
-                .fill(Color.indigo.opacity(0.6))
-                .frame(width: 6)
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 4) {
-                    Image(systemName: "moon.stars.fill")
-                        .font(.caption)
-                        .foregroundStyle(.indigo)
+            Circle()
+                .fill(Color.indigo.opacity(0.7))
+                .frame(width: 10, height: 10)
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
                     Text("Sleep")
-                        .font(.headline)
-                }
-                HStack(spacing: 8) {
-                    Text(timeLabel)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(.subheadline.weight(.medium))
                     if let duration = sleepDuration {
                         Text(duration)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                     HStack(spacing: 3) {
-                        Image(systemName: "star.fill")
+                        Image(systemName: "moon.fill")
+                            .font(.caption2)
                         Text("\(sleep.quality)/5")
+                            .font(.caption)
                     }
-                    .font(.caption2)
                     .foregroundStyle(.indigo)
                 }
-                if hasHealthMetrics {
-                    HStack(spacing: 8) {
-                        if let sleepHours = sleep.hkSleepHours?.doubleValue {
-                            Text(String(format: "%.1fh", sleepHours))
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-                        if let hrv = sleep.hkHRV?.doubleValue {
-                            Text(String(format: "%.0f ms", hrv))
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-                        if let rhr = sleep.hkRestingHR?.doubleValue {
-                            Text(String(format: "%.0f bpm", rhr))
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
-                if let note = sleep.note, !note.isEmpty {
-                    Text(note)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
+                Text(timeLabel)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             Spacer()
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityDescription)
     }
@@ -388,38 +569,27 @@ private struct TimelineMealRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            RoundedRectangle(cornerRadius: 4)
-                .fill(Color.orange.opacity(0.6))
-                .frame(width: 6)
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 4) {
-                    Image(systemName: "fork.knife")
-                        .font(.caption)
-                        .foregroundStyle(.orange)
+            Circle()
+                .fill(Color.orange.opacity(0.7))
+                .frame(width: 10, height: 10)
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
                     Text(meal.mealType?.capitalized ?? "Meal")
-                        .font(.headline)
+                        .font(.subheadline.weight(.medium))
+                    if let description = meal.mealDescription, !description.isEmpty {
+                        Text(description)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
                 }
-                HStack(spacing: 8) {
-                    Text(timeLabel)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                if let description = meal.mealDescription, !description.isEmpty {
-                    Text(description)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-                if let note = meal.note, !note.isEmpty {
-                    Text(note)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
+                Text(timeLabel)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             Spacer()
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityDescription)
     }

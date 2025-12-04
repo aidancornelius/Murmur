@@ -29,7 +29,14 @@ struct DayDetailView: View {
     @State private var summary: DaySummary?
     @State private var previousSummary: DaySummary?
     @State private var metrics: DayMetrics?
+    @State private var dayReflection: DayReflection?
     @State private var errorMessage: String?
+
+    // Edit sheet state
+    @State private var entryToEdit: SymptomEntry?
+    @State private var activityToEdit: ActivityEvent?
+    @State private var sleepToEdit: SleepEvent?
+    @State private var mealToEdit: MealEvent?
 
     private let calendar = Calendar.current
 
@@ -59,9 +66,16 @@ struct DayDetailView: View {
         List {
             if let summary {
                 Section {
-                    DaySummaryCard(summary: summary, comparison: previousSummary, metrics: metrics)
+                    DaySummaryCard(
+                        summary: summary,
+                        comparison: previousSummary,
+                        metrics: metrics,
+                        feltLoadMultiplier: dayReflection?.loadMultiplierValue
+                    )
+                    .frame(maxWidth: .infinity)
                 }
-                .listRowBackground(summary.dominantColor(for: colorScheme).opacity(0.1))
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
             }
 
             // Calibration section
@@ -105,8 +119,22 @@ struct DayDetailView: View {
                 Section("Symptoms") {
                     ForEach(dayEntries.sorted(by: sortEntries)) { entry in
                         DayEntryRow(entry: entry)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    deleteEntry(entry)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                            .swipeActions(edge: .leading) {
+                                Button {
+                                    entryToEdit = entry
+                                } label: {
+                                    Label("Edit", systemImage: "pencil")
+                                }
+                                .tint(.orange)
+                            }
                     }
-                    .onDelete(perform: deleteEntries)
                 }
                 .listRowBackground(palette.surfaceColor)
             }
@@ -115,8 +143,22 @@ struct DayDetailView: View {
                 Section("Activities") {
                     ForEach(dayActivities.sorted(by: sortActivities)) { activity in
                         DayActivityRow(activity: activity)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    deleteActivity(activity)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                            .swipeActions(edge: .leading) {
+                                Button {
+                                    activityToEdit = activity
+                                } label: {
+                                    Label("Edit", systemImage: "pencil")
+                                }
+                                .tint(.orange)
+                            }
                     }
-                    .onDelete(perform: deleteActivities)
                 }
                 .listRowBackground(palette.surfaceColor)
             }
@@ -125,14 +167,23 @@ struct DayDetailView: View {
                 Section("Sleep") {
                     ForEach(daySleepEvents.sorted(by: sortSleepEvents)) { sleep in
                         DaySleepRow(sleep: sleep)
-                    }
-                    .onDelete { offsets in
-                        // Only allow deletion of non-imported sleep events
-                        let sortedEvents = daySleepEvents.sorted(by: sortSleepEvents)
-                        let deletableOffsets = offsets.filter { !sortedEvents[$0].isImported }
-                        if !deletableOffsets.isEmpty {
-                            deleteSleepEvents(at: IndexSet(deletableOffsets))
-                        }
+                            .swipeActions(edge: .trailing, allowsFullSwipe: !sleep.isImported) {
+                                if !sleep.isImported {
+                                    Button(role: .destructive) {
+                                        deleteSleepEvent(sleep)
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                }
+                            }
+                            .swipeActions(edge: .leading) {
+                                Button {
+                                    sleepToEdit = sleep
+                                } label: {
+                                    Label("Edit", systemImage: "pencil")
+                                }
+                                .tint(.orange)
+                            }
                     }
                 }
                 .listRowBackground(palette.surfaceColor)
@@ -142,8 +193,36 @@ struct DayDetailView: View {
                 Section("Meals") {
                     ForEach(dayMealEvents.sorted(by: sortMealEvents)) { meal in
                         DayMealRow(meal: meal)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    deleteMealEvent(meal)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                            .swipeActions(edge: .leading) {
+                                Button {
+                                    mealToEdit = meal
+                                } label: {
+                                    Label("Edit", systemImage: "pencil")
+                                }
+                                .tint(.orange)
+                            }
                     }
-                    .onDelete(perform: deleteMealEvents)
+                }
+                .listRowBackground(palette.surfaceColor)
+            }
+
+            // Reflection section - show when there's any logged data for the day
+            if !dayEntries.isEmpty || !dayActivities.isEmpty || !daySleepEvents.isEmpty || !dayMealEvents.isEmpty {
+                Section("Reflection") {
+                    DayReflectionSection(
+                        date: date,
+                        calculatedLoad: summary?.loadScore?.decayedLoad,
+                        onReflectionChanged: { reflection in
+                            dayReflection = reflection
+                        }
+                    )
                 }
                 .listRowBackground(palette.surfaceColor)
             }
@@ -178,6 +257,32 @@ struct DayDetailView: View {
         .navigationTitle(formatted(date: date))
         .accessibilityIdentifier(AccessibilityIdentifiers.dayDetailList)
         .onAppear(perform: bootstrap)
+        .sheet(item: $entryToEdit) { entry in
+            EditEntrySheet(entry: entry, onSave: refreshAfterEdit)
+        }
+        .sheet(item: $activityToEdit) { activity in
+            EditActivitySheet(activity: activity, onSave: refreshAfterEdit)
+        }
+        .sheet(item: $sleepToEdit) { sleep in
+            EditSleepSheet(sleep: sleep, onSave: refreshAfterEdit)
+        }
+        .sheet(item: $mealToEdit) { meal in
+            EditMealSheet(meal: meal, onSave: refreshAfterEdit)
+        }
+    }
+
+    private func refreshAfterEdit() {
+        do {
+            try context.save()
+            let refreshedEntries = try fetchEntries(for: date)
+            let loadScore = try calculateLoadScore(for: date)
+            apply(entries: refreshedEntries, loadScore: loadScore)
+            dayActivities = try fetchActivities(for: date).sorted(by: sortActivities)
+            daySleepEvents = try fetchSleepEvents(for: date).sorted(by: sortSleepEvents)
+            dayMealEvents = try fetchMealEvents(for: date).sorted(by: sortMealEvents)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     private func bootstrap() {
@@ -189,6 +294,9 @@ struct DayDetailView: View {
             dayActivities = activities.sorted(by: sortActivities)
             daySleepEvents = sleepEvents.sorted(by: sortSleepEvents)
             dayMealEvents = mealEvents.sorted(by: sortMealEvents)
+
+            // Fetch reflection for felt load display
+            dayReflection = try DayReflection.fetch(for: date, in: context)
 
             // Calculate load score with proper decay chain
             let loadScore = try calculateLoadScore(for: date)
@@ -455,6 +563,72 @@ struct DayDetailView: View {
             try context.save()
             dayMealEvents = try fetchMealEvents(for: date).sorted(by: sortMealEvents)
             // Recalculate summary after deletion
+            let refreshedEntries = try fetchEntries(for: date)
+            let loadScore = try calculateLoadScore(for: date)
+            apply(entries: refreshedEntries, loadScore: loadScore)
+        } catch {
+            errorMessage = error.localizedDescription
+            context.rollback()
+        }
+    }
+
+    // MARK: - Single Item Delete Actions
+
+    private func deleteEntry(_ entry: SymptomEntry) {
+        context.delete(entry)
+        if let typeId = entry.symptomType?.id {
+            entriesByType.removeValue(forKey: typeId)
+            severityByType.removeValue(forKey: typeId)
+            noteByType.removeValue(forKey: typeId)
+        }
+
+        do {
+            try context.save()
+            let refreshed = try fetchEntries(for: date)
+            let loadScore = try calculateLoadScore(for: date)
+            apply(entries: refreshed, loadScore: loadScore)
+        } catch {
+            errorMessage = error.localizedDescription
+            context.rollback()
+        }
+    }
+
+    private func deleteActivity(_ activity: ActivityEvent) {
+        context.delete(activity)
+
+        do {
+            try context.save()
+            dayActivities = try fetchActivities(for: date).sorted(by: sortActivities)
+            let refreshedEntries = try fetchEntries(for: date)
+            let loadScore = try calculateLoadScore(for: date)
+            apply(entries: refreshedEntries, loadScore: loadScore)
+        } catch {
+            errorMessage = error.localizedDescription
+            context.rollback()
+        }
+    }
+
+    private func deleteSleepEvent(_ sleep: SleepEvent) {
+        context.delete(sleep)
+
+        do {
+            try context.save()
+            daySleepEvents = try fetchSleepEvents(for: date).sorted(by: sortSleepEvents)
+            let refreshedEntries = try fetchEntries(for: date)
+            let loadScore = try calculateLoadScore(for: date)
+            apply(entries: refreshedEntries, loadScore: loadScore)
+        } catch {
+            errorMessage = error.localizedDescription
+            context.rollback()
+        }
+    }
+
+    private func deleteMealEvent(_ meal: MealEvent) {
+        context.delete(meal)
+
+        do {
+            try context.save()
+            dayMealEvents = try fetchMealEvents(for: date).sorted(by: sortMealEvents)
             let refreshedEntries = try fetchEntries(for: date)
             let loadScore = try calculateLoadScore(for: date)
             apply(entries: refreshedEntries, loadScore: loadScore)
