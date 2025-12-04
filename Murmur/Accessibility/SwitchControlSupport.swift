@@ -1,10 +1,11 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  SwitchControlSupport.swift
-//  Murmur
+// SwitchControlSupport.swift
+// Created by Aidan Cornelius-Bell on 02/10/2025.
+// Enhancements for Switch Control accessibility.
 //
-//  Created by Aidan Cornelius-Bell on 02/10/2025.
-//
-
 import SwiftUI
 
 // MARK: - Switch Control Support

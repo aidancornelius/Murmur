@@ -1,10 +1,11 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  DayReflectionSection.swift
-//  Murmur
+// DayReflectionSection.swift
+// Created by Aidan Cornelius-Bell on 04/12/2025.
+// Section for viewing and editing daily felt-load reflections.
 //
-//  Created by Aidan Cornelius-Bell on 04/12/2025.
-//
-
 import CoreData
 import SwiftUI
 

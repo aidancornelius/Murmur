@@ -1,14 +1,11 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  HealthKitIntegrationTests.swift
-//  Murmur
+// HealthKitIntegrationTests.swift
+// Created by Aidan Cornelius-Bell on 10/10/2025.
+// Integration tests for HealthKit services.
 //
-//  Consolidated test suite for HealthKit integration scenarios: error handling, permissions, and manual tracking
-//
-//  Originally from:
-//  - HealthKitAssistantErrorHandlingTests.swift (6 tests)
-//  - HealthKitAssistantManualTrackingTests.swift (3 tests)
-//
-
 import HealthKit
 import XCTest
 @testable import Murmur

@@ -1,10 +1,11 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  DayMetrics.swift
-//  Murmur
+// DayMetrics.swift
+// Created by Aidan Cornelius-Bell on 10/10/2025.
+// Component displaying daily metrics and statistics.
 //
-//  Extracted from DayDetailView.swift on 10/10/2025.
-//
-
 import CoreLocation
 import SwiftUI
 

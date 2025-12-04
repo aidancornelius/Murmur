@@ -1,10 +1,11 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  ReflectionRingSelector.swift
-//  Murmur
+// ReflectionRingSelector.swift
+// Created by Aidan Cornelius-Bell on 04/12/2025.
+// Ring-style selector for felt-load adjustment.
 //
-//  Created by Aidan Cornelius-Bell on 04/12/2025.
-//
-
 import SwiftUI
 
 /// A ring-based selector for reflection levels (1-5 scale) with progressive fill

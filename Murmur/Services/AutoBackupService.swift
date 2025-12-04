@@ -1,10 +1,11 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  AutoBackupService.swift
-//  Murmur
+// AutoBackupService.swift
+// Created by Aidan Cornelius-Bell on 07/10/2025.
+// Service managing automatic data backups.
 //
-//  Created by Aidan Cornelius-Bell on 07/10/2025.
-//
-
 import BackgroundTasks
 import Foundation
 import Security

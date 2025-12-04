@@ -1,10 +1,11 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  LoadCalculationProtocols.swift
-//  Murmur
+// LoadCalculationProtocols.swift
+// Created by Aidan Cornelius-Bell on 12/10/2025.
+// Protocols defining the load calculation interface.
 //
-//  Created by Aidan Cornelius-Bell on 10/12/2025.
-//
-
 import Foundation
 
 // MARK: - Base Protocol

@@ -1,10 +1,11 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  DaySummaryCard.swift
-//  Murmur
+// DaySummaryCard.swift
+// Created by Aidan Cornelius-Bell on 10/10/2025.
+// Card component displaying the day's load and intensity gauges.
 //
-//  Extracted from DayDetailView.swift on 10/10/2025.
-//
-
 import SwiftUI
 
 /// A unified day summary - delegates to LoadScoreCard when load data exists,

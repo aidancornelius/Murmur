@@ -1,10 +1,11 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  EventTests.swift
-//  Murmur
+// EventTests.swift
+// Created by Aidan Cornelius-Bell on 05/10/2025.
+// Tests for event model behaviour.
 //
-//  Created by Aidan Cornelius-Bell on 05/10/2025.
-//
-
 import CoreData
 import XCTest
 @testable import Murmur

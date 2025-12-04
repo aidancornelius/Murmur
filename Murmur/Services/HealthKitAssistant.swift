@@ -1,11 +1,11 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  HealthKitAssistant.swift
-//  Murmur
+// HealthKitAssistant.swift
+// Created by Aidan Cornelius-Bell on 02/10/2025.
+// Main service coordinating HealthKit data access.
 //
-//  Created by Aidan Cornelius-Bell on 02/10/2025.
-//  Refactored: 10/10/2025 - Converted to facade pattern with service extraction
-//
-
 import Combine
 import HealthKit
 import os.log

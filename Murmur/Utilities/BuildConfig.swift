@@ -1,10 +1,11 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  BuildConfig.swift
-//  Murmur
+// BuildConfig.swift
+// Created by Aidan Cornelius-Bell on 06/10/2025.
+// Build configuration and environment detection.
 //
-//  Quick utility to check build configuration at runtime
-//
-
 import Foundation
 
 enum BuildConfig {

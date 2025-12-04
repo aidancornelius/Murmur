@@ -1,11 +1,11 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  SampleDataSeeder.swift
-//  Murmur
+// SampleDataSeeder.swift
+// Created by Aidan Cornelius-Bell on 02/10/2025.
+// Development utility for seeding sample Core Data entries.
 //
-//  Created by Aidan Cornelius-Bell on 02/10/2025.
-//  Refactored: 10/10/2025 - Extracted random generation and HealthKit reads into separate services
-//
-
 import CoreData
 import Foundation
 import HealthKit

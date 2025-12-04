@@ -1,10 +1,11 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  HealthKitAssistantTestCase.swift
-//  Murmur
+// HealthKitAssistantTestCase.swift
+// Created by Aidan Cornelius-Bell on 10/10/2025.
+// Base test case for HealthKit tests.
 //
-//  Created by Aidan Cornelius-Bell on 10/10/2025.
-//
-
 import HealthKit
 import XCTest
 @testable import Murmur

@@ -1,10 +1,11 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  LoadScoreCard.swift
-//  Murmur
+// LoadScoreCard.swift
+// Created by Aidan Cornelius-Bell on 10/10/2025.
+// Card component displaying load score breakdown.
 //
-//  Extracted from DayDetailView.swift on 10/10/2025.
-//
-
 import SwiftUI
 
 /// Instrument cluster layout: load gauge (left, larger) + intensity gauge (right, smaller)

@@ -1,10 +1,11 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  MurmurWidgetTestsBase.swift
-//  MurmurWidgetTests
+// MurmurWidgetTestsBase.swift
+// Created by Aidan Cornelius-Bell on 13/10/2025.
+// Base class for widget tests.
 //
-//  Created by Aidan Cornelius-Bell on 13/10/2025.
-//
-
 import CoreData
 import XCTest
 import WidgetKit

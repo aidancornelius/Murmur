@@ -1,10 +1,11 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  DayReflection.swift
-//  Murmur
+// DayReflection.swift
+// Created by Aidan Cornelius-Bell on 04/12/2025.
+// Core Data entity for daily felt-load reflections.
 //
-//  Created by Aidan Cornelius-Bell on 04/12/2025.
-//
-
 import CoreData
 import Foundation
 

@@ -1,10 +1,11 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  ReflectionNotesField.swift
-//  Murmur
+// ReflectionNotesField.swift
+// Created by Aidan Cornelius-Bell on 04/12/2025.
+// Text field for entering daily reflection notes.
 //
-//  Created by Aidan Cornelius-Bell on 04/12/2025.
-//
-
 import SwiftUI
 
 /// A minimal, expandable text field for reflection notes

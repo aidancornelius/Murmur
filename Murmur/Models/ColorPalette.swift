@@ -1,10 +1,11 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  ColorPalette.swift
-//  Murmur
+// ColorPalette.swift
+// Created by Aidan Cornelius-Bell on 03/10/2025.
+// Custom colour palette definitions for the app theme.
 //
-//  Created by Aidan Cornelius-Bell on 03/10/2025.
-//
-
 import SwiftUI
 
 struct ColorPalette: Identifiable, Hashable, Codable {

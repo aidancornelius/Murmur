@@ -1,10 +1,11 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  LoadCapacitySettingsView.swift
-//  Murmur
+// LoadCapacitySettingsView.swift
+// Created by Aidan Cornelius-Bell on 06/10/2025.
+// Settings view for configuring load capacity baselines.
 //
-//  Created by Aidan Cornelius-Bell on 06/10/2025.
-//
-
 import SwiftUI
 
 // MARK: - Risk Level Color Extension

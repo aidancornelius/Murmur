@@ -1,10 +1,11 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  LoadScore.swift
-//  Murmur
+// LoadScore.swift
+// Created by Aidan Cornelius-Bell on 02/10/2025.
+// Load score calculation model with component breakdowns.
 //
-//  Created by Aidan Cornelius-Bell on 02/10/2025.
-//
-
 import Foundation
 
 /// Represents the accumulated activity load with symptom-aware decay

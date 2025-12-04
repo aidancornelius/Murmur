@@ -1,10 +1,11 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  SpeechService.swift
-//  Murmur
+// SpeechService.swift
+// Created by Aidan Cornelius-Bell on 07/10/2025.
+// Service for speech recognition input.
 //
-//  Created by Aidan Cornelius-Bell on 07/10/2025.
-//
-
 import AVFoundation
 import Combine
 import os.log

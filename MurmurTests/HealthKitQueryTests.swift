@@ -1,15 +1,11 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  HealthKitQueryTests.swift
-//  Murmur
+// HealthKitQueryTests.swift
+// Created by Aidan Cornelius-Bell on 13/10/2025.
+// Tests for HealthKit query construction.
 //
-//  Consolidated test suite for HealthKit query operations, caching, and lifecycle
-//
-//  Originally from:
-//  - HealthKitQueryServiceTests.swift (8 tests)
-//  - HealthKitCacheServiceTests.swift (18 tests)
-//  - HealthKitAssistantQueryLifecycleTests.swift (5 tests)
-//
-
 import XCTest
 import HealthKit
 @testable import Murmur

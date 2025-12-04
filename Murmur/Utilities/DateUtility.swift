@@ -1,10 +1,11 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  DateUtility.swift
-//  Murmur
+// DateUtility.swift
+// Created by Aidan Cornelius-Bell on 10/10/2025.
+// Date calculation and manipulation utilities.
 //
-//  Created by Aidan Cornelius-Bell on 10/10/2025.
-//
-
 import Foundation
 
 /// Thread-safe date formatting and day-bound calculations

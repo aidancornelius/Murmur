@@ -1,10 +1,11 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  PerformanceTests.swift
-//  MurmurUITests
+// PerformanceTests.swift
+// Created by Aidan Cornelius-Bell on 06/10/2025.
+// Performance measurement UI tests.
 //
-//  Created by Aidan Cornelius-Bell on 06/10/2025.
-//
-
 import XCTest
 
 /// Performance and responsiveness tests

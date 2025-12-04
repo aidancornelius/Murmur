@@ -1,10 +1,11 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  EditSheets.swift
-//  Murmur
+// EditSheets.swift
+// Created by Aidan Cornelius-Bell on 04/12/2025.
+// Sheet views for editing timeline items.
 //
-//  Created for swipe-to-edit functionality
-//
-
 import SwiftUI
 
 // MARK: - Edit Entry Sheet

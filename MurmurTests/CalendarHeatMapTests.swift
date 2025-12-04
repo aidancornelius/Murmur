@@ -1,10 +1,11 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  CalendarHeatMapTests.swift
-//  Murmur
+// CalendarHeatMapTests.swift
+// Created by Aidan Cornelius-Bell on 06/10/2025.
+// Tests for calendar heatmap view model.
 //
-//  Created by Aidan Cornelius-Bell on 06/10/2025.
-//
-
 import CoreData
 import XCTest
 @testable import Murmur

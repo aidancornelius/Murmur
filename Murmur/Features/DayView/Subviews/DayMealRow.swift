@@ -1,10 +1,11 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  DayMealRow.swift
-//  Murmur
+// DayMealRow.swift
+// Created by Aidan Cornelius-Bell on 10/10/2025.
+// Row component displaying a meal event in day view.
 //
-//  Extracted from DayDetailView.swift on 10/10/2025.
-//
-
 import SwiftUI
 
 /// A row displaying a meal event with time and description

@@ -1,17 +1,11 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 //
-//  SnapshotHelper.swift
-//  Murmur
+// SnapshotHelper.swift
+// Created by Aidan Cornelius-Bell on 02/10/2025.
+// Helper for generating UI snapshots.
 //
-//  Created by Aidan Cornelius-Bell on 02/10/2025.
-//
-
-// -----------------------------------------------------
-// IMPORTANT: When modifying this file, make sure to
-//            increment the version number at the very
-//            bottom of the file to notify users about
-//            the new SnapshotHelper.swift
-// -----------------------------------------------------
-
 import Foundation
 import XCTest
 
