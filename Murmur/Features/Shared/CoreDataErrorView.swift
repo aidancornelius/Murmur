@@ -9,7 +9,14 @@
 import SwiftUI
 
 struct CoreDataErrorView: View {
-    let error: CoreDataStack.CoreDataError
+    let error: Error
+
+    private var errorDescription: String {
+        if let coreDataError = error as? CoreDataStack.CoreDataError {
+            return coreDataError.localizedDescription
+        }
+        return error.localizedDescription
+    }
 
     var body: some View {
         VStack(spacing: 20) {
@@ -21,7 +28,7 @@ struct CoreDataErrorView: View {
                 .font(.title)
                 .fontWeight(.semibold)
 
-            Text(error.localizedDescription)
+            Text(errorDescription)
                 .font(.body)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)

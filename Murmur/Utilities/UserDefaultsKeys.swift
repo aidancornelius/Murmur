@@ -42,6 +42,8 @@ enum UserDefaultsKeys {
 
     // MARK: - Data Management
     static let symptomSeedVersion = "symptomSeedVersion"
+    static let deliberateDataReset = "deliberateDataReset"
+    static let lastRecoveryPromptDismissed = "lastRecoveryPromptDismissed"
 
     // MARK: - UI Testing
     static let hasSeededHealthKitData = "hasSeededHealthKitData"

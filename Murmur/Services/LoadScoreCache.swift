@@ -11,8 +11,14 @@ import CoreData
 
 /// Cache for LoadScore calculations with intelligent invalidation
 /// Stores load scores by date and tracks data dependencies for efficient updates
+/// Uses LRU (Least Recently Used) eviction when cache exceeds maximum size
 @MainActor
 final class LoadScoreCache {
+
+    // MARK: - Constants
+
+    /// Maximum number of entries the cache can hold before LRU eviction occurs
+    private static let maxCacheSize = 500
 
     // MARK: - Types
 
@@ -21,6 +27,8 @@ final class LoadScoreCache {
         let loadScore: LoadScore
         let dataHash: DataHash
         let timestamp: Date
+        /// Tracks when this entry was last accessed for LRU eviction
+        var lastAccessTime: Date
 
         /// Hash representing the input data for this calculation
         struct DataHash: Hashable {
@@ -75,7 +83,7 @@ final class LoadScoreCache {
              reflectionMultiplier: Double? = nil) -> LoadScore? {
         let dayStart = calendar.startOfDay(for: date)
 
-        guard let entry = cache[dayStart] else {
+        guard var entry = cache[dayStart] else {
             misses += 1
             return nil
         }
@@ -90,6 +98,9 @@ final class LoadScoreCache {
 
         if entry.dataHash == currentHash {
             hits += 1
+            // Update last access time for LRU tracking
+            entry.lastAccessTime = DateUtility.now()
+            cache[dayStart] = entry
             return entry.loadScore
         } else {
             misses += 1
@@ -109,8 +120,17 @@ final class LoadScoreCache {
             config: config,
             reflectionMultiplier: reflectionMultiplier
         )
-        let entry = CachedEntry(loadScore: loadScore, dataHash: dataHash, timestamp: DateUtility.now())
+        let now = DateUtility.now()
+        let entry = CachedEntry(
+            loadScore: loadScore,
+            dataHash: dataHash,
+            timestamp: now,
+            lastAccessTime: now
+        )
         cache[dayStart] = entry
+
+        // Evict least recently used entries if cache exceeds maximum size
+        evictIfNeeded()
     }
 
     /// Calculates load scores for a date range, using cache when possible
@@ -205,5 +225,27 @@ final class LoadScoreCache {
     func resetStatistics() {
         hits = 0
         misses = 0
+    }
+
+    // MARK: - Private Methods
+
+    /// Evicts least recently used entries when cache exceeds maximum size
+    private func evictIfNeeded() {
+        guard cache.count > Self.maxCacheSize else { return }
+
+        // Sort entries by last access time (oldest first)
+        let sortedKeys = cache.keys.sorted { key1, key2 in
+            let entry1 = cache[key1]!
+            let entry2 = cache[key2]!
+            return entry1.lastAccessTime < entry2.lastAccessTime
+        }
+
+        // Remove oldest entries until we're at 90% capacity to avoid frequent evictions
+        let targetSize = Int(Double(Self.maxCacheSize) * 0.9)
+        let entriesToRemove = cache.count - targetSize
+
+        for i in 0..<entriesToRemove {
+            cache.removeValue(forKey: sortedKeys[i])
+        }
     }
 }

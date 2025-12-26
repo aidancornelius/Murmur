@@ -10,6 +10,12 @@ import Foundation
 import CoreData
 import SwiftUI
 import Combine
+import os
+
+/// Notification posted when data needs to be refreshed (e.g., after restore)
+extension Notification.Name {
+    static let timelineDataDidChange = Notification.Name("timelineDataDidChange")
+}
 
 /// Centralised data controller for timeline view
 /// Manages fetched results controllers, load score cache, and day section grouping
@@ -23,9 +29,11 @@ final class TimelineDataController: NSObject, ObservableObject {
 
     // MARK: - Private Properties
 
+    private let logger = Logger(subsystem: "app.murmur", category: "TimelineData")
     private let context: NSManagedObjectContext
     private let calendar = Calendar.current
     private let loadScoreCache = LoadScoreCache()
+    private var cancellables = Set<AnyCancellable>()
 
     // Fetched results controllers
     private var entriesFRC: NSFetchedResultsController<SymptomEntry>?
@@ -61,6 +69,33 @@ final class TimelineDataController: NSObject, ObservableObject {
 
         setupFetchedResultsControllers()
         performInitialFetch()
+        observeDataChangeNotifications()
+    }
+
+    private func observeDataChangeNotifications() {
+        // Listen for data change notifications (e.g., after restore)
+        NotificationCenter.default.publisher(for: .timelineDataDidChange)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.forceRefresh()
+            }
+            .store(in: &cancellables)
+
+        // Also listen for Core Data remote change notifications
+        NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] notification in
+                guard let self = self else { return }
+                // Only refresh if the notification is from a different context
+                if let savedContext = notification.object as? NSManagedObjectContext,
+                   savedContext != self.context {
+                    self.context.perform {
+                        self.context.refreshAllObjects()
+                    }
+                    self.forceRefresh()
+                }
+            }
+            .store(in: &cancellables)
     }
 
     // MARK: - Setup
@@ -178,8 +213,91 @@ final class TimelineDataController: NSObject, ObservableObject {
 
             rebuildDaySections()
             isLoading = false
+
+            // Validate FRC data against database counts
+            Task {
+                await validateDataIntegrity()
+            }
         } catch {
-            print("Error performing initial fetch: \(error)")
+            logger.error("Error performing initial fetch: \(error)")
+        }
+    }
+
+    /// Validates that FRC data matches database reality
+    /// If there's a significant mismatch, triggers a force refresh
+    private func validateDataIntegrity() async {
+        let frcEntryCount = entriesFRC?.fetchedObjects?.count ?? 0
+        let frcActivityCount = activitiesFRC?.fetchedObjects?.count ?? 0
+        let frcSleepCount = sleepEventsFRC?.fetchedObjects?.count ?? 0
+        let frcMealCount = mealEventsFRC?.fetchedObjects?.count ?? 0
+
+        // Query actual database counts
+        let dbCounts = await context.perform { [context, dataStartDate] in
+            let entryRequest: NSFetchRequest<SymptomEntry> = SymptomEntry.fetchRequest()
+            entryRequest.predicate = NSPredicate(
+                format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
+                dataStartDate as NSDate, dataStartDate as NSDate
+            )
+
+            let activityRequest: NSFetchRequest<ActivityEvent> = ActivityEvent.fetchRequest()
+            activityRequest.predicate = NSPredicate(
+                format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
+                dataStartDate as NSDate, dataStartDate as NSDate
+            )
+
+            let sleepRequest: NSFetchRequest<SleepEvent> = SleepEvent.fetchRequest()
+            sleepRequest.predicate = NSPredicate(
+                format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
+                dataStartDate as NSDate, dataStartDate as NSDate
+            )
+
+            let mealRequest: NSFetchRequest<MealEvent> = MealEvent.fetchRequest()
+            mealRequest.predicate = NSPredicate(
+                format: "(backdatedAt >= %@ OR (backdatedAt == nil AND createdAt >= %@))",
+                dataStartDate as NSDate, dataStartDate as NSDate
+            )
+
+            return (
+                entries: (try? context.count(for: entryRequest)) ?? 0,
+                activities: (try? context.count(for: activityRequest)) ?? 0,
+                sleep: (try? context.count(for: sleepRequest)) ?? 0,
+                meals: (try? context.count(for: mealRequest)) ?? 0
+            )
+        }
+
+        // Check for mismatches
+        let entryMismatch = abs(frcEntryCount - dbCounts.entries)
+        let activityMismatch = abs(frcActivityCount - dbCounts.activities)
+        let sleepMismatch = abs(frcSleepCount - dbCounts.sleep)
+        let mealMismatch = abs(frcMealCount - dbCounts.meals)
+
+        let totalFRC = frcEntryCount + frcActivityCount + frcSleepCount + frcMealCount
+        let totalDB = dbCounts.entries + dbCounts.activities + dbCounts.sleep + dbCounts.meals
+        let totalMismatch = entryMismatch + activityMismatch + sleepMismatch + mealMismatch
+
+        // Trigger refresh if:
+        // 1. FRC shows 0 but DB has data (completely stale)
+        // 2. Mismatch is more than 10% of total items
+        // 3. Mismatch is more than 5 items (for small datasets)
+        let needsRefresh: Bool
+        if totalFRC == 0 && totalDB > 0 {
+            logger.warning("Data integrity: FRC empty but DB has \(totalDB) items - triggering refresh")
+            needsRefresh = true
+        } else if totalDB > 0 && Double(totalMismatch) / Double(totalDB) > 0.1 {
+            logger.warning("Data integrity: \(totalMismatch) item mismatch (>\(10)%) - triggering refresh")
+            needsRefresh = true
+        } else if totalMismatch > 5 {
+            logger.warning("Data integrity: \(totalMismatch) item mismatch - triggering refresh")
+            needsRefresh = true
+        } else {
+            needsRefresh = false
+        }
+
+        if needsRefresh {
+            logger.info("Data integrity check failed - FRC: \(totalFRC), DB: \(totalDB)")
+            forceRefresh()
+        } else {
+            logger.debug("Data integrity check passed - FRC: \(totalFRC), DB: \(totalDB)")
         }
     }
 
@@ -294,6 +412,34 @@ final class TimelineDataController: NSObject, ObservableObject {
 
     // MARK: - Public API
 
+    /// Forces a complete refresh of all data from Core Data
+    /// Use this after data restoration or when FRCs may have stale data
+    func forceRefresh() {
+        logger.info("Force refreshing timeline data")
+        isLoading = true
+
+        // Refresh the context to pick up any changes from other contexts
+        context.refreshAllObjects()
+
+        // Invalidate all caches
+        loadScoreCache.invalidateAll()
+
+        // Re-perform fetch on all FRCs
+        do {
+            try entriesFRC?.performFetch()
+            try activitiesFRC?.performFetch()
+            try sleepEventsFRC?.performFetch()
+            try mealEventsFRC?.performFetch()
+            try reflectionsFRC?.performFetch()
+
+            rebuildDaySections()
+        } catch {
+            logger.error("Error during force refresh: \(error)")
+        }
+
+        isLoading = false
+    }
+
     /// Updates date ranges (e.g., at midnight or when user changes settings)
     func updateDateRanges() {
         let today = calendar.startOfDay(for: DateUtility.now())
@@ -362,6 +508,9 @@ extension TimelineDataController: ResourceManageable {
 
     @MainActor
     private func _cleanup() {
+        // Cancel notification observers
+        cancellables.removeAll()
+
         // Clear FRC delegates to break retain cycles
         entriesFRC?.delegate = nil
         activitiesFRC?.delegate = nil

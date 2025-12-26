@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git log:*)",
+      "Bash(git filter-branch:*)",
+      "Bash(echo \"Checking commit count with attribution...\" git log --format=\"%h\")",
+      "Bash(FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch -f --msg-filter '/tmp/filter_msg.sh' 9c81b55^..HEAD)",
+      "Bash(git stash:*)",
+      "Bash(git push:*)",
+      "Bash(xcodebuild test:*)",
+      "Bash(cat:*)",
+      "Bash(find:*)",
+      "Bash(xcodebuild:*)",
+      "Bash(xcrun simctl:*)",
+      "Bash(swift build:*)",
+      "Bash(swiftc:*)",
+      "Bash(grep:*)",
+      "Bash(swift -parse:*)",
+      "Bash(xcodegen generate:*)",
+      "Bash(xcrun xcresulttool:*)",
+      "Bash(python3:*)",
+      "Bash(# Check for crash logs find ~/Library/Logs/DiagnosticReports -name \"\"Murmur*\"\" -mmin -5)",
+      "Bash(# Check for recent crash logs ls -la ~/Library/Logs/DiagnosticReports/)",
+      "Bash(# List recent crash logs ls -la ~/Library/Logs/DiagnosticReports/)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -12,14 +12,17 @@ import AppIntents
 import BackgroundTasks
 
 @MainActor
-final class MurmurAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+final class MurmurAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, ObservableObject {
     let healthKitAssistant: HealthKitAssistant
     let calendarAssistant: CalendarAssistant
     let sleepImportService: SleepImportService
-    private(set) var manualCycleTracker: ManualCycleTracker?
+    @Published private(set) var manualCycleTracker: ManualCycleTracker?
 
     // Resource manager for coordinated lifecycle management
     let resourceManager = ResourceManager()
+
+    /// Error from Core Data stack initialization, if any
+    @Published private(set) var coreDataError: Error?
 
     override init() {
         // Conditionally initialize services based on UI test flags
@@ -31,11 +34,10 @@ final class MurmurAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificati
         // Connect sleep import service to HealthKit
         sleepImportService.setHealthKit(healthKitAssistant)
 
-        // Register services with resource manager
+        // Register non-Core Data services with resource manager
         Task {
             try? await resourceManager.register(healthKitAssistant)
             try? await resourceManager.register(calendarAssistant)
-            try? await resourceManager.register(CoreDataStack.shared)
         }
     }
 
@@ -43,15 +45,24 @@ final class MurmurAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificati
         // Register custom value transformers for Core Data
         PlacemarkTransformer.register()
 
-        // Initialize manual cycle tracker with Core Data context
-        let context = CoreDataStack.shared.context
-        manualCycleTracker = ManualCycleTracker(context: context)
-        healthKitAssistant.manualCycleTracker = manualCycleTracker
+        // Start Core Data asynchronously, then initialize dependent services
+        Task { @MainActor in
+            // Start Core Data stack and capture any initialization errors
+            do {
+                try await CoreDataStack.shared.start()
+                try await resourceManager.register(CoreDataStack.shared)
 
-        // Register manual cycle tracker with resource manager
-        if let tracker = manualCycleTracker {
-            Task {
-                try? await resourceManager.register(tracker)
+                // Initialize manual cycle tracker after Core Data is ready
+                let context = CoreDataStack.shared.context
+                self.manualCycleTracker = ManualCycleTracker(context: context)
+                self.healthKitAssistant.manualCycleTracker = self.manualCycleTracker
+
+                // Register manual cycle tracker with resource manager
+                if let tracker = self.manualCycleTracker {
+                    try? await resourceManager.register(tracker)
+                }
+            } catch {
+                self.coreDataError = error
             }
         }
 

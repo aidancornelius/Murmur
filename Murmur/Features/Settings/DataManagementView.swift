@@ -304,7 +304,11 @@ struct DataManagementView: View {
 
                 // Refresh view context to trigger UI updates
                 await MainActor.run {
+                    // Mark this as a deliberate reset so we don't prompt for recovery
+                    UserDefaults.standard.set(true, forKey: UserDefaultsKeys.deliberateDataReset)
                     viewContext.refreshAllObjects()
+                    // Notify observers that data has changed (for timeline refresh)
+                    NotificationCenter.default.post(name: .timelineDataDidChange, object: nil)
                     HapticFeedback.success.trigger()
                     isProcessing = false
                     successMessage = "All data has been deleted"

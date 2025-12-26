@@ -695,6 +695,8 @@ final class DataBackupService {
         // Refresh view context to trigger UI updates
         await MainActor.run {
             viewContext.refreshAllObjects()
+            // Notify observers that data has changed (for timeline refresh)
+            NotificationCenter.default.post(name: .timelineDataDidChange, object: nil)
         }
 
         if !enabledReminderIDs.isEmpty {

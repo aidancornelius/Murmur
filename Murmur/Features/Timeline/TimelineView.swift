@@ -123,6 +123,9 @@ struct TimelineView: View {
                 emptyState
             }
         }
+        .refreshable {
+            dataController.forceRefresh()
+        }
         .listStyle(.insetGrouped)
         .themedScrollBackground()
         .navigationTitle("Murmur")

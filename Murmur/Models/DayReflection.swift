@@ -68,7 +68,7 @@ extension DayReflection {
     /// Whether this reflection has any data entered
     var hasData: Bool {
         bodyToMood != nil || mindToBody != nil || selfCareSpace != nil ||
-        loadMultiplier != nil || (notes != nil && !notes!.isEmpty)
+        loadMultiplier != nil || notes?.isEmpty == false
     }
 }
 

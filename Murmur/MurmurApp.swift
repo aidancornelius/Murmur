@@ -31,28 +31,89 @@ struct MurmurApp: App {
 
     var body: some Scene {
         WindowGroup {
-            // Check for CoreData initialization errors first
-            if let error = stack.initializationError {
-                CoreDataErrorView(error: error)
-            } else if let manualCycleTracker = appDelegate.manualCycleTracker {
-                RootContainer()
-                    .environment(\.managedObjectContext, stack.context)
-                    .environmentObject(appDelegate.healthKitAssistant)
-                    .environmentObject(appDelegate.calendarAssistant)
-                    .environmentObject(appDelegate.sleepImportService)
-                    .environmentObject(manualCycleTracker)
-                    .environmentObject(appearanceManager)
-                    .task {
-                        // Configure app for UI testing (data seeding etc)
-                        // Run async to avoid blocking UI
-                        if UITestConfiguration.isUITesting {
-                            let context = stack.context
-                            await UITestConfiguration.configure(context: context)
-                        }
+            AppContentView(appDelegate: appDelegate, stack: stack)
+                .environmentObject(appearanceManager)
+        }
+    }
+}
+
+/// Intermediary view that properly observes the app delegate's @Published properties
+private struct AppContentView: View {
+    @ObservedObject var appDelegate: MurmurAppDelegate
+    let stack: CoreDataStack
+
+    var body: some View {
+        // Check for CoreData initialization errors first
+        if let error = appDelegate.coreDataError {
+            CoreDataErrorView(error: error)
+        } else if let manualCycleTracker = appDelegate.manualCycleTracker {
+            RootContainer()
+                .environment(\.managedObjectContext, stack.context)
+                .environmentObject(appDelegate.healthKitAssistant)
+                .environmentObject(appDelegate.calendarAssistant)
+                .environmentObject(appDelegate.sleepImportService)
+                .environmentObject(manualCycleTracker)
+                .task {
+                    // Configure app for UI testing (data seeding etc)
+                    // Run async to avoid blocking UI
+                    if UITestConfiguration.isUITesting {
+                        let context = stack.context
+                        await UITestConfiguration.configure(context: context)
                     }
+                }
+        } else {
+            InitializationWaitView()
+        }
+    }
+}
+
+/// View that shows loading state with timeout handling
+private struct InitializationWaitView: View {
+    @State private var showTimeoutError = false
+    private let timeoutSeconds: Double = 10
+
+    var body: some View {
+        Group {
+            if showTimeoutError {
+                VStack(spacing: 20) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 48))
+                        .foregroundStyle(.orange)
+
+                    Text("Unable to start")
+                        .font(.title2.bold())
+
+                    Text("The app is taking longer than expected to initialize. This may indicate a problem with your data store.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Try these steps:")
+                            .font(.subheadline.bold())
+                        Text("1. Force quit and reopen the app")
+                        Text("2. Restart your device")
+                        Text("3. Check available storage space")
+                    }
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .padding()
+                    .background(.quaternary, in: RoundedRectangle(cornerRadius: 12))
+                }
+                .padding()
             } else {
-                ProgressView()
+                VStack(spacing: 16) {
+                    ProgressView()
+                    Text("Loading...")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
             }
+        }
+        .task {
+            try? await Task.sleep(for: .seconds(timeoutSeconds))
+            showTimeoutError = true
         }
     }
 }
@@ -66,6 +127,9 @@ private struct RootContainer: View {
     @State private var showingAddEntry = false
     @State private var showingAddActivity = false
     @State private var hasCompletedOnboarding = UserDefaults.standard.bool(forKey: UserDefaultsKeys.hasCompletedOnboarding)
+    @State private var recoveryInfo: DataRecoveryService.RecoveryInfo?
+    @State private var showRecoverySheet = false
+    @State private var isRestoring = false
 
     private let openAddEntryPublisher = NotificationCenter.default.publisher(for: .openAddEntry)
     private let openAddActivityPublisher = NotificationCenter.default.publisher(for: .openAddActivity)
@@ -157,6 +221,32 @@ private struct RootContainer: View {
                 .onReceive(openAddActivityPublisher) { _ in
                     showingAddActivity = true
                 }
+                .task {
+                    // Check for recovery opportunity (empty database with backup available)
+                    if !UITestConfiguration.isUITesting {
+                        if let info = await DataRecoveryService.shared.checkForRecoveryOpportunity(context: context) {
+                            recoveryInfo = info
+                            showRecoverySheet = true
+                        }
+                    }
+                }
+                .sheet(isPresented: $showRecoverySheet) {
+                    if let info = recoveryInfo {
+                        DataRecoverySheet(
+                            recoveryInfo: info,
+                            isRestoring: $isRestoring,
+                            onRestore: {
+                                Task {
+                                    await performRecovery(info: info)
+                                }
+                            },
+                            onDismiss: {
+                                DataRecoveryService.shared.dismissRecoveryPrompt()
+                                showRecoverySheet = false
+                            }
+                        )
+                    }
+                }
                 } else {
                     OnboardingView {
                         UserDefaults.standard.set(true, forKey: UserDefaultsKeys.hasCompletedOnboarding)
@@ -199,6 +289,90 @@ private struct RootContainer: View {
         if let orphanedEntries = try? context.fetch(fetchRequest), !orphanedEntries.isEmpty {
             orphanedEntries.forEach(context.delete)
             try? context.save()
+        }
+    }
+
+    private func performRecovery(info: DataRecoveryService.RecoveryInfo) async {
+        isRestoring = true
+        do {
+            try await AutoBackupService.shared.restoreBackup(from: info.backup)
+            DataRecoveryService.shared.clearDeliberateResetFlag()
+            await MainActor.run {
+                HapticFeedback.success.trigger()
+                isRestoring = false
+                showRecoverySheet = false
+                recoveryInfo = nil
+            }
+        } catch {
+            await MainActor.run {
+                HapticFeedback.error.trigger()
+                isRestoring = false
+            }
+        }
+    }
+}
+
+/// Sheet for offering data recovery from backup
+private struct DataRecoverySheet: View {
+    let recoveryInfo: DataRecoveryService.RecoveryInfo
+    @Binding var isRestoring: Bool
+    let onRestore: () -> Void
+    let onDismiss: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 24) {
+                Spacer()
+
+                Image(systemName: "arrow.counterclockwise.circle")
+                    .font(.system(size: 64))
+                    .foregroundStyle(.blue)
+
+                Text("Restore your data?")
+                    .font(.title2.bold())
+
+                Text("Your timeline appears empty, but we found a backup with your data. Would you like to restore it?")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("Backup from \(recoveryInfo.metadata.formattedCreatedAt)", systemImage: "clock")
+                    Label(recoveryInfo.metadata.summary, systemImage: "doc.text")
+                }
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(.quaternary, in: RoundedRectangle(cornerRadius: 12))
+                .padding(.horizontal)
+
+                Spacer()
+
+                VStack(spacing: 12) {
+                    Button(action: onRestore) {
+                        if isRestoring {
+                            ProgressView()
+                                .frame(maxWidth: .infinity)
+                        } else {
+                            Text("Restore backup")
+                                .frame(maxWidth: .infinity)
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(isRestoring)
+
+                    Button("Not now", action: onDismiss)
+                        .foregroundStyle(.secondary)
+                        .disabled(isRestoring)
+                }
+                .padding(.horizontal)
+                .padding(.bottom)
+            }
+            .navigationTitle("Data recovery")
+            .navigationBarTitleDisplayMode(.inline)
+            .interactiveDismissDisabled(isRestoring)
         }
     }
 }
