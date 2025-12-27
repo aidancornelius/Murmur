@@ -313,14 +313,29 @@ final class TimelineDataController: NSObject, ObservableObject {
         // Group reflection multipliers by date
         groupedReflections = LoadCalculator.shared.groupReflectionsByDate(reflectionsFRC?.fetchedObjects ?? [])
 
-        // Calculate display dates (union of all dates with display data)
-        let displayDates = Set(groupedEntries.keys)
+        // Get all dates with data (before filtering to display window)
+        let allDatesWithData = Set(groupedEntries.keys)
             .union(groupedActivities.keys)
             .union(groupedSleepEvents.keys)
             .union(groupedMealEvents.keys)
-            .filter { $0 >= displayStartDate }
 
+        // Calculate display dates (filter to display window)
+        var displayDates = allDatesWithData.filter { $0 >= displayStartDate }
+
+        // If display window is empty but we have older data in the fetch, expand to show it
+        if displayDates.isEmpty && !allDatesWithData.isEmpty {
+            if let mostRecentDate = allDatesWithData.max() {
+                logger.info("Display window empty, expanding to show entries from \(mostRecentDate)")
+                // Show all fetched data since the normal display window was empty
+                displayDates = allDatesWithData
+            }
+        }
+
+        // If still empty, check if there's older data in the database beyond our fetch range
         guard !displayDates.isEmpty else {
+            Task {
+                await checkForOlderDataAndExpand()
+            }
             daySections = []
             return
         }
@@ -408,6 +423,152 @@ final class TimelineDataController: NSObject, ObservableObject {
             mealEvents: mealEvents,
             summary: summary
         )
+    }
+
+    // MARK: - Date Range Expansion
+
+    /// Checks if there's data in the database older than our current fetch range
+    /// If found, expands the fetch range to include the most recent entries
+    private func checkForOlderDataAndExpand() async {
+        let oldestEntryDate = await findOldestEntryDate()
+
+        guard let oldestDate = oldestEntryDate else {
+            // No data in the database at all
+            logger.debug("No data found in database")
+            return
+        }
+
+        // Check if oldest data is outside our current fetch range
+        if oldestDate < dataStartDate {
+            logger.info("Found older data from \(oldestDate), expanding fetch range")
+            await MainActor.run {
+                expandFetchRange(toInclude: oldestDate)
+            }
+        }
+    }
+
+    /// Finds the oldest entry date across all entity types
+    private func findOldestEntryDate() async -> Date? {
+        await context.perform { [context] in
+            var oldestDates: [Date] = []
+
+            // Check symptom entries
+            let entryRequest: NSFetchRequest<SymptomEntry> = SymptomEntry.fetchRequest()
+            entryRequest.sortDescriptors = [
+                NSSortDescriptor(keyPath: \SymptomEntry.backdatedAt, ascending: true),
+                NSSortDescriptor(keyPath: \SymptomEntry.createdAt, ascending: true)
+            ]
+            entryRequest.fetchLimit = 1
+            if let oldest = try? context.fetch(entryRequest).first {
+                oldestDates.append(oldest.backdatedAt ?? oldest.createdAt ?? Date())
+            }
+
+            // Check activities
+            let activityRequest: NSFetchRequest<ActivityEvent> = ActivityEvent.fetchRequest()
+            activityRequest.sortDescriptors = [
+                NSSortDescriptor(keyPath: \ActivityEvent.backdatedAt, ascending: true),
+                NSSortDescriptor(keyPath: \ActivityEvent.createdAt, ascending: true)
+            ]
+            activityRequest.fetchLimit = 1
+            if let oldest = try? context.fetch(activityRequest).first {
+                oldestDates.append(oldest.backdatedAt ?? oldest.createdAt ?? Date())
+            }
+
+            // Check sleep events
+            let sleepRequest: NSFetchRequest<SleepEvent> = SleepEvent.fetchRequest()
+            sleepRequest.sortDescriptors = [
+                NSSortDescriptor(keyPath: \SleepEvent.backdatedAt, ascending: true),
+                NSSortDescriptor(keyPath: \SleepEvent.createdAt, ascending: true)
+            ]
+            sleepRequest.fetchLimit = 1
+            if let oldest = try? context.fetch(sleepRequest).first {
+                oldestDates.append(oldest.backdatedAt ?? oldest.createdAt ?? Date())
+            }
+
+            // Check meal events
+            let mealRequest: NSFetchRequest<MealEvent> = MealEvent.fetchRequest()
+            mealRequest.sortDescriptors = [
+                NSSortDescriptor(keyPath: \MealEvent.backdatedAt, ascending: true),
+                NSSortDescriptor(keyPath: \MealEvent.createdAt, ascending: true)
+            ]
+            mealRequest.fetchLimit = 1
+            if let oldest = try? context.fetch(mealRequest).first {
+                oldestDates.append(oldest.backdatedAt ?? oldest.createdAt ?? Date())
+            }
+
+            return oldestDates.min()
+        }
+    }
+
+    /// Expands the fetch range to include older data, then refetches
+    private func expandFetchRange(toInclude oldestDate: Date) {
+        // Find the most recent entry to set display start appropriately
+        let mostRecentDate = findMostRecentEntryDateSync() ?? oldestDate
+
+        // Set display start to show the most recent 30 days of actual data
+        // (or from the oldest entry if less than 30 days of data exists)
+        let thirtyDaysBeforeMostRecent = calendar.date(byAdding: .day, value: -30, to: mostRecentDate) ?? mostRecentDate
+        displayStartDate = max(oldestDate, thirtyDaysBeforeMostRecent)
+
+        // Expand data fetch to include lookback period before oldest data for load calculations
+        dataStartDate = calendar.date(byAdding: .day, value: -LoadCalculator.lookbackDays, to: oldestDate) ?? oldestDate
+
+        logger.info("Expanded date range: display from \(self.displayStartDate), data from \(self.dataStartDate)")
+
+        // Rebuild FRCs with new date range and refetch
+        setupFetchedResultsControllers()
+        performInitialFetch()
+    }
+
+    /// Synchronously finds the most recent entry date (for use on main actor)
+    private func findMostRecentEntryDateSync() -> Date? {
+        var newestDates: [Date] = []
+
+        // Check symptom entries
+        let entryRequest: NSFetchRequest<SymptomEntry> = SymptomEntry.fetchRequest()
+        entryRequest.sortDescriptors = [
+            NSSortDescriptor(keyPath: \SymptomEntry.backdatedAt, ascending: false),
+            NSSortDescriptor(keyPath: \SymptomEntry.createdAt, ascending: false)
+        ]
+        entryRequest.fetchLimit = 1
+        if let newest = try? context.fetch(entryRequest).first {
+            newestDates.append(newest.backdatedAt ?? newest.createdAt ?? Date.distantPast)
+        }
+
+        // Check activities
+        let activityRequest: NSFetchRequest<ActivityEvent> = ActivityEvent.fetchRequest()
+        activityRequest.sortDescriptors = [
+            NSSortDescriptor(keyPath: \ActivityEvent.backdatedAt, ascending: false),
+            NSSortDescriptor(keyPath: \ActivityEvent.createdAt, ascending: false)
+        ]
+        activityRequest.fetchLimit = 1
+        if let newest = try? context.fetch(activityRequest).first {
+            newestDates.append(newest.backdatedAt ?? newest.createdAt ?? Date.distantPast)
+        }
+
+        // Check sleep events
+        let sleepRequest: NSFetchRequest<SleepEvent> = SleepEvent.fetchRequest()
+        sleepRequest.sortDescriptors = [
+            NSSortDescriptor(keyPath: \SleepEvent.backdatedAt, ascending: false),
+            NSSortDescriptor(keyPath: \SleepEvent.createdAt, ascending: false)
+        ]
+        sleepRequest.fetchLimit = 1
+        if let newest = try? context.fetch(sleepRequest).first {
+            newestDates.append(newest.backdatedAt ?? newest.createdAt ?? Date.distantPast)
+        }
+
+        // Check meal events
+        let mealRequest: NSFetchRequest<MealEvent> = MealEvent.fetchRequest()
+        mealRequest.sortDescriptors = [
+            NSSortDescriptor(keyPath: \MealEvent.backdatedAt, ascending: false),
+            NSSortDescriptor(keyPath: \MealEvent.createdAt, ascending: false)
+        ]
+        mealRequest.fetchLimit = 1
+        if let newest = try? context.fetch(mealRequest).first {
+            newestDates.append(newest.backdatedAt ?? newest.createdAt ?? Date.distantPast)
+        }
+
+        return newestDates.max()
     }
 
     // MARK: - Public API
